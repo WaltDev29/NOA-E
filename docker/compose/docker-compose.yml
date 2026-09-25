@@ -1,0 +1,80 @@
+name: noa-e
+
+services:
+  nginx:
+    container_name: noa-e-nginx
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../../services/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+
+  ollama:
+    container_name: noa-e-ollama
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-init:
+    container_name: noa-e-ollama-init
+    image: ollama/ollama
+    depends_on:
+      - ollama
+    command: ["pull", "gemma2:2b"]
+    environment:
+      - OLLAMA_HOST=ollama:11434
+
+  frontend:
+    container_name: noa-e-frontend
+    build: 
+      context: ../../services/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../services/frontend:/app
+      - /app/node_modules
+    env_file:
+      - ../env/.env.frontend
+    depends_on:
+      - backend
+
+  backend:
+    container_name: noa-e-backend
+    build:
+      context: ../../services/backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../services/backend:/app
+    env_file:
+      - ../env/.env.backend
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  db:
+    container_name: noa-e-db
+    image: postgres:15-alpine
+    env_file:
+      - ../env/.env.db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  ollama_data:
