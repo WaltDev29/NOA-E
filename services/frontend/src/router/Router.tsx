@@ -72,12 +72,18 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  // Compute dynamic params (e.g. /noa-e/nodes/:nodeId)
+  // Compute dynamic params (e.g. /noa-e/nodes/:nodeId, /noa-e/learn/:topicId)
   let params: Record<string, string> = {};
   if (path.startsWith('/noa-e/nodes/')) {
     const sub = path.replace('/noa-e/nodes/', '').split('/')[0];
     if (sub) {
       params.nodeId = sub;
+    }
+  }
+  if (path.startsWith('/noa-e/learn/')) {
+    const sub = path.replace('/noa-e/learn/', '').split('/')[0].split('#')[0];
+    if (sub) {
+      params.topicId = sub;
     }
   }
 

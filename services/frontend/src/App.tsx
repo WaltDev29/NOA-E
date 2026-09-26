@@ -3,6 +3,7 @@ import { RouterProvider, useLocation } from './router/Router';
 import { MainPage } from './pages/MainPage';
 import { StudioPage } from './pages/StudioPage';
 import { NodeInstructionPage } from './pages/NodeInstructionPage';
+import { LearnPage } from './pages/LearnPage';
 import { MyPage } from './pages/MyPage';
 import logoImg from './assets/logo.png';
 
@@ -35,9 +36,12 @@ const AppRoutes: React.FC = () => {
     return <StudioPage />;
   }
 
+  if (pathname.startsWith('/noa-e/learn')) {
+    return <LearnPage />;
+  }
+
   if (
     pathname.startsWith('/noa-e/nodes') ||
-    pathname.startsWith('/noa-e/learn') ||
     pathname.startsWith('/noa-e/templates')
   ) {
     return <NodeInstructionPage />;
