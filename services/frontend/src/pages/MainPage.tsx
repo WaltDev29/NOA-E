@@ -15,7 +15,7 @@ export const MainPage: React.FC = () => {
             <section className="relative pt-space-md pb-space-lg w-full">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center">
                 {/* Left: Text Content */}
-                <div className="lg:col-span-7 flex flex-col items-start z-10">
+                <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-start z-10">
                   {/* Top Pill Badge */}
                   <div className="inline-flex items-center gap-space-xs px-space-md py-1 rounded-full bg-surface-container-high/70 backdrop-blur-md shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
@@ -60,117 +60,137 @@ export const MainPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right: Isometric Visual Composition */}
-                <div className="lg:col-span-5 relative w-full h-[400px] flex items-center justify-center">
+                {/* Right: Isometric Visual Composition (4 Node Organic Layout) */}
+                <div className="lg:col-span-7 xl:col-span-7 relative w-full h-[440px] flex items-center justify-center select-none">
                   {/* Background Radiant Grid Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-surface-container-low/40 via-surface-container/60 to-primary-container/10 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-surface-container-low/40 via-surface-container/60 to-primary-container/10 rounded-2xl pointer-events-none" />
 
-                  {/* Dynamic SVG Network Diagram with Cute Friendly Bot & Nodes */}
+                  {/* Dynamic SVG Network Diagram with 4 Nodes */}
                   <svg
-                    className="relative z-10 w-full h-full max-w-[480px] drop-shadow-[0_12px_32px_rgba(0,0,0,0.6)]"
+                    className="relative z-10 w-full h-full max-w-[640px] drop-shadow-[0_16px_36px_rgba(0,0,0,0.65)]"
                     fill="none"
-                    viewBox="0 0 500 420"
+                    viewBox="0 0 660 420"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <defs>
-                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad1" x1="120" x2="250" y1="110" y2="200">
+                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad1" x1="120" x2="270" y1="105" y2="210">
                         <stop stopColor="#4d8eff" />
                         <stop offset="1" stopColor="#acedff" />
                       </linearGradient>
-                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad2" x1="380" x2="250" y1="90" y2="200">
+                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad2" x1="530" x2="390" y1="105" y2="210">
                         <stop stopColor="#571bc1" />
                         <stop offset="1" stopColor="#4d8eff" />
                       </linearGradient>
-                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad3" x1="400" x2="250" y1="290" y2="200">
+                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad3" x1="530" x2="390" y1="295" y2="210">
                         <stop stopColor="#4cd7f6" />
                         <stop offset="1" stopColor="#4d8eff" />
                       </linearGradient>
-                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad4" x1="110" x2="250" y1="270" y2="200">
+                      <linearGradient gradientUnits="userSpaceOnUse" id="lineGrad4" x1="120" x2="270" y1="295" y2="210">
                         <stop stopColor="#4d8eff" />
                         <stop offset="1" stopColor="#c4abff" />
                       </linearGradient>
                       <radialGradient cx="50%" cy="50%" id="botAura" r="50%">
-                        <stop offset="0%" stopColor="#4d8eff" stopOpacity="0.5" />
+                        <stop offset="0%" stopColor="#4d8eff" stopOpacity="0.55" />
                         <stop offset="100%" stopColor="#0b1326" stopOpacity="0" />
                       </radialGradient>
                     </defs>
 
                     {/* Edge Connection Curves */}
-                    <path d="M 120 110 Q 185 140 250 200" stroke="url(#lineGrad1)" strokeDasharray="6 4" strokeOpacity="0.8" strokeWidth="2.5" />
-                    <path d="M 380 90 Q 320 140 250 200" stroke="url(#lineGrad2)" strokeDasharray="6 4" strokeOpacity="0.8" strokeWidth="2.5" />
-                    <path d="M 400 290 Q 330 270 250 200" stroke="url(#lineGrad3)" strokeDasharray="6 4" strokeOpacity="0.8" strokeWidth="2.5" />
-                    <path d="M 110 270 Q 180 250 250 200" stroke="url(#lineGrad4)" strokeDasharray="6 4" strokeOpacity="0.8" strokeWidth="2.5" />
-                    <path d="M 250 70 L 250 160" stroke="#4d8eff" strokeDasharray="4 4" strokeOpacity="0.6" strokeWidth="2" />
+                    <path d="M 120 105 C 190 105, 200 200, 270 210" stroke="url(#lineGrad1)" strokeDasharray="6 4" strokeOpacity="0.85" strokeWidth="2.5" />
+                    <path d="M 530 105 C 460 105, 450 200, 390 210" stroke="url(#lineGrad2)" strokeDasharray="6 4" strokeOpacity="0.85" strokeWidth="2.5" />
+                    <path d="M 530 295 C 460 295, 450 220, 390 210" stroke="url(#lineGrad3)" strokeDasharray="6 4" strokeOpacity="0.85" strokeWidth="2.5" />
+                    <path d="M 120 295 C 190 295, 200 220, 270 210" stroke="url(#lineGrad4)" strokeDasharray="6 4" strokeOpacity="0.85" strokeWidth="2.5" />
 
                     {/* Center Aura */}
-                    <circle cx="250" cy="205" fill="url(#botAura)" r="90" />
+                    <circle cx="330" cy="210" fill="url(#botAura)" r="100" />
 
-                    {/* Center AI Bot Node Capsule */}
-                    <g transform="translate(200, 155)">
-                      <rect fill="#171f33" height="96" rx="28" stroke="#4d8eff" strokeWidth="2" width="100" />
-                      <rect fill="#060e20" height="46" rx="14" width="70" x="15" y="18" />
-                      <circle cx="36" cy="40" fill="#4cd7f6" r="7" />
-                      <circle cx="38" cy="38" fill="#ffffff" r="2.5" />
-                      <circle cx="64" cy="40" fill="#4cd7f6" r="7" />
-                      <circle cx="66" cy="38" fill="#ffffff" r="2.5" />
-                      <path d="M 8 36 Q 2 36 2 44 Q 2 52 8 52" fill="#4d8eff" />
-                      <path d="M 92 36 Q 98 36 98 44 Q 98 52 92 52" fill="#4d8eff" />
-                      <path d="M 45 49 Q 50 54 55 49" fill="none" stroke="#acedff" strokeLinecap="round" strokeWidth="2" />
-                      <rect fill="#222a3d" height="15" rx="7.5" width="50" x="25" y="72" />
-                      <text fill="#adc6ff" fontFamily="'JetBrains Mono', monospace" fontSize="9" fontWeight="700" textAnchor="middle" x="50" y="83">
+                    {/* Center AI Bot Node Capsule (Center: 330, 210) */}
+                    <g
+                      className="cursor-default transition-all duration-300 ease-out hover:scale-[1.1] hover:brightness-125 hover:drop-shadow-[0_0_20px_rgba(77,142,255,0.6)]"
+                      style={{ transformOrigin: '330px 210px' }}
+                    >
+                      <rect fill="#171f33" height="100" rx="30" stroke="#4d8eff" strokeWidth="2" width="120" x="270" y="160" />
+                      <rect fill="#060e20" height="50" rx="16" width="86" x="287" y="178" />
+                      <circle cx="312" cy="203" fill="#4cd7f6" r="8" />
+                      <circle cx="314" cy="201" fill="#ffffff" r="2.5" />
+                      <circle cx="348" cy="203" fill="#4cd7f6" r="8" />
+                      <circle cx="350" cy="201" fill="#ffffff" r="2.5" />
+                      <path d="M 276 198 Q 270 198 270 206 Q 270 214 276 214" fill="#4d8eff" />
+                      <path d="M 384 198 Q 390 198 390 206 Q 390 214 384 214" fill="#4d8eff" />
+                      <path d="M 324 214 Q 330 220 336 214" fill="none" stroke="#acedff" strokeLinecap="round" strokeWidth="2" />
+                      <rect fill="#222a3d" height="16" rx="8" width="64" x="298" y="234" />
+                      <text fill="#adc6ff" fontFamily="'JetBrains Mono', monospace" fontSize="9.5" fontWeight="700" textAnchor="middle" x="330" y="246">
                         AI AGENT
                       </text>
                     </g>
 
-                    {/* Top Node: Web Search */}
-                    <g transform="translate(225, 45)">
-                      <rect fill="#171f33" height="50" rx="16" stroke="#4cd7f6" strokeWidth="1.5" width="50" />
-                      <circle cx="25" cy="25" fill="#009eb9" fillOpacity="0.3" r="14" />
-                      <path d="M25 15C19.5 15 15 19.5 15 25C15 30.5 19.5 35 25 35C30.5 35 35 30.5 35 25C35 19.5 30.5 15 25 15ZM25 33C20.6 33 17 29.4 17 25C17 20.6 20.6 17 25 17C29.4 17 33 20.6 33 25C33 29.4 29.4 33 25 33Z" fill="#4cd7f6" />
-                      <path d="M25 15C22 18 20 22 20 25C20 28 22 32 25 35C28 32 30 28 30 25C30 22 28 18 25 15Z" fill="none" stroke="#4cd7f6" strokeWidth="1.2" />
-                      <line stroke="#4cd7f6" strokeWidth="1.2" x1="16" x2="34" y1="25" y2="25" />
+                    {/* 1. Top-Left Node: Device/API (Center: 77.5, 105) */}
+                    <g
+                      className="cursor-default transition-all duration-300 ease-out hover:scale-[1.15] hover:brightness-125 hover:drop-shadow-[0_0_16px_rgba(77,142,255,0.6)]"
+                      style={{ transformOrigin: '77.5px 105px' }}
+                    >
+                      <rect fill="#171f33" height="70" rx="20" stroke="#4d8eff" strokeWidth="1.5" width="85" x="35" y="70" />
+                      <rect fill="#4d8eff" fillOpacity="0.25" height="34" rx="6" stroke="#adc6ff" strokeWidth="1.5" width="32" x="61.5" y="82" />
+                      <circle cx="77.5" cy="108" fill="#ffffff" r="2" />
+                      <text fill="#adc6ff" fontFamily="'JetBrains Mono', monospace" fontSize="8.5" fontWeight="700" textAnchor="middle" x="77.5" y="130">
+                        API / TOOL
+                      </text>
                     </g>
 
-                    {/* Top-Left Node: Device/API */}
-                    <g transform="translate(85, 80)">
-                      <rect fill="#171f33" height="56" rx="18" stroke="#4d8eff" strokeWidth="1.5" width="65" />
-                      <rect fill="#4d8eff" fillOpacity="0.2" height="28" rx="5" stroke="#adc6ff" strokeWidth="1.5" width="25" x="20" y="14" />
-                      <circle cx="32.5" cy="36" fill="#ffffff" r="1.5" />
-                    </g>
-
-                    {/* Top-Right Node: LLM */}
-                    <g transform="translate(345, 60)">
-                      <rect fill="#222a3d" height="60" rx="18" stroke="#c4abff" strokeWidth="1.5" width="78" />
-                      <text fill="#d0bcff" fontFamily="'Plus Jakarta Sans', sans-serif" fontSize="14" fontWeight="800" textAnchor="middle" x="39" y="36">
+                    {/* 2. Top-Right Node: LLM (Center: 577.5, 105) */}
+                    <g
+                      className="cursor-default transition-all duration-300 ease-out hover:scale-[1.15] hover:brightness-125 hover:drop-shadow-[0_0_16px_rgba(208,188,255,0.6)]"
+                      style={{ transformOrigin: '577.5px 105px' }}
+                    >
+                      <rect fill="#222a3d" height="70" rx="20" stroke="#c4abff" strokeWidth="1.5" width="95" x="530" y="70" />
+                      <text fill="#d0bcff" fontFamily="'Plus Jakarta Sans', sans-serif" fontSize="16" fontWeight="800" textAnchor="middle" x="577.5" y="109">
                         LLM
                       </text>
-                    </g>
-
-                    {/* Bottom-Left Node: Database Storage */}
-                    <g transform="translate(75, 240)">
-                      <rect fill="#171f33" height="60" rx="18" stroke="#4d8eff" strokeWidth="1.5" width="70" />
-                      <ellipse cx="35" cy="20" fill="#4d8eff" fillOpacity="0.4" rx="15" ry="5" stroke="#4d8eff" strokeWidth="1.2" />
-                      <path d="M 20 20 v 8 a 15 5 0 0 0 30 0 v -8" fill="none" stroke="#4d8eff" strokeWidth="1.2" />
-                      <path d="M 20 28 v 8 a 15 5 0 0 0 30 0 v -8" fill="none" stroke="#4d8eff" strokeWidth="1.2" />
-                    </g>
-
-                    {/* Bottom-Right Node: Code Execution </ > */}
-                    <g transform="translate(365, 255)">
-                      <rect fill="#171f33" height="60" rx="18" stroke="#4cd7f6" strokeWidth="1.5" width="74" />
-                      <text fill="#4cd7f6" fontFamily="'JetBrains Mono', monospace" fontSize="16" fontWeight="700" textAnchor="middle" x="37" y="37">
-                        &lt; / &gt;
+                      <text fill="#8c909f" fontFamily="'JetBrains Mono', monospace" fontSize="8.5" fontWeight="600" textAnchor="middle" x="577.5" y="128">
+                        GEN-AI
                       </text>
                     </g>
 
-                    {/* Floating Data Packets */}
-                    <circle cx="185" cy="155" fill="#acedff" r="3.5">
+                    {/* 3. Bottom-Left Node: Prompt Set (Center: 77.5, 295) */}
+                    <g
+                      className="cursor-default transition-all duration-300 ease-out hover:scale-[1.15] hover:brightness-125 hover:drop-shadow-[0_0_16px_rgba(77,142,255,0.6)]"
+                      style={{ transformOrigin: '77.5px 295px' }}
+                    >
+                      <rect fill="#171f33" height="70" rx="20" stroke="#4d8eff" strokeWidth="1.5" width="85" x="35" y="260" />
+                      <rect fill="#4d8eff" fillOpacity="0.2" height="26" rx="5" stroke="#adc6ff" strokeWidth="1.2" width="50" x="52.5" y="272" />
+                      <line stroke="#adc6ff" strokeLinecap="round" strokeWidth="1.5" x1="58" x2="72" y1="281" y2="281" />
+                      <line stroke="#4cd7f6" strokeLinecap="round" strokeWidth="1.5" x1="58" x2="90" y1="289" y2="289" />
+                      <text fill="#adc6ff" fontFamily="'JetBrains Mono', monospace" fontSize="8.5" fontWeight="700" textAnchor="middle" x="77.5" y="320">
+                        PROMPT SET
+                      </text>
+                    </g>
+
+                    {/* 4. Bottom-Right Node: Code Execution (Center: 577.5, 295) */}
+                    <g
+                      className="cursor-default transition-all duration-300 ease-out hover:scale-[1.15] hover:brightness-125 hover:drop-shadow-[0_0_16px_rgba(76,215,246,0.6)]"
+                      style={{ transformOrigin: '577.5px 295px' }}
+                    >
+                      <rect fill="#171f33" height="70" rx="20" stroke="#4cd7f6" strokeWidth="1.5" width="95" x="530" y="260" />
+                      <text fill="#4cd7f6" fontFamily="'JetBrains Mono', monospace" fontSize="18" fontWeight="700" textAnchor="middle" x="577.5" y="299">
+                        &lt; / &gt;
+                      </text>
+                      <text fill="#8c909f" fontFamily="'JetBrains Mono', monospace" fontSize="8.5" fontWeight="600" textAnchor="middle" x="577.5" y="320">
+                        EXECUTION
+                      </text>
+                    </g>
+
+                    {/* Floating Data Packets Along Curves */}
+                    <circle cx="205" cy="145" fill="#acedff" r="4">
                       <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.3;1;0.3" />
                     </circle>
-                    <circle cx="315" cy="145" fill="#c4abff" r="3.5">
+                    <circle cx="455" cy="145" fill="#c4abff" r="4">
                       <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="1;0.3;1" />
                     </circle>
-                    <circle cx="320" cy="245" fill="#4cd7f6" r="3.5">
+                    <circle cx="455" cy="265" fill="#4cd7f6" r="4">
                       <animate attributeName="opacity" dur="1.8s" repeatCount="indefinite" values="0.2;0.9;0.2" />
+                    </circle>
+                    <circle cx="205" cy="265" fill="#acedff" r="4">
+                      <animate attributeName="opacity" dur="2.2s" repeatCount="indefinite" values="0.8;0.2;0.8" />
                     </circle>
                   </svg>
                 </div>
