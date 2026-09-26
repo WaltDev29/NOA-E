@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link } from '../../router/Router';
+import logoImg from '../../assets/logo.png';
 
 export const Footer: React.FC = () => {
   return (
     <footer className="w-full bg-surface-container-lowest border-t border-outline-variant/20 py-space-lg">
-      <div className="max-w-7xl mx-auto px-margin flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant font-sans text-xs">
-        <div className="flex items-center gap-space-sm">
-          <span className="font-display text-base text-primary font-bold">NOA-E</span>
+      <div className="w-full px-6 flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant font-sans text-xs">
+        <div className="flex items-center gap-space-md">
+          <Link to="/noa-e">
+            <img src={logoImg} alt="NOA-E" className="h-6 w-auto object-contain" />
+          </Link>
           <span className="text-outline">Node-Oriented Agent Education Platform</span>
         </div>
         <div className="flex flex-wrap items-center gap-space-lg text-outline">

@@ -3,13 +3,12 @@ import { RouterProvider, useLocation } from './router/Router';
 import { MainPage } from './pages/MainPage';
 import { StudioPage } from './pages/StudioPage';
 import { NodeInstructionPage } from './pages/NodeInstructionPage';
+import logoImg from './assets/logo.png';
 
 const NotFoundPage: React.FC = () => {
   return (
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-surface-container-high border border-outline-variant/30 flex items-center justify-center text-primary mb-4 shadow-[0_0_25px_rgba(77,142,255,0.3)]">
-        <span className="material-symbols-outlined text-[36px]">error_outline</span>
-      </div>
+      <img src={logoImg} alt="NOA-E" className="h-10 w-auto object-contain mb-6" />
       <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-2">
         404 - 페이지를 찾을 수 없습니다
       </h1>
