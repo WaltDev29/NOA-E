@@ -160,7 +160,7 @@ export const InputNode = memo(({ id, data, selected }: any) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 !bg-tertiary !border-2 !border-surface-container-lowest"
+        className="!bg-tertiary"
       />
     </>
   );
@@ -173,13 +173,13 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
         type="target"
         id="tools"
         position={Position.Top}
-        className="w-3 h-3 !bg-secondary !border-2 !border-surface-container-lowest"
+        className="!bg-secondary"
       />
       <Handle
         type="target"
         id="left"
         position={Position.Left}
-        className="w-3 h-3 !bg-primary !border-2 !border-surface-container-lowest"
+        className="!bg-primary"
       />
       <NodeWrapper
         id={id}
@@ -205,7 +205,7 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
         type="source"
         id="right"
         position={Position.Right}
-        className="w-3 h-3 !bg-secondary !border-2 !border-surface-container-lowest"
+        className="!bg-secondary"
       />
     </>
   );
@@ -217,7 +217,7 @@ export const AgentNode = memo(({ id, data, selected }: any) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 !bg-primary !border-2 !border-surface-container-lowest"
+        className="!bg-primary"
       />
       <NodeWrapper
         id={id}
@@ -242,7 +242,7 @@ export const AgentNode = memo(({ id, data, selected }: any) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 !bg-secondary !border-2 !border-surface-container-lowest"
+        className="!bg-secondary"
       />
     </>
   );
@@ -266,7 +266,7 @@ export const SearchNode = memo(({ id, selected }: any) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-primary !border-2 !border-surface-container-lowest"
+        className="!bg-primary"
       />
     </>
   );
@@ -290,7 +290,7 @@ export const CalculatorNode = memo(({ id, selected }: any) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-tertiary !border-2 !border-surface-container-lowest"
+        className="!bg-tertiary"
       />
     </>
   );
@@ -302,7 +302,7 @@ export const OutputNode = memo(({ id, selected }: any) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 !bg-error !border-2 !border-surface-container-lowest"
+        className="!bg-error"
       />
       <NodeWrapper
         id={id}
