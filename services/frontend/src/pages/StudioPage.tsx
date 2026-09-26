@@ -7,6 +7,7 @@ import { NodeResultPanel } from '../components/panel/NodeResultPanel';
 import { ExecutionPanel } from '../components/execution/ExecutionPanel';
 import { NodeInfoModal } from '../components/editor/NodeInfoModal';
 import { OutputResultModal } from '../components/editor/OutputResultModal';
+import { ExportModal } from '../components/panel/ExportModal';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 
 export const StudioPage: React.FC = () => {
@@ -16,6 +17,7 @@ export const StudioPage: React.FC = () => {
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'results'>('properties');
   const [savedNotice, setSavedNotice] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -71,6 +73,7 @@ export const StudioPage: React.FC = () => {
   }, [isResizing]);
 
   const handleSave = () => {
+    setIsExportModalOpen(true);
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 2000);
   };
@@ -285,6 +288,11 @@ export const StudioPage: React.FC = () => {
       {/* Modals */}
       <NodeInfoModal />
       <OutputResultModal />
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        agentName={agentName}
+      />
     </div>
   );
 };
