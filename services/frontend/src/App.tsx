@@ -3,6 +3,7 @@ import { RouterProvider, useLocation } from './router/Router';
 import { MainPage } from './pages/MainPage';
 import { StudioPage } from './pages/StudioPage';
 import { NodeInstructionPage } from './pages/NodeInstructionPage';
+import { MyPage } from './pages/MyPage';
 import logoImg from './assets/logo.png';
 
 const NotFoundPage: React.FC = () => {
@@ -40,6 +41,10 @@ const AppRoutes: React.FC = () => {
     pathname.startsWith('/noa-e/templates')
   ) {
     return <NodeInstructionPage />;
+  }
+
+  if (pathname.startsWith('/noa-e/mypage')) {
+    return <MyPage />;
   }
 
   // Only render MainPage for '/noa-e' or '/noa-e/'
