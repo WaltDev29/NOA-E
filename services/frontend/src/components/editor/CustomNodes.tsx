@@ -78,7 +78,7 @@ const NodeWrapper: React.FC<NodeWrapperProps> = ({
           e.stopPropagation();
           openNodeModal(nodeType);
         }}
-        className="absolute top-2 right-2 p-1 text-outline opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary rounded-md hover:bg-surface-container-high"
+        className="absolute top-2 right-2 p-1 text-outline opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary rounded-md hover:bg-surface-container-high cursor-pointer"
         title="노드 가이드 보기"
         type="button"
       >

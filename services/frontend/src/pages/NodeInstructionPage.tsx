@@ -19,6 +19,43 @@ interface NodeDetail {
 }
 
 const NODE_CATALOG: Record<string, NodeDetail> = {
+  input: {
+    id: 'input',
+    name: '사용자 입력',
+    subtitle: '에이전트 시작 질문 및 데이터 입력',
+    category: '기본',
+    badgeType: 'Trigger',
+    icon: 'login',
+    accentColor: 'tertiary',
+    tagList: ['시작 노드', '필수', '프롬프트 입력', '사용자 질의'],
+    description:
+      '사용자 입력 노드는 워크플로우의 시작점으로, 사용자가 에이전트에게 전달할 최초의 질문이나 프롬프트 데이터를 설정합니다.',
+    features: [
+      {
+        title: '사용자 질문 입력',
+        desc: '에이전트가 처리할 기본 질문 또는 프롬프트 텍스트 지정',
+      },
+      {
+        title: '파이프라인 시작점 역할',
+        desc: '모든 에이전트 실행의 출발점으로서 다음 LLM 또는 에이전트 노드로 데이터 전달',
+      },
+      {
+        title: '동적 입력값 바인딩',
+        desc: '실행 시마다 사용자 입력을 실시간으로 주입 가능',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'input_text', org: 'String', badge: '입력 텍스트', context: '시작 질문 내용' },
+      { name: 'mode', org: 'Single / Chat', badge: '동작 모드', context: '단발성 질의 또는 대화형' },
+    ],
+    examples: [
+      {
+        title: '시작 질문 설정 예시',
+        prompt: 'input_text: "인공지능 에이전트가 무엇인지 3문장으로 요약해줘."',
+        resultJson: '{\n  "input_text": "인공지능 에이전트가 무엇인지 3문장으로 요약해줘.",\n  "timestamp": "2026-09-26T17:10:00Z"\n}',
+      },
+    ],
+  },
   llm: {
     id: 'llm',
     name: 'LLM',
@@ -290,10 +327,114 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
       { name: 'eval_mode', org: 'Strict / Fuzzy', badge: '정밀도', context: '일치 검사 강도' },
     ],
     examples: [
+  agent: {
+    id: 'agent',
+    name: '자율 에이전트',
+    subtitle: '목표 지향적 자율 추론/도구 실행',
+    category: '기본 / 지능',
+    badgeType: 'Agentic',
+    icon: 'smart_toy',
+    accentColor: 'secondary',
+    tagList: ['ReAct', '도구 연동', '자율 추론', '자기 교정'],
+    description:
+      '자율 에이전트 노드는 주어진 목표(Goal)를 달성하기 위해 필요한 도구를 스스로 판단하여 순차적으로 실행하고, 결과를 종합하여 최적의 응답을 도출합니다.',
+    features: [
       {
-        title: '키워드 기반 분기',
-        prompt: 'If input contains "날씨" -> WebSearch\nElse -> LLM Chat',
-        resultJson: '{\n  "selected_branch": "WebSearch",\n  "matched_condition": "contains(\'날씨\')",\n  "routed_to": "node_web_search"\n}',
+        title: 'ReAct (Reason + Act) 루프',
+        desc: '생각(Thought) -> 행동(Action) -> 관찰(Observation) 사이클을 자율 수행',
+      },
+      {
+        title: '다중 도구 오케스트레이션',
+        desc: '검색, 계산기, 파이썬 코드 실행 등을 목적에 맞게 복합 조합',
+      },
+      {
+        title: '자기 오류 수정 (Self-Correction)',
+        desc: '도구 실행 실패 시 다른 파라미터로 재시도하거나 대체 도구 호출',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'max_iterations', org: '5회 (기본)', badge: '루프 한도', context: '최대 자율 실행 횟수' },
+      { name: 'reasoning_engine', org: 'ReAct Agent', badge: '아키텍처', context: '추론 알고리즘' },
+      { name: 'system_prompt', org: 'System Prompt', badge: '지침', context: '에이전트 행동 규칙' },
+    ],
+    examples: [
+      {
+        title: '복합 질문 자율 해결',
+        prompt: 'Goal: "2026년 파이썬 최신 버전을 검색하고, 그 버전 번호의 제곱근을 계산해줘."',
+        resultJson: '{\n  "thought": "먼저 2026년 파이썬 버전을 검색하고, 결과를 바탕으로 계산기 도구를 호출해야 합니다.",\n  "actions": ["search_web(\'Python latest version 2026\')", "calculator(\'sqrt(3.14)\')"],\n  "final_answer": "2026년 최신 파이썬 3.14의 제곱근 계산 결과는 약 1.77입니다."\n}',
+      },
+    ],
+  },
+  calculator: {
+    id: 'calculator',
+    name: '계산기',
+    subtitle: '수학 수식 및 정밀 연산',
+    category: '도구',
+    badgeType: 'Math Tool',
+    icon: 'calculate',
+    accentColor: 'tertiary',
+    tagList: ['수학 연산', '정밀 계산', '사칙연산', '수식 파서'],
+    description:
+      '계산기 노드는 LLM의 수학적 한계를 보완하여 복잡한 산술 수식과 과학 계산을 오차 없이 정밀하게 연산합니다.',
+    features: [
+      {
+        title: '정밀 산술 연산',
+        desc: '부동소수점 오차 없는 정밀 사칙연산 및 지수/로그/삼각함수 지원',
+      },
+      {
+        title: 'LLM 도구 호출 연계',
+        desc: 'LLM 노드의 도구 핸들과 연결되어 수식 발견 시 자동 호출',
+      },
+      {
+        title: '실시간 결과 반환',
+        desc: '수식 검증 및 안전한 파싱을 거쳐 즉시 연산 결과 반환',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'expression', org: 'String', badge: '수식', context: '계산할 수식 표현식' },
+      { name: 'precision', org: 'Decimal 10자리', badge: '정밀도', context: '소수점 정밀도' },
+    ],
+    examples: [
+      {
+        title: '복합 수식 계산',
+        prompt: 'Expression: "(15000 * 0.85) + 3000 / 2"',
+        resultJson: '{\n  "expression": "(15000 * 0.85) + 3000 / 2",\n  "result": 14250.0,\n  "status": "success"\n}',
+      },
+    ],
+  },
+  output: {
+    id: 'output',
+    name: '결과 출력',
+    subtitle: '최종 결과 표출 및 포맷팅',
+    category: '기본',
+    badgeType: 'Sink',
+    icon: 'output',
+    accentColor: 'error',
+    tagList: ['최종 출력', '결과 표출', '포맷팅', '파이프라인 종료'],
+    description:
+      '결과 출력 노드는 워크플로우의 최종 종착점으로, 이전 노드들에서 생성된 최종 답변이나 실행 데이터를 사용자 화면에 깔끔하게 표출합니다.',
+    features: [
+      {
+        title: '최종 결과 렌더링',
+        desc: '마크다운, 텍스트, 구조화된 JSON 결과를 사용자가 보기 편하게 시각화',
+      },
+      {
+        title: '실행 완료 트리거',
+        desc: '전체 파이프라인의 성공적 종료를 알리고 최종 소요 시간 및 상태 기록',
+      },
+      {
+        title: '클립보드 복사 및 다운로드',
+        desc: '생성된 결과를 원클릭으로 복사하거나 파일로 내보내기 지원',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'render_mode', org: 'Markdown / Raw', badge: '렌더링', context: '출력 서식 형태' },
+    ],
+    examples: [
+      {
+        title: '최종 출력 포맷팅 예시',
+        prompt: 'Input: "AI 에이전트 요약 완료"',
+        resultJson: '{\n  "final_output": "AI 에이전트는 목표를 스스로 파악하여 도구를 활용해 문제를 해결하는 지능형 프로그램입니다.",\n  "execution_status": "completed"\n}',
       },
     ],
   },
@@ -318,10 +459,10 @@ export const NodeInstructionPage: React.FC = () => {
 
       <main className="w-full pt-16 bg-background min-h-screen flex-1 flex flex-col">
         <div className="flex flex-col w-full">
-          <div className="w-full max-w-7xl mx-auto px-margin py-space-lg">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
-              {/* Left Sidebar Panel */}
-              <aside className="lg:col-span-3 flex flex-col gap-space-md">
+          <div className="w-full px-6 py-space-lg">
+            <div className="flex flex-col lg:flex-row items-start gap-8">
+              {/* Left Sidebar Panel - Aligned to left */}
+              <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md">
                 {/* Back Navigation */}
                 <Link
                   to="/noa-e"
@@ -403,10 +544,11 @@ export const NodeInstructionPage: React.FC = () => {
                 </div>
               </aside>
 
-              {/* Right Main Content Panel */}
-              <div className="lg:col-span-9 flex flex-col gap-space-lg">
-                {/* Hero Banner: Visual Node Feature Showcase */}
-                <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high p-space-lg lg:p-space-xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-space-xl">
+              {/* Right Main Content Panel - Centered in remaining space */}
+              <div className="flex-1 w-full min-w-0 flex justify-center">
+                <div className="w-full max-w-4xl xl:max-w-5xl flex flex-col gap-space-lg">
+                  {/* Hero Banner: Visual Node Feature Showcase */}
+                  <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high p-space-lg lg:p-space-xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-space-xl">
                   {/* Ambient Glow Blobs */}
                   <div className="absolute -top-16 -left-16 w-64 h-64 bg-secondary-container/40 rounded-full blur-3xl pointer-events-none" />
                   <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-primary-container/30 rounded-full blur-3xl pointer-events-none" />
@@ -611,6 +753,7 @@ export const NodeInstructionPage: React.FC = () => {
                     );
                   })()}
                 </section>
+                </div>
               </div>
             </div>
           </div>

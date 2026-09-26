@@ -53,19 +53,11 @@ export const Link: React.FC<LinkProps> = ({ to, children, className, onClick, ..
 };
 
 export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Normalize initial path: fallback '/' to '/noa-e'
-  const getInitialPath = () => {
-    const raw = window.location.pathname || '/noa-e';
-    if (raw === '' || raw === '/') return '/noa-e';
-    return raw;
-  };
-
-  const [path, setPath] = useState<string>(getInitialPath());
+  const [path, setPath] = useState<string>(window.location.pathname || '/');
 
   useEffect(() => {
     const handlePopState = () => {
-      const current = window.location.pathname || '/noa-e';
-      setPath(current === '/' ? '/noa-e' : current);
+      setPath(window.location.pathname || '/');
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -73,12 +65,9 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const navigate = (to: string) => {
-    let target = to;
-    if (target === '' || target === '/') target = '/noa-e';
-    
-    if (window.location.pathname !== target) {
-      window.history.pushState({}, '', target);
-      setPath(target);
+    if (window.location.pathname !== to) {
+      window.history.pushState({}, '', to);
+      setPath(to);
       window.scrollTo(0, 0);
     }
   };
