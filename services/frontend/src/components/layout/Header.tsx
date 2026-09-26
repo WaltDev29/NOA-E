@@ -4,7 +4,7 @@ import { Link, useLocation } from '../../router/Router';
 export const Header: React.FC = () => {
   const { pathname } = useLocation();
 
-  const isHome = pathname === '/noa-e' || pathname === '/';
+  const isHome = pathname === '/noa-e' || pathname === '/noa-e/';
   const isStudio = pathname.startsWith('/noa-e/studio');
   const isNodes = pathname.startsWith('/noa-e/nodes');
 
