@@ -32,19 +32,20 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
-let idCounters: Record<string, number> = {
-  inputNode: 1,
-  llmNode: 1,
-  outputNode: 1,
-  agentNode: 1,
-  searchNode: 1,
-  calculatorNode: 1,
-};
-
-const getId = (type: string) => {
+const getUniqueId = (type: string, currentNodes: any[]) => {
   const prefix = type.replace('Node', '');
-  if (!idCounters[type]) idCounters[type] = 1;
-  return `${prefix}-${idCounters[type]++}`;
+  // Find highest existing numerical suffix
+  let maxSuffix = 0;
+  currentNodes.forEach((node) => {
+    if (node.id.startsWith(`${prefix}-`)) {
+      const num = parseInt(node.id.replace(`${prefix}-`, ''), 10);
+      if (!isNaN(num) && num > maxSuffix) {
+        maxSuffix = num;
+      }
+    }
+  });
+
+  return `${prefix}-${maxSuffix + 1}`;
 };
 
 const EditorInner: React.FC = () => {
@@ -93,14 +94,28 @@ const EditorInner: React.FC = () => {
         outputNode: '결과 출력',
       };
 
-      const newNode = {
-        id: getId(type),
-        type,
-        position,
-        data: { label: labels[type] || 'Node', config: {} },
+      const defaultConfigs: Record<string, any> = {
+        llmNode: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' },
+        agentNode: { model: 'gemma2:2b', system_prompt: 'You are an autonomous agent.' },
+        inputNode: { input_text: '' },
+        searchNode: {},
+        calculatorNode: {},
+        outputNode: {},
       };
 
-      useWorkflowStore.getState().setNodes([...useWorkflowStore.getState().nodes, newNode]);
+      const newId = getUniqueId(type, currentNodes);
+
+      const newNode = {
+        id: newId,
+        type,
+        position,
+        data: {
+          label: labels[type] || 'Node',
+          config: defaultConfigs[type] || {},
+        },
+      };
+
+      useWorkflowStore.getState().setNodes([...currentNodes, newNode]);
     },
     [reactFlowInstance],
   );
