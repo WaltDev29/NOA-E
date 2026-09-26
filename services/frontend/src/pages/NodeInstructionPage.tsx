@@ -318,10 +318,10 @@ export const NodeInstructionPage: React.FC = () => {
 
       <main className="w-full pt-16 bg-background min-h-screen flex-1 flex flex-col">
         <div className="flex flex-col w-full">
-          <div className="w-full max-w-7xl mx-auto px-margin py-space-lg">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
-              {/* Left Sidebar Panel */}
-              <aside className="lg:col-span-3 flex flex-col gap-space-md">
+          <div className="w-full px-6 py-space-lg">
+            <div className="flex flex-col lg:flex-row items-start gap-8">
+              {/* Left Sidebar Panel - Aligned to left */}
+              <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md">
                 {/* Back Navigation */}
                 <Link
                   to="/noa-e"
@@ -403,10 +403,11 @@ export const NodeInstructionPage: React.FC = () => {
                 </div>
               </aside>
 
-              {/* Right Main Content Panel */}
-              <div className="lg:col-span-9 flex flex-col gap-space-lg">
-                {/* Hero Banner: Visual Node Feature Showcase */}
-                <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high p-space-lg lg:p-space-xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-space-xl">
+              {/* Right Main Content Panel - Centered in remaining space */}
+              <div className="flex-1 w-full min-w-0 flex justify-center">
+                <div className="w-full max-w-4xl xl:max-w-5xl flex flex-col gap-space-lg">
+                  {/* Hero Banner: Visual Node Feature Showcase */}
+                  <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high p-space-lg lg:p-space-xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-space-xl">
                   {/* Ambient Glow Blobs */}
                   <div className="absolute -top-16 -left-16 w-64 h-64 bg-secondary-container/40 rounded-full blur-3xl pointer-events-none" />
                   <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-primary-container/30 rounded-full blur-3xl pointer-events-none" />
@@ -611,6 +612,7 @@ export const NodeInstructionPage: React.FC = () => {
                     );
                   })()}
                 </section>
+                </div>
               </div>
             </div>
           </div>
