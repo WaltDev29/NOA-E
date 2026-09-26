@@ -22,6 +22,11 @@ export const StudioPage: React.FC = () => {
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
   const isExecuting = useWorkflowStore((state) => state.isExecuting);
   const nodeResults = useWorkflowStore((state) => state.nodeResults);
+  const clearMessages = useWorkflowStore((state) => state.clearMessages);
+  const clearLogs = useWorkflowStore((state) => state.clearLogs);
+  const clearNodeResults = useWorkflowStore((state) => state.clearNodeResults);
+  const addLog = useWorkflowStore((state) => state.addLog);
+  const [resetNotice, setResetNotice] = useState(false);
 
   const canShowResultsTab =
     selectedNode && selectedNode.type !== 'inputNode' && selectedNode.type !== 'outputNode';
@@ -68,6 +73,15 @@ export const StudioPage: React.FC = () => {
   const handleSave = () => {
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 2000);
+  };
+
+  const handleResetMemory = () => {
+    clearMessages();
+    clearLogs();
+    clearNodeResults();
+    addLog('에이전트 메모리 및 대화 세션이 초기화되었습니다.');
+    setResetNotice(true);
+    setTimeout(() => setResetNotice(false), 2000);
   };
 
   const triggerRun = () => {
@@ -132,10 +146,29 @@ export const StudioPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-space-sm">
+              {/* 에이전트 메모리 초기화 버튼 (붉은색) */}
+              <button
+                onClick={handleResetMemory}
+                disabled={isExecuting}
+                className={`px-3.5 py-space-xs h-9 rounded-lg border font-body-sm text-body-sm font-semibold flex items-center gap-1.5 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                  resetNotice
+                    ? 'bg-[#ba1a1a] text-white border-[#ff5449] shadow-[0_0_16px_rgba(255,84,73,0.5)]'
+                    : 'bg-[#ba1a1a]/15 hover:bg-[#ba1a1a]/30 text-[#ffb4ab] hover:text-white border-[#ff5449]/40 hover:border-[#ff5449]/80 shadow-[0_0_12px_rgba(255,84,73,0.15)]'
+                }`}
+                title="에이전트 대화 기억 및 실행 메모리 초기화"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[17px] text-[#ff897d]">
+                  {resetNotice ? 'check' : 'restart_alt'}
+                </span>
+                <span>{resetNotice ? '초기화됨' : '메모리 초기화'}</span>
+              </button>
+
+              {/* 실행하기 버튼 */}
               <button
                 onClick={triggerRun}
                 disabled={isExecuting}
-                className="px-space-lg py-space-xs h-9 rounded-lg bg-gradient-to-r from-inverse-primary via-primary-container to-secondary-container hover:brightness-110 text-on-surface font-body-sm text-body-sm font-semibold flex items-center gap-space-xs shadow-[0_0_20px_rgba(77,142,255,0.4)] transition-all transform active:scale-95 disabled:opacity-50"
+                className="px-space-lg py-space-xs h-9 rounded-lg bg-gradient-to-r from-inverse-primary via-primary-container to-secondary-container hover:brightness-110 text-on-surface font-body-sm text-body-sm font-semibold flex items-center gap-space-xs shadow-[0_0_20px_rgba(77,142,255,0.4)] transition-all transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 id="run-pipeline-btn"
                 type="button"
               >
