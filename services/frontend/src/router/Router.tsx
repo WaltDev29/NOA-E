@@ -86,6 +86,12 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       params.topicId = sub;
     }
   }
+  if (path.startsWith('/noa-e/templates/')) {
+    const sub = path.replace('/noa-e/templates/', '').split('/')[0].split('?')[0].split('#')[0];
+    if (sub) {
+      params.categoryId = sub;
+    }
+  }
 
   return (
     <RouterContext.Provider value={{ path, navigate, params }}>

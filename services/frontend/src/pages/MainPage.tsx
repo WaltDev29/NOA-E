@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link } from '../router/Router';
+import { TEMPLATES_DATA } from './TemplatesPage';
 
 interface AgentProject {
   id: string;
@@ -121,6 +122,92 @@ const MY_AGENT_PROJECTS: AgentProject[] = [
         <text x="138" y="44" fill="#4cd7f6" fontSize="9" textAnchor="middle">CASE A</text>
         <rect x="115" y="64" width="46" height="32" rx="8" fill="#171f33" stroke="#c4abff" strokeWidth="1.5" />
         <text x="138" y="84" fill="#c4abff" fontSize="9" textAnchor="middle">CASE B</text>
+      </svg>
+    ),
+  },
+  {
+    id: '7',
+    name: 'SQL 쿼리 자동 생성기',
+    updatedAt: '2026. 09. 12 14:00',
+    themeColor: 'border-primary/40 hover:border-primary',
+    dotColor: '#4d8eff',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 140 60 L 185 60" stroke="#4d8eff" strokeWidth="2" />
+        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="32" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">KOR</text>
+        <rect x="95" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="118" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">SQL</text>
+        <rect x="185" y="44" width="44" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="207" y="64" fill="#4cd7f6" fontSize="9" fontFamily="monospace" textAnchor="middle">QUERY</text>
+      </svg>
+    ),
+  },
+  {
+    id: '8',
+    name: 'PDF 교재 Q&A 봇 (RAG)',
+    updatedAt: '2026. 09. 10 11:30',
+    themeColor: 'border-secondary/40 hover:border-secondary',
+    dotColor: '#c4abff',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 40 40 L 90 40" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 40 80 L 90 80" stroke="#c4abff" strokeWidth="2" />
+        <path d="M 140 40 C 160 40, 160 60, 180 60" stroke="#4cd7f6" strokeWidth="2" />
+        <path d="M 140 80 C 160 80, 160 60, 180 60" stroke="#4cd7f6" strokeWidth="2" />
+        <rect x="10" y="24" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="27" y="44" fill="#adc6ff" fontSize="8" textAnchor="middle">ASK</text>
+        <rect x="10" y="64" width="34" height="32" rx="8" fill="#171f33" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="27" y="84" fill="#d0bcff" fontSize="8" textAnchor="middle">PDF</text>
+        <rect x="90" y="24" width="50" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="115" y="44" fill="#4cd7f6" fontSize="8" fontWeight="bold" textAnchor="middle">VECTOR</text>
+        <rect x="180" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="203" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">RAG</text>
+      </svg>
+    ),
+  },
+  {
+    id: '9',
+    name: '이메일 자동 답장 초안 봇',
+    updatedAt: '2026. 09. 08 09:20',
+    themeColor: 'border-tertiary/40 hover:border-tertiary',
+    dotColor: '#4cd7f6',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 40 60 L 85 60" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 125 45 L 170 30" stroke="#4cd7f6" strokeWidth="2" />
+        <path d="M 125 75 L 170 90" stroke="#c4abff" strokeWidth="2" />
+        <rect x="10" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="27" y="64" fill="#adc6ff" fontSize="8" textAnchor="middle">MAIL</text>
+        <rect x="85" y="44" width="42" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="106" y="64" fill="#4cd7f6" fontSize="8" textAnchor="middle">ROUTE</text>
+        <rect x="170" y="14" width="50" height="30" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="195" y="33" fill="#d0bcff" fontSize="8" fontWeight="bold" textAnchor="middle">DRAFT</text>
+        <rect x="170" y="76" width="50" height="30" rx="8" fill="#171f33" stroke="#adc6ff" strokeWidth="1.5" />
+        <text x="195" y="95" fill="#adc6ff" fontSize="8" textAnchor="middle">LOG</text>
+      </svg>
+    ),
+  },
+  {
+    id: '10',
+    name: '일일 날씨 & 일정 브리핑 봇',
+    updatedAt: '2026. 09. 05 18:10',
+    themeColor: 'border-tertiary/40 hover:border-tertiary',
+    dotColor: '#4cd7f6',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 40 40 L 90 60" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 40 80 L 90 60" stroke="#4cd7f6" strokeWidth="2" />
+        <path d="M 140 60 L 180 60" stroke="#c4abff" strokeWidth="2" />
+        <rect x="10" y="24" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="27" y="44" fill="#adc6ff" fontSize="8" textAnchor="middle">TIME</text>
+        <rect x="10" y="64" width="34" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="27" y="84" fill="#4cd7f6" fontSize="8" textAnchor="middle">API</text>
+        <rect x="90" y="44" width="50" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="115" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">SUMMARY</text>
+        <rect x="180" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="203" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">MSG</text>
       </svg>
     ),
   },
@@ -402,7 +489,7 @@ export const MainPage: React.FC = () => {
               </div>
             </section>
 
-            {/* 3. My Agent Projects Section (Mouse Drag-to-Scroll Horizontal List) */}
+            {/* 3. My Agent Projects Section (Mouse Drag-to-Scroll Horizontal List, Max 10) */}
             <section className="mt-20 w-full">
               {/* Section Header */}
               <div className="flex items-center justify-between mb-4">
@@ -411,7 +498,7 @@ export const MainPage: React.FC = () => {
                     <span>내 에이전트 프로젝트</span>
                   </h2>
                   <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-xs text-primary font-mono font-bold">
-                    {MY_AGENT_PROJECTS.length}
+                    {Math.min(MY_AGENT_PROJECTS.length, 10)}
                   </span>
                 </div>
 
@@ -427,7 +514,7 @@ export const MainPage: React.FC = () => {
                 </Link>
               </div>
 
-              {/* Horizontal Drag-to-Scroll List */}
+              {/* Horizontal Drag-to-Scroll List (Max 10 Items) */}
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleMouseDown}
@@ -439,7 +526,7 @@ export const MainPage: React.FC = () => {
                 }`}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {MY_AGENT_PROJECTS.map((agent) => (
+                {MY_AGENT_PROJECTS.slice(0, 10).map((agent) => (
                   <Link
                     key={agent.id}
                     to="/noa-e/studio"
@@ -476,7 +563,7 @@ export const MainPage: React.FC = () => {
               </div>
             </section>
 
-            {/* 4. Templates (템플릿) Section */}
+            {/* 4. Templates (템플릿) Section (Displaying 4 actual templates) */}
             <section className="mt-20 mb-space-xl w-full">
               {/* Section Header */}
               <div className="flex items-center justify-between mb-space-md">
@@ -499,105 +586,61 @@ export const MainPage: React.FC = () => {
 
               {/* 4 Template Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
-                {/* Card 1: AI 챗봇 */}
-                <div className="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between shadow-sm hover:shadow-md group">
-                  <div>
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-space-md group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
-                      <span className="material-symbols-outlined text-[20px]">chat</span>
-                    </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">AI 챗봇</h3>
-                    <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-snug">
-                      기본적인 대화형 AI Agent를 만들 수 있는 템플릿입니다.
-                    </p>
-                  </div>
-                  <div className="mt-space-lg flex items-center justify-between">
-                    <span className="px-space-sm py-0.5 rounded bg-surface-container-highest text-primary font-label-badge text-label-badge font-semibold">
-                      기초
-                    </span>
-                    <Link
-                      to="/noa-e/templates"
-                      aria-label="템플릿 열기"
-                      className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
-                  </div>
-                </div>
+                {TEMPLATES_DATA.slice(0, 4).map((template) => (
+                  <Link
+                    key={template.id}
+                    to={`/noa-e/studio?template=${template.id}`}
+                    className={`rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 hover:${template.themeColor} overflow-hidden flex flex-col justify-between group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm select-none cursor-pointer`}
+                  >
+                    <div>
+                      {/* 1. 에이전트 그래프 (스크린샷 스냅샷 뷰) */}
+                      <div className="w-full h-32 bg-[#060e20] relative flex items-center justify-center border-b border-outline-variant/20 overflow-hidden pointer-events-none">
+                        <div
+                          className="absolute inset-0 opacity-20"
+                          style={{
+                            backgroundImage: `radial-gradient(${template.dotColor} 1px, transparent 1px)`,
+                            backgroundSize: '14px 14px',
+                          }}
+                        />
+                        {template.graphSvg}
 
-                {/* Card 2: 웹 검색 어시스턴트 */}
-                <div className="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between shadow-sm hover:shadow-md group">
-                  <div>
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary mb-space-md group-hover:bg-tertiary-container group-hover:text-on-tertiary-container transition-colors">
-                      <span className="material-symbols-outlined text-[20px]">search</span>
-                    </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">웹 검색 어시스턴트</h3>
-                    <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-snug">
-                      웹에서 정보를 검색하여 요약해주는 Agent입니다.
-                    </p>
-                  </div>
-                  <div className="mt-space-lg flex items-center justify-between">
-                    <span className="px-space-sm py-0.5 rounded bg-surface-container-highest text-tertiary font-label-badge text-label-badge font-semibold">
-                      실습
-                    </span>
-                    <Link
-                      to="/noa-e/templates"
-                      aria-label="템플릿 열기"
-                      className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
-                  </div>
-                </div>
+                        {/* Top Badges Overlay */}
+                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                          <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/30 text-[10px] text-on-surface font-medium">
+                            {template.categoryLabel}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full border text-[10px] font-semibold ${template.difficultyColor}`}
+                          >
+                            {template.difficulty}
+                          </span>
+                        </div>
+                      </div>
 
-                {/* Card 3: 문서 요약기 */}
-                <div className="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between shadow-sm hover:shadow-md group">
-                  <div>
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary mb-space-md group-hover:bg-secondary-container group-hover:text-on-secondary-container transition-colors">
-                      <span className="material-symbols-outlined text-[20px]">description</span>
+                      {/* 2. 에이전트 이름 & 설명 */}
+                      <div className="p-4 flex flex-col gap-1.5 pointer-events-none">
+                        <h4 className="font-bold text-sm sm:text-base text-on-surface group-hover:text-primary transition-colors truncate">
+                          {template.name}
+                        </h4>
+                        <p className="text-xs text-outline leading-snug line-clamp-2">
+                          {template.description}
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">문서 요약기</h3>
-                    <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-snug">
-                      긴 문서를 요약해주는 Agent입니다.
-                    </p>
-                  </div>
-                  <div className="mt-space-lg flex items-center justify-between">
-                    <span className="px-space-sm py-0.5 rounded bg-surface-container-highest text-secondary font-label-badge text-label-badge font-semibold">
-                      실습
-                    </span>
-                    <Link
-                      to="/noa-e/templates"
-                      aria-label="템플릿 열기"
-                      className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
-                  </div>
-                </div>
 
-                {/* Card 4: 이미지 생성 도우미 */}
-                <div className="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between shadow-sm hover:shadow-md group">
-                  <div>
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-space-md group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
-                      <span className="material-symbols-outlined text-[20px]">image</span>
+                    {/* 3. 하단 노드 개수 & 열기 액션 */}
+                    <div className="px-4 pb-3.5 pt-2 border-t border-outline-variant/15 flex items-center justify-between text-xs pointer-events-none">
+                      <span className="text-[11px] text-outline font-mono flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px] text-primary">hub</span>
+                        <span>노드 {template.nodeCount}개</span>
+                      </span>
+                      <span className="text-primary font-bold text-xs flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                        <span>열기</span>
+                        <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                      </span>
                     </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">이미지 생성 도우미</h3>
-                    <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-snug">
-                      텍스트로 이미지를 생성하는 Agent입니다.
-                    </p>
-                  </div>
-                  <div className="mt-space-lg flex items-center justify-between">
-                    <span className="px-space-sm py-0.5 rounded bg-surface-container-highest text-primary font-label-badge text-label-badge font-semibold">
-                      실습
-                    </span>
-                    <Link
-                      to="/noa-e/templates"
-                      aria-label="템플릿 열기"
-                      className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
-                  </div>
-                </div>
+                  </Link>
+                ))}
               </div>
             </section>
           </div>

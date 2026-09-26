@@ -4,6 +4,7 @@ import { MainPage } from './pages/MainPage';
 import { StudioPage } from './pages/StudioPage';
 import { NodeInstructionPage } from './pages/NodeInstructionPage';
 import { LearnPage } from './pages/LearnPage';
+import { TemplatesPage } from './pages/TemplatesPage';
 import { MyPage } from './pages/MyPage';
 import logoImg from './assets/logo.png';
 
@@ -40,10 +41,11 @@ const AppRoutes: React.FC = () => {
     return <LearnPage />;
   }
 
-  if (
-    pathname.startsWith('/noa-e/nodes') ||
-    pathname.startsWith('/noa-e/templates')
-  ) {
+  if (pathname.startsWith('/noa-e/templates')) {
+    return <TemplatesPage />;
+  }
+
+  if (pathname.startsWith('/noa-e/nodes')) {
     return <NodeInstructionPage />;
   }
 
