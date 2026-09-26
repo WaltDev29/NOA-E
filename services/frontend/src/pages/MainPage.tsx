@@ -10,13 +10,9 @@ export const MainPage: React.FC = () => {
 
       <main className="w-full pt-16 bg-background min-h-screen flex-1 flex flex-col">
         <div className="flex flex-col w-full">
-          {/* Subtle Ambient Glow Orbs */}
-          <div className="relative w-full max-w-7xl mx-auto px-margin overflow-hidden">
-            <div className="absolute -top-32 right-12 w-96 h-96 bg-primary-container/20 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute top-80 -left-20 w-80 h-80 bg-secondary-container/25 rounded-full blur-[100px] pointer-events-none" />
-
+          <div className="w-full max-w-[1560px] mx-auto px-6 lg:px-12 py-space-lg">
             {/* 1. Hero Section */}
-            <section className="relative pt-space-xl pb-space-lg w-full">
+            <section className="relative pt-space-md pb-space-lg w-full">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center">
                 {/* Left: Text Content */}
                 <div className="lg:col-span-7 flex flex-col items-start z-10">
@@ -50,16 +46,16 @@ export const MainPage: React.FC = () => {
                   <div className="mt-space-xl flex flex-wrap items-center gap-space-md">
                     <Link
                       to="/noa-e/studio"
-                      className="px-space-xl py-space-sm rounded-lg bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-headline-sm text-headline-sm font-semibold shadow-lg shadow-primary-container/30 hover:shadow-primary-container/50 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center"
+                      className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-primary-container to-secondary-container hover:brightness-110 text-white font-headline-sm text-headline-sm font-semibold shadow-sm ring-1 ring-inset ring-white/15 overflow-hidden hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center leading-none"
                     >
                       시작하기
                     </Link>
                     <Link
-                      to="/noa-e/nodes"
-                      className="px-space-lg py-space-sm rounded-lg bg-surface-container-high/80 text-on-surface font-body-md text-body-md hover:bg-surface-variant shadow-sm transition-all flex items-center gap-space-xs"
+                      to="/noa-e/learn"
+                      className="px-space-lg py-2.5 rounded-lg bg-surface-container-high text-on-surface font-body-md text-body-md hover:bg-surface-variant shadow-sm transition-all flex items-center gap-space-xs"
                     >
-                      <span className="material-symbols-outlined text-[18px] text-tertiary">play_arrow</span>
-                      <span>노드 탐색 및 튜토리얼</span>
+                      <span className="material-symbols-outlined text-[18px] text-tertiary">school</span>
+                      <span>기초 지식 학습하기</span>
                     </Link>
                   </div>
                 </div>
@@ -181,76 +177,63 @@ export const MainPage: React.FC = () => {
               </div>
             </section>
 
-            {/* 2. 5-Step Process Feature Cards Row */}
-            <section className="mt-space-xl w-full">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-space-md">
-                {/* Step 1: 배우기 */}
-                <div className="group p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center text-center shadow-sm hover:shadow-lg">
-                  <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-primary group-hover:scale-110 transition-transform shadow-inner">
-                    <span className="material-symbols-outlined text-[24px]">school</span>
+            {/* 2. 3-Step Process Feature Mini Cards */}
+            <section className="mt-10 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* 1: 배우기 */}
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low/60 border border-outline-variant/25 hover:border-primary/40 hover:bg-surface-container-low transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                    <span className="material-symbols-outlined text-[20px]">school</span>
                   </div>
-                  <span className="mt-space-md font-headline-sm text-headline-sm text-on-surface font-bold">배우기</span>
-                  <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-tight">
-                    AI와 Agent에 대한<br />기본 개념을 학습해요.
-                  </p>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-on-surface">배우기</span>
+                    <span className="text-xs text-outline mt-0.5 leading-snug">
+                      AI와 Agent에 대한 기본 개념 학습
+                    </span>
+                  </div>
                 </div>
 
-                {/* Step 2: 설계하기 */}
-                <div className="group p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center text-center shadow-sm hover:shadow-lg">
-                  <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-primary-container group-hover:scale-110 transition-transform shadow-inner">
-                    <span className="material-symbols-outlined text-[24px]">architecture</span>
+                {/* 2: 만들기 */}
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low/60 border border-outline-variant/25 hover:border-secondary/40 hover:bg-surface-container-low transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0 border border-secondary/20">
+                    <span className="material-symbols-outlined text-[20px]">build</span>
                   </div>
-                  <span className="mt-space-md font-headline-sm text-headline-sm text-on-surface font-bold">설계하기</span>
-                  <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-tight">
-                    Node를 연결하여<br />나만의 Agent를 설계해요.
-                  </p>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-on-surface">만들기</span>
+                    <span className="text-xs text-outline mt-0.5 leading-snug">
+                      Node를 연결하여 나만의 Agent 제작
+                    </span>
+                  </div>
                 </div>
 
-                {/* Step 3: 제작하기 */}
-                <div className="group p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center text-center shadow-sm hover:shadow-lg">
-                  <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary group-hover:scale-110 transition-transform shadow-inner">
-                    <span className="material-symbols-outlined text-[24px]">build</span>
+                {/* 3: 사용하기 */}
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low/60 border border-outline-variant/25 hover:border-tertiary/40 hover:bg-surface-container-low transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0 border border-tertiary/20">
+                    <span className="material-symbols-outlined text-[20px]">play_circle</span>
                   </div>
-                  <span className="mt-space-md font-headline-sm text-headline-sm text-on-surface font-bold">제작하기</span>
-                  <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-tight">
-                    설계한 Agent를<br />직접 만들어보세요.
-                  </p>
-                </div>
-
-                {/* Step 4: 실행하기 */}
-                <div className="group p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center text-center shadow-sm hover:shadow-lg">
-                  <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-tertiary group-hover:scale-110 transition-transform shadow-inner">
-                    <span className="material-symbols-outlined text-[24px]">play_circle</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-on-surface">사용하기</span>
+                    <span className="text-xs text-outline mt-0.5 leading-snug">
+                      완성된 Agent를 다운받아 PC에서 실행
+                    </span>
                   </div>
-                  <span className="mt-space-md font-headline-sm text-headline-sm text-on-surface font-bold">실행하기</span>
-                  <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-tight">
-                    제작한 Agent를 실행하고<br />동작을 확인해요.
-                  </p>
-                </div>
-
-                {/* Step 5: 체험하기 */}
-                <div className="group p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center text-center shadow-sm hover:shadow-lg col-span-2 sm:col-span-1">
-                  <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-tertiary-fixed-dim group-hover:scale-110 transition-transform shadow-inner">
-                    <span className="material-symbols-outlined text-[24px]">smart_toy</span>
-                  </div>
-                  <span className="mt-space-md font-headline-sm text-headline-sm text-on-surface font-bold">체험하기</span>
-                  <p className="mt-space-xs font-body-sm text-body-sm text-outline leading-tight">
-                    실제 시나리오에서<br />직접 체험해보세요.
-                  </p>
                 </div>
               </div>
             </section>
 
-            {/* 3. Popular Templates (인기 템플릿) Section */}
-            <section className="mt-space-xl mb-space-xl w-full">
+            {/* 3. Templates (템플릿) Section */}
+            <section className="mt-24 mb-space-xl w-full">
               {/* Section Header */}
               <div className="flex items-center justify-between mb-space-md">
-                <h2 className="font-headline-md text-headline-md text-on-surface flex items-center gap-space-xs">
-                  인기 템플릿
-                </h2>
+                <div>
+                  <h2 className="font-headline-md text-headline-md text-on-surface flex items-center gap-space-xs font-bold">
+                    템플릿
+                  </h2>
+                  <p className="text-xs text-outline mt-0.5">미리 준비된 다양한 에이전트 템플릿으로 빠르게 시작해보세요.</p>
+                </div>
                 <Link
-                  to="/noa-e/nodes"
-                  className="font-body-sm text-body-sm text-outline hover:text-primary transition-colors flex items-center gap-1 group"
+                  to="/noa-e/templates"
+                  className="font-body-sm text-body-sm text-outline hover:text-primary transition-colors flex items-center gap-1 group py-1"
                 >
                   <span>더보기</span>
                   <span className="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">
@@ -277,7 +260,7 @@ export const MainPage: React.FC = () => {
                       기초
                     </span>
                     <Link
-                      to="/noa-e/studio"
+                      to="/noa-e/templates"
                       aria-label="템플릿 열기"
                       className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
                     >
@@ -302,7 +285,7 @@ export const MainPage: React.FC = () => {
                       실습
                     </span>
                     <Link
-                      to="/noa-e/studio"
+                      to="/noa-e/templates"
                       aria-label="템플릿 열기"
                       className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
                     >
@@ -327,7 +310,7 @@ export const MainPage: React.FC = () => {
                       실습
                     </span>
                     <Link
-                      to="/noa-e/studio"
+                      to="/noa-e/templates"
                       aria-label="템플릿 열기"
                       className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
                     >
@@ -352,7 +335,7 @@ export const MainPage: React.FC = () => {
                       실습
                     </span>
                     <Link
-                      to="/noa-e/studio"
+                      to="/noa-e/templates"
                       aria-label="템플릿 열기"
                       className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-outline group-hover:text-on-surface group-hover:bg-surface-bright transition-colors"
                     >

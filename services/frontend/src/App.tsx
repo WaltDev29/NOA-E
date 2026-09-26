@@ -34,7 +34,11 @@ const AppRoutes: React.FC = () => {
     return <StudioPage />;
   }
 
-  if (pathname.startsWith('/noa-e/nodes')) {
+  if (
+    pathname.startsWith('/noa-e/nodes') ||
+    pathname.startsWith('/noa-e/learn') ||
+    pathname.startsWith('/noa-e/templates')
+  ) {
     return <NodeInstructionPage />;
   }
 

@@ -7,6 +7,8 @@ export const Header: React.FC = () => {
 
   const isStudio = pathname.startsWith('/noa-e/studio');
   const isNodes = pathname.startsWith('/noa-e/nodes');
+  const isTemplates = pathname.startsWith('/noa-e/templates');
+  const isLearn = pathname.startsWith('/noa-e/learn');
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
@@ -46,16 +48,24 @@ export const Header: React.FC = () => {
               Nodes
             </Link>
             <Link
-              to="/noa-e/nodes"
+              to="/noa-e/templates"
               data-path="templates"
-              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                isTemplates
+                  ? 'bg-surface-container-high text-primary'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low'
+              }`}
             >
               Templates
             </Link>
             <Link
-              to="/noa-e/nodes"
+              to="/noa-e/learn"
               data-path="learn"
-              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                isLearn
+                  ? 'bg-surface-container-high text-primary'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low'
+              }`}
             >
               Learn
             </Link>
