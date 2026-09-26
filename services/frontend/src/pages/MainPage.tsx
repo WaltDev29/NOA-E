@@ -1,9 +1,170 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link } from '../router/Router';
 
+interface AgentProject {
+  id: string;
+  name: string;
+  updatedAt: string;
+  themeColor: string;
+  dotColor: string;
+  graphSvg: React.ReactNode;
+}
+
+const MY_AGENT_PROJECTS: AgentProject[] = [
+  {
+    id: '1',
+    name: '스마트 영어 튜터',
+    updatedAt: '2026. 09. 26 16:20',
+    themeColor: 'border-primary/40 hover:border-primary',
+    dotColor: '#4d8eff',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 50 60 C 90 60, 100 40, 130 40" stroke="#4d8eff" strokeWidth="2" strokeDasharray="3 3" />
+        <path d="M 130 40 C 160 40, 170 60, 210 60" stroke="#4d8eff" strokeWidth="2" />
+        <rect x="20" y="44" width="36" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="38" y="64" fill="#adc6ff" fontSize="10" textAnchor="middle" fontFamily="monospace">IN</text>
+        <rect x="110" y="24" width="48" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="134" y="44" fill="#d0bcff" fontSize="10" fontWeight="bold" textAnchor="middle">LLM</text>
+        <rect x="200" y="44" width="42" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="221" y="64" fill="#4cd7f6" fontSize="10" textAnchor="middle" fontFamily="monospace">OUT</text>
+      </svg>
+    ),
+  },
+  {
+    id: '2',
+    name: '보고서 요약 봇',
+    updatedAt: '2026. 09. 25 18:45',
+    themeColor: 'border-secondary/40 hover:border-secondary',
+    dotColor: '#d0bcff',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 135 60 L 175 60" stroke="#c4abff" strokeWidth="2" strokeDasharray="3 3" />
+        <path d="M 215 60 L 235 60" stroke="#4cd7f6" strokeWidth="2" />
+        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <rect x="90" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="113" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">DOC</text>
+        <rect x="170" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="193" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">LLM</text>
+      </svg>
+    ),
+  },
+  {
+    id: '3',
+    name: '파이썬 연산기',
+    updatedAt: '2026. 09. 23 11:10',
+    themeColor: 'border-tertiary/40 hover:border-tertiary',
+    dotColor: '#4cd7f6',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 45 45 C 80 45, 90 75, 125 75" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 165 75 C 185 75, 195 45, 220 45" stroke="#4cd7f6" strokeWidth="2" strokeDasharray="3 3" />
+        <rect x="15" y="30" width="34" height="30" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <rect x="120" y="60" width="48" height="30" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="144" y="79" fill="#4cd7f6" fontSize="10" textAnchor="middle" fontFamily="monospace">&lt;/&gt;</text>
+        <rect x="215" y="30" width="34" height="30" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
+  {
+    id: '4',
+    name: '실시간 뉴스 요약기',
+    updatedAt: '2026. 09. 21 09:30',
+    themeColor: 'border-primary/40 hover:border-primary',
+    dotColor: '#4d8eff',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 140 60 L 180 60" stroke="#acedff" strokeWidth="2" />
+        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <rect x="95" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="118" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">SEARCH</text>
+        <rect x="180" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="203" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">LLM</text>
+      </svg>
+    ),
+  },
+  {
+    id: '5',
+    name: '이미지 크리에이터',
+    updatedAt: '2026. 09. 19 14:15',
+    themeColor: 'border-secondary/40 hover:border-secondary',
+    dotColor: '#c4abff',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 140 60 L 180 60" stroke="#d0bcff" strokeWidth="2" strokeDasharray="3 3" />
+        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <rect x="95" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#adc6ff" strokeWidth="1.5" />
+        <text x="118" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">PROMPT</text>
+        <rect x="180" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#d0bcff" strokeWidth="1.5" />
+        <text x="203" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">IMAGE</text>
+      </svg>
+    ),
+  },
+  {
+    id: '6',
+    name: '고객 상담 자동 분류기',
+    updatedAt: '2026. 09. 15 17:00',
+    themeColor: 'border-tertiary/40 hover:border-tertiary',
+    dotColor: '#4cd7f6',
+    graphSvg: (
+      <svg className="w-full h-full p-3.5 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 45 60 C 80 60, 85 40, 115 40" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 45 60 C 80 60, 85 80, 115 80" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 160 40 L 195 40" stroke="#4cd7f6" strokeWidth="2" />
+        <path d="M 160 80 L 195 80" stroke="#c4abff" strokeWidth="2" />
+        <rect x="15" y="44" width="32" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <rect x="115" y="24" width="46" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="138" y="44" fill="#4cd7f6" fontSize="9" textAnchor="middle">CASE A</text>
+        <rect x="115" y="64" width="46" height="32" rx="8" fill="#171f33" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="138" y="84" fill="#c4abff" fontSize="9" textAnchor="middle">CASE B</text>
+      </svg>
+    ),
+  },
+];
+
 export const MainPage: React.FC = () => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isMouseDown = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const hasDragged = useRef(false);
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    isMouseDown.current = true;
+    hasDragged.current = false;
+    startX.current = e.pageX - scrollContainerRef.current.offsetLeft;
+    scrollLeftStart.current = scrollContainerRef.current.scrollLeft;
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown.current || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5; // Drag speed multiplier
+    if (Math.abs(walk) > 6) {
+      hasDragged.current = true;
+    }
+    scrollContainerRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    isMouseDown.current = false;
+    setIsDragging(false);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (hasDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
   return (
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen flex flex-col">
       <Header />
@@ -241,8 +402,82 @@ export const MainPage: React.FC = () => {
               </div>
             </section>
 
-            {/* 3. Templates (템플릿) Section */}
-            <section className="mt-24 mb-space-xl w-full">
+            {/* 3. My Agent Projects Section (Mouse Drag-to-Scroll Horizontal List) */}
+            <section className="mt-20 w-full">
+              {/* Section Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <h2 className="font-headline-md text-headline-md text-on-surface font-bold flex items-center gap-2">
+                    <span>내 에이전트 프로젝트</span>
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-xs text-primary font-mono font-bold">
+                    {MY_AGENT_PROJECTS.length}
+                  </span>
+                </div>
+
+                {/* 전체 목록 보기 버튼 (마이페이지 이동) */}
+                <Link
+                  to="/noa-e/mypage"
+                  className="px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/30 hover:border-primary/40 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+                >
+                  <span>전체 목록 보기</span>
+                  <span className="material-symbols-outlined text-[16px] text-primary group-hover:translate-x-0.5 transition-transform">
+                    arrow_forward
+                  </span>
+                </Link>
+              </div>
+
+              {/* Horizontal Drag-to-Scroll List */}
+              <div
+                ref={scrollContainerRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUpOrLeave}
+                onMouseLeave={handleMouseUpOrLeave}
+                className={`flex gap-5 overflow-x-auto pb-4 pt-1 select-none no-scrollbar transition-all duration-75 ${
+                  isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                }`}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {MY_AGENT_PROJECTS.map((agent) => (
+                  <Link
+                    key={agent.id}
+                    to="/noa-e/studio"
+                    onClick={handleCardClick}
+                    draggable={false}
+                    className={`w-[290px] sm:w-[320px] shrink-0 rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 hover:${agent.themeColor} overflow-hidden flex flex-col group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm select-none pointer-events-auto`}
+                  >
+                    {/* 1. 에이전트 그래프 (스크린샷 스냅샷 뷰) */}
+                    <div className="w-full h-36 bg-[#060e20] relative flex items-center justify-center border-b border-outline-variant/20 overflow-hidden pointer-events-none">
+                      <div
+                        className="absolute inset-0 opacity-20"
+                        style={{
+                          backgroundImage: `radial-gradient(${agent.dotColor} 1px, transparent 1px)`,
+                          backgroundSize: '14px 14px',
+                        }}
+                      />
+                      {agent.graphSvg}
+                    </div>
+
+                    {/* 2. 에이전트 이름 & 3. 최종 수정 날짜 */}
+                    <div className="p-4 flex flex-col justify-between flex-1 pointer-events-none">
+                      <h4 className="font-bold text-sm sm:text-base text-on-surface group-hover:text-primary transition-colors truncate">
+                        {agent.name}
+                      </h4>
+                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-outline-variant/15 text-xs text-outline">
+                        <span>최종 수정 날짜</span>
+                        <span className="font-mono text-on-surface-variant font-medium">
+                          {agent.updatedAt}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* 4. Templates (템플릿) Section */}
+            <section className="mt-20 mb-space-xl w-full">
               {/* Section Header */}
               <div className="flex items-center justify-between mb-space-md">
                 <div>
@@ -253,11 +488,11 @@ export const MainPage: React.FC = () => {
                 </div>
                 <Link
                   to="/noa-e/templates"
-                  className="font-body-sm text-body-sm text-outline hover:text-primary transition-colors flex items-center gap-1 group py-1"
+                  className="px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/30 hover:border-primary/40 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
                 >
-                  <span>더보기</span>
-                  <span className="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">
-                    chevron_right
+                  <span>템플릿 더보기</span>
+                  <span className="material-symbols-outlined text-[16px] text-primary group-hover:translate-x-0.5 transition-transform">
+                    arrow_forward
                   </span>
                 </Link>
               </div>
