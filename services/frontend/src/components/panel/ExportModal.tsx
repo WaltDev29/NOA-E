@@ -45,10 +45,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       return {
         id: node.id,
         type: backendType,
+        label: (node.data as any)?.label || node.id,
         position: node.position,
-        data: {
-          label: (node.data as any)?.label || node.id,
-        },
         config: sanitizedConfig,
       };
     });

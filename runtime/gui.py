@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame,
     QDialog, QFileDialog, QMessageBox, QCheckBox, QGroupBox, QSizePolicy
 )
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QEvent
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer
 from PySide6.QtGui import QFont, QCursor
 
 # Path setup
@@ -36,9 +36,6 @@ except ModuleNotFoundError:
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 
 
-# -------------------------------------------------------------
-# 깔끔하고 통일된 다크 모드 스타일시트 (배경 투명화 및 일관성 보장)
-# -------------------------------------------------------------
 DARK_STYLESHEET = """
 QMainWindow, QWidget {
     background-color: #11151c;
@@ -49,6 +46,7 @@ QMainWindow, QWidget {
 
 QLabel {
     background-color: transparent;
+    border: none;
     color: #e6edf3;
 }
 
@@ -64,6 +62,7 @@ QLabel {
     color: #4d8eff;
     letter-spacing: 0.5px;
     background-color: transparent;
+    border: none;
 }
 
 #AgentTitle {
@@ -71,6 +70,7 @@ QLabel {
     font-weight: bold;
     color: #ffffff;
     background-color: transparent;
+    border: none;
 }
 
 #AgentDesc {
@@ -78,6 +78,7 @@ QLabel {
     color: #8c9ba5;
     line-height: 1.35;
     background-color: transparent;
+    border: none;
 }
 
 /* Buttons */
@@ -165,6 +166,18 @@ QPushButton:pressed {
     border-bottom: 1px solid #222938;
 }
 
+/* Message Bubbles */
+#UserBubbleFrame {
+    background-color: #1e2e45;
+    border: 1px solid #2d4263;
+    border-radius: 10px;
+}
+#AgentBubbleFrame {
+    background-color: #161e2b;
+    border: 1px solid #243044;
+    border-radius: 10px;
+}
+
 /* Scroll Area */
 QScrollArea {
     background-color: transparent;
@@ -195,7 +208,7 @@ QDialog {
 # 실시간 스트리밍 지원 비동기 실행 워커 (QThread)
 # -------------------------------------------------------------
 class AgentExecutionWorker(QThread):
-    step_log_signal = Signal(str, str)         # session_id, log_message
+    step_log_signal = Signal(str, str, str)    # session_id, node_name, log_message
     finished_signal = Signal(str, str, list)   # session_id, output, logs
     error_signal = Signal(str, str)            # session_id, error_message
 
@@ -225,16 +238,17 @@ class AgentExecutionWorker(QThread):
             # stream_mode="updates"를 사용하여 노드 실행 완료 시마다 실시간 로그 전달
             for chunk in self.compiled_graph.stream(initial_state, stream_mode="updates"):
                 if self._is_stopped:
-                    self.step_log_signal.emit(self.session_id, "[시스템] 사용자에 의해 생성이 중단되었습니다.")
+                    stop_msg = "[시스템] 사용자에 의해 생성이 중단되었습니다."
+                    accumulated_logs.append(stop_msg)
+                    self.step_log_signal.emit(self.session_id, "system", stop_msg)
                     final_output = "사용자에 의해 응답 생성이 중단되었습니다."
                     break
 
-                # chunk is a dict: {node_name: {state_keys...}}
                 for node_name, state_update in chunk.items():
                     if "logs" in state_update and state_update["logs"]:
                         for log_line in state_update["logs"]:
                             accumulated_logs.append(log_line)
-                            self.step_log_signal.emit(self.session_id, log_line)
+                            self.step_log_signal.emit(self.session_id, node_name, log_line)
 
                     if "current_output" in state_update and state_update["current_output"]:
                         final_output = state_update["current_output"]
@@ -256,25 +270,29 @@ class ThoughtLogToggleWidget(QWidget):
     def __init__(self, logs: list = None, is_live: bool = False, parent=None):
         super().__init__(parent)
         self.logs = list(logs or [])
-        self.is_expanded = is_live  # 실행 중에는 펼침, 완료 후에는 접힘
+        self.is_expanded = is_live        # 실행 중에는 펼침, 완료 후에는 접힘
+        self.is_finalized = not is_live   # is_live이면 아직 output 전(False), 아니면 완료 상태(True)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 8)
+        layout.setAlignment(Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
         self.btn_toggle = QPushButton("사고 과정 보기" if not self.is_expanded else "사고 과정 접기")
+        self.btn_toggle.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.btn_toggle.setStyleSheet("""
             QPushButton {
                 background-color: #171f2b;
                 border: 1px solid #263245;
-                border-radius: 4px;
+                border-radius: 6px;
                 color: #8bb8ff;
                 font-size: 11px;
                 font-weight: bold;
                 text-align: left;
-                padding: 6px 10px;
+                padding: 7px 10px;
             }
             QPushButton:hover {
                 background-color: #1f2a3a;
@@ -285,74 +303,226 @@ class ThoughtLogToggleWidget(QWidget):
         self.btn_toggle.clicked.connect(self.toggle)
         layout.addWidget(self.btn_toggle)
 
-        self.content_box = QFrame()
-        self.content_box.setStyleSheet("""
-            QFrame {
+        # -------------------------------------------------------------
+        # 1. 실행 중(Live) 전용 스크롤 컨테이너 (200px 고정 + 자동 스크롤)
+        # -------------------------------------------------------------
+        self.live_scroll_area = QScrollArea()
+        self.live_scroll_area.setWidgetResizable(True)
+        self.live_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.live_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.live_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.live_scroll_area.setFixedHeight(200)
+        self.live_scroll_area.setStyleSheet("""
+            QScrollArea {
                 background-color: #0d121a;
-                border: 1px solid #202a3a;
-                border-radius: 4px;
-                padding: 8px;
+                border: 1px solid #243245;
+                border-radius: 6px;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #0d121a;
+                width: 6px;
+                margin: 4px 2px 4px 0px;
+                border-radius: 3px;
+            }
+            QScrollBar::handle:vertical {
+                background: #2a374a;
+                min-height: 20px;
+                border-radius: 3px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #4d8eff;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                border: none;
+                background: none;
+                height: 0px;
             }
         """)
-        self.c_layout = QVBoxLayout(self.content_box)
-        self.c_layout.setContentsMargins(6, 6, 6, 6)
-        self.c_layout.setSpacing(4)
 
+        self.live_content_widget = QWidget()
+        self.live_content_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.live_content_widget.setStyleSheet("background: transparent; border: none;")
+        self.live_layout = QVBoxLayout(self.live_content_widget)
+        self.live_layout.setAlignment(Qt.AlignTop)
+        self.live_layout.setContentsMargins(6, 6, 6, 6)
+        self.live_layout.setSpacing(6)
+
+        self.live_scroll_area.setWidget(self.live_content_widget)
+
+        # -------------------------------------------------------------
+        # 2. 완료 후(Finalized) 전용 전체 확장 컨테이너 (고정 높이 없이 내부 요소 전체 노출)
+        # -------------------------------------------------------------
+        self.static_content_box = QFrame()
+        self.static_content_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.static_content_box.setStyleSheet("""
+            QFrame {
+                background-color: #0d121a;
+                border: 1px solid #243245;
+                border-radius: 6px;
+            }
+        """)
+        self.static_layout = QVBoxLayout(self.static_content_box)
+        self.static_layout.setAlignment(Qt.AlignTop)
+        self.static_layout.setContentsMargins(6, 6, 6, 6)
+        self.static_layout.setSpacing(6)
+
+        # 초기 로그 아이템 배치
         for log in self.logs:
-            self._append_log_label(log)
+            self._add_log_item_ui(log)
 
-        self.content_box.setVisible(self.is_expanded)
-        layout.addWidget(self.content_box)
+        # 다음 노드 실행 대기 애니메이션 라벨 (실행 중 스크롤 영역에만 표시)
+        self.lbl_pending_dots = QLabel("다음 노드 실행 대기 중 .")
+        self.lbl_pending_dots.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.lbl_pending_dots.setStyleSheet("color: #4d8eff; font-size: 11px; font-style: italic; background: transparent; border: none; padding: 4px;")
+        self.lbl_pending_dots.setVisible(not self.is_finalized)
+        self.live_layout.addWidget(self.lbl_pending_dots)
 
-    def _append_log_label(self, log_text: str):
+        self.dot_count = 1
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_dots)
+        if not self.is_finalized and self.is_expanded:
+            self.timer.start(350)
+
+        layout.addWidget(self.live_scroll_area)
+        layout.addWidget(self.static_content_box)
+
+        self._adjust_live_scroll_height()
+        self._update_visibility()
+
+    def _adjust_live_scroll_height(self):
+        """200px 이전까지는 내부 요소 크기만큼 높이를 가지고, 200px 도달 시 최대 높이 고정 및 스크롤 작동"""
+        if not self.is_finalized:
+            QApplication.processEvents()
+            hint_h = self.live_layout.sizeHint().height() + 6
+            target_h = min(200, max(36, hint_h))
+            self.live_scroll_area.setFixedHeight(target_h)
+
+    def _create_log_item_frame(self, log_text: str) -> QFrame:
+        item_frame = QFrame()
+        item_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        item_frame.setStyleSheet("""
+            QFrame {
+                background-color: #141b26;
+                border: 1px solid #263345;
+                border-radius: 5px;
+            }
+        """)
+        f_layout = QVBoxLayout(item_frame)
+        f_layout.setContentsMargins(10, 6, 10, 6)
+        f_layout.setSpacing(0)
+
         lbl = QLabel(f"• {log_text}")
         lbl.setWordWrap(True)
+        lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        lbl.setStyleSheet("color: #9cb0c9; font-family: monospace; font-size: 11px; line-height: 1.35; background: transparent;")
-        self.c_layout.addWidget(lbl)
+        lbl.setStyleSheet("""
+            color: #b0c4de;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            background: transparent;
+            border: none;
+        """)
+        f_layout.addWidget(lbl)
+        return item_frame
+
+    def _add_log_item_ui(self, log_text: str):
+        # 1. 라이브 스크롤 컨테이너에 추가 (점 애니메이션 위쪽)
+        idx_live = max(0, self.live_layout.count() - 1)
+        self.live_layout.insertWidget(idx_live, self._create_log_item_frame(log_text))
+
+        # 2. 완료 후 전체 표시 컨테이너에도 추가
+        self.static_layout.addWidget(self._create_log_item_frame(log_text))
+
+    def update_dots(self):
+        self.dot_count = (self.dot_count % 3) + 1
+        dots_str = "." * self.dot_count
+        self.lbl_pending_dots.setText(f"다음 노드 실행 대기 중 {dots_str}")
 
     def append_log(self, log_text: str):
         self.logs.append(log_text)
-        self._append_log_label(log_text)
+        self._add_log_item_ui(log_text)
+        self._adjust_live_scroll_height()
+        QApplication.processEvents()
+        self.live_scroll_area.verticalScrollBar().setValue(
+            self.live_scroll_area.verticalScrollBar().maximum()
+        )
 
-    def collapse(self):
+    def finalize(self):
+        self.timer.stop()
+        self.is_finalized = True
+        self.lbl_pending_dots.setVisible(False)
         self.is_expanded = False
         self.btn_toggle.setText("사고 과정 보기")
-        self.content_box.setVisible(False)
+        self._update_visibility()
+
+    def _update_visibility(self):
+        if not self.is_expanded:
+            self.live_scroll_area.setVisible(False)
+            self.static_content_box.setVisible(False)
+        else:
+            if not self.is_finalized:
+                # 실행 중: 내부 요소 높이에 맞춘 동적 높이(최대 200px) 스크롤 영역 활성화
+                self._adjust_live_scroll_height()
+                self.live_scroll_area.setVisible(True)
+                self.static_content_box.setVisible(False)
+            else:
+                # 완료 후: 고정 높이 없이 모든 요소가 한 번에 다 보이는 정적 컨테이너 활성화
+                self.live_scroll_area.setVisible(False)
+                self.static_content_box.setVisible(True)
 
     def toggle(self):
         self.is_expanded = not self.is_expanded
+        self._update_visibility()
         if self.is_expanded:
             self.btn_toggle.setText("사고 과정 접기")
-            self.content_box.setVisible(True)
+            if not self.is_finalized:
+                if not self.timer.isActive():
+                    self.timer.start(350)
+                self._adjust_live_scroll_height()
+                QApplication.processEvents()
+                self.live_scroll_area.verticalScrollBar().setValue(
+                    self.live_scroll_area.verticalScrollBar().maximum()
+                )
         else:
             self.btn_toggle.setText("사고 과정 보기")
-            self.content_box.setVisible(False)
+            if self.timer.isActive():
+                self.timer.stop()
 
 
 # -------------------------------------------------------------
 # 순수 점(...) 깜빡임 애니메이션 위젯 (텍스트 없이 순수 도트만)
 # -------------------------------------------------------------
-class PureDotsAnimationWidget(QFrame):
+class PureDotsAnimationWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #171d27;
-                border: 1px solid #232d3e;
-                border-radius: 8px;
-                margin-right: 120px;
-                padding: 8px 14px;
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        row_layout = QHBoxLayout(self)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(0)
+        row_layout.setAlignment(Qt.AlignTop)
+
+        self.bubble_frame = QFrame()
+        self.bubble_frame.setObjectName("AgentBubbleFrame")
+        self.bubble_frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.bubble_frame.setStyleSheet("""
+            QFrame#AgentBubbleFrame {
+                background-color: #161e2b;
+                border: 1px solid #243044;
+                border-radius: 10px;
+                padding: 6px 12px;
             }
         """)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 6, 12, 6)
-        layout.setSpacing(6)
+        f_layout = QHBoxLayout(self.bubble_frame)
+        f_layout.setContentsMargins(8, 4, 8, 4)
 
         self.lbl_dots = QLabel(". . .")
-        self.lbl_dots.setStyleSheet("color: #4d8eff; font-size: 18px; font-weight: bold; background: transparent;")
-        layout.addWidget(self.lbl_dots)
-        layout.addStretch()
+        self.lbl_dots.setStyleSheet("color: #4d8eff; font-size: 16px; font-weight: bold; background: transparent; border: none;")
+        f_layout.addWidget(self.lbl_dots)
+
+        row_layout.addWidget(self.bubble_frame)
+        row_layout.addStretch(1)
 
         self.dot_count = 1
         self.timer = QTimer(self)
@@ -395,14 +565,14 @@ class SessionListItemWidget(QWidget):
         f_layout.setSpacing(6)
 
         self.lbl_title = QLabel(self.title)
-        self.lbl_title.setStyleSheet("font-size: 12px; color: #e6edf3; font-weight: 500; background: transparent;")
+        self.lbl_title.setStyleSheet("font-size: 12px; color: #e6edf3; font-weight: 500; background: transparent; border: none;")
         f_layout.addWidget(self.lbl_title, 1)
 
         self.btn_del = QPushButton("삭제")
         self.btn_del.setObjectName("SessionDeleteBtn")
         self.btn_del.setToolTip("대화 삭제")
         self.btn_del.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_del.setVisible(False)  # 기본 숨김 (호버 시 표시)
+        self.btn_del.setVisible(False)
         self.btn_del.clicked.connect(self.on_delete_clicked)
         f_layout.addWidget(self.btn_del)
 
@@ -434,7 +604,7 @@ class SessionListItemWidget(QWidget):
 
 
 # -------------------------------------------------------------
-# 단일 화면으로 통합된 에이전트 설정 다이얼로그 (이모티콘 제거)
+# 단일 화면으로 통합된 에이전트 설정 다이얼로그 (모델명 수정 완벽 지원)
 # -------------------------------------------------------------
 class SettingsDialog(QDialog):
     def __init__(self, parent=None, workflow_dict=None, workflow_path=None):
@@ -569,7 +739,7 @@ class SettingsDialog(QDialog):
 
         if not self.workflow_dict:
             lbl = QLabel("상단의 [에이전트 로드] 버튼을 눌러 워크플로우 JSON 파일을 불러오세요.")
-            lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent;")
+            lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent; border: none;")
             lbl.setAlignment(Qt.AlignCenter)
             self.scroll_layout.addWidget(lbl)
             self.scroll_layout.addStretch()
@@ -578,7 +748,7 @@ class SettingsDialog(QDialog):
         llm_nodes = extract_llm_nodes(self.workflow_dict)
         if not llm_nodes:
             lbl = QLabel("현재 워크플로우에 LLM 또는 Agent 노드가 없습니다.")
-            lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent;")
+            lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent; border: none;")
             lbl.setAlignment(Qt.AlignCenter)
             self.scroll_layout.addWidget(lbl)
             self.scroll_layout.addStretch()
@@ -599,10 +769,10 @@ class SettingsDialog(QDialog):
             c_layout.setSpacing(8)
 
             lbl_header = QLabel(f"노드: <b>{node['label']}</b> (ID: {node['id']}, 타입: {node['type']})")
-            lbl_header.setStyleSheet("color: #ffffff; font-size: 12px; background: transparent;")
+            lbl_header.setStyleSheet("color: #ffffff; font-size: 12px; background: transparent; border: none;")
             c_layout.addWidget(lbl_header)
 
-            chk_custom = QCheckBox("외부 커스텀 LLM API 사용")
+            chk_custom = QCheckBox("외부 커스텀 API (Model, Base URL, API Key) 사용")
             chk_custom.setChecked(node["is_custom"])
             c_layout.addWidget(chk_custom)
 
@@ -611,7 +781,7 @@ class SettingsDialog(QDialog):
             cust_layout.setContentsMargins(0, 4, 0, 4)
             cust_layout.setSpacing(6)
 
-            # Model
+            # Model (외부 API 커스텀 시에만 표시)
             h_m = QHBoxLayout()
             lbl_m = QLabel("Model:")
             lbl_m.setFixedWidth(70)
@@ -669,9 +839,11 @@ class SettingsDialog(QDialog):
         updated_configs = {}
         for node_id, w in self.node_input_widgets.items():
             is_custom = w["chk_custom"].isChecked()
+            # 커스텀 사용 시 입력된 model/url/key 저장, 아닐 시 기본값 저장
+            model_val = w["txt_model"].text().strip() if is_custom else (w["node_info"].get("model") or DEFAULT_MODEL)
             updated_configs[node_id] = {
                 "is_custom": is_custom,
-                "model": w["txt_model"].text().strip() if is_custom else (w["node_info"].get("model") or DEFAULT_MODEL),
+                "model": model_val,
                 "base_url": w["txt_url"].text().strip() if is_custom else "",
                 "api_key": w["txt_key"].text().strip() if is_custom else "",
                 "temperature": float(w["node_info"].get("temperature", 0.7))
@@ -695,13 +867,16 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         self.sessions = load_sessions()
         self.current_session_id = self.sessions[0]["id"] if self.sessions else None
-        self.is_new_chat_mode = False  # 새 대화 생성 대기 모드
+        self.is_new_chat_mode = False
 
         self.workflow_dict = None
         self.workflow_path = None
         self.compiled_graph = None
         
-        self.current_worker = None
+        # 활성 실행 상태 관리 (세션별 격리 및 복원용)
+        self.active_executions: Dict[str, Dict[str, Any]] = {}
+        self.current_worker: Optional[AgentExecutionWorker] = None
+        
         self.loading_bubble = None
         self.live_thought_widget = None
 
@@ -752,7 +927,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         s_layout.addWidget(btn_new_chat)
 
         lbl_sess_header = QLabel("대화 목록")
-        lbl_sess_header.setStyleSheet("color: #7a889b; font-size: 11px; font-weight: bold; margin-top: 10px; background: transparent;")
+        lbl_sess_header.setStyleSheet("color: #7a889b; font-size: 11px; font-weight: bold; margin-top: 10px; background: transparent; border: none;")
         s_layout.addWidget(lbl_sess_header)
 
         # 세션 목록 스크롤 영역
@@ -789,7 +964,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         h_layout = QHBoxLayout(header)
         h_layout.setContentsMargins(22, 16, 22, 16)
         self.lbl_chat_title = QLabel("새로운 대화")
-        self.lbl_chat_title.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff; background: transparent;")
+        self.lbl_chat_title.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff; background: transparent; border: none;")
         h_layout.addWidget(self.lbl_chat_title)
         h_layout.addStretch()
         r_layout.addWidget(header)
@@ -858,6 +1033,7 @@ class AgentRuntimeMainWindow(QMainWindow):
                     {
                         "id": n.get("id"),
                         "type": type_map.get(n.get("type"), n.get("type")),
+                        "label": n.get("label") or n.get("data", {}).get("label"),
                         "config": n.get("config", {}) or n.get("data", {}).get("config", {})
                     }
                     for n in workflow_dict.get("nodes", [])
@@ -937,7 +1113,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         has_sessions = len(self.sessions) > 0
         is_active = has_sessions or self.is_new_chat_mode
 
-        # 세션이 0개이고 '새로운 대화' 모드가 아닐 때 입력창 숨김
+        # 세션 0개이고 새 대화 모드가 아닐 때 입력창 숨김
         self.input_container.setVisible(is_active)
 
         if not self.current_session_id:
@@ -947,8 +1123,9 @@ class AgentRuntimeMainWindow(QMainWindow):
             else:
                 placeholder = QLabel("대화 목록이 없습니다.\n상단의 [새로운 대화] 버튼을 눌러 대화를 시작하세요.")
             placeholder.setAlignment(Qt.AlignCenter)
-            placeholder.setStyleSheet("color: #7a889b; font-size: 14px; padding: 60px; line-height: 1.6; background: transparent;")
+            placeholder.setStyleSheet("color: #7a889b; font-size: 14px; padding: 60px; line-height: 1.6; background: transparent; border: none;")
             self.chat_messages_layout.insertWidget(0, placeholder)
+            self.set_executing_state(False)
             return
 
         curr = next((s for s in self.sessions if s["id"] == self.current_session_id), None)
@@ -959,18 +1136,35 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         self.lbl_chat_title.setText(curr["title"])
 
-        if not curr.get("messages"):
-            placeholder = QLabel("에이전트에게 질문이나 메시지를 입력하세요.")
-            placeholder.setAlignment(Qt.AlignCenter)
-            placeholder.setStyleSheet("color: #7a889b; font-size: 13px; padding: 40px; background: transparent;")
-            self.chat_messages_layout.insertWidget(0, placeholder)
-            return
-
-        for msg in curr.get("messages", []):
+        messages = curr.get("messages", [])
+        for msg in messages:
             role = msg.get("role", "user")
             content = msg.get("content", "")
             logs = msg.get("logs", [])
             self.add_message_bubble(role, content, logs)
+
+        # 만약 이 세션이 현재 실행 중인 상태라면 진행 중인 로그/로딩 버블 복원
+        if self.current_session_id in self.active_executions:
+            exec_state = self.active_executions[self.current_session_id]
+            if exec_state.get("is_running", False):
+                self.set_executing_state(True)
+                active_logs = exec_state.get("logs", [])
+                if active_logs:
+                    self._create_live_bubble(active_logs)
+                else:
+                    self.loading_bubble = PureDotsAnimationWidget()
+                    idx = max(0, self.chat_messages_layout.count() - 1)
+                    self.chat_messages_layout.insertWidget(idx, self.loading_bubble)
+            else:
+                self.set_executing_state(False)
+        else:
+            self.set_executing_state(False)
+
+        if not messages and self.current_session_id not in self.active_executions:
+            placeholder = QLabel("에이전트에게 질문이나 메시지를 입력하세요.")
+            placeholder.setAlignment(Qt.AlignCenter)
+            placeholder.setStyleSheet("color: #7a889b; font-size: 13px; padding: 40px; background: transparent; border: none;")
+            self.chat_messages_layout.insertWidget(0, placeholder)
 
         QApplication.processEvents()
         self.chat_scroll.verticalScrollBar().setValue(
@@ -978,55 +1172,63 @@ class AgentRuntimeMainWindow(QMainWindow):
         )
 
     def add_message_bubble(self, role: str, text: str, logs: list = None):
-        bubble_frame = QFrame()
         is_user = (role == "user")
-        
+
+        row_widget = QWidget()
+        row_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(0)
+        row_layout.setAlignment(Qt.AlignTop)
+
+        bubble_frame = QFrame()
+        bubble_frame.setObjectName("UserBubbleFrame" if is_user else "AgentBubbleFrame")
+
         b_layout = QVBoxLayout(bubble_frame)
-        b_layout.setContentsMargins(14, 10, 14, 10)
-        b_layout.setSpacing(6)
 
         if is_user:
-            bubble_frame.setStyleSheet("""
-                QFrame {
-                    background-color: #1e2e45;
-                    border: 1px solid #2d4263;
-                    border-radius: 10px;
-                    margin-left: 60px;
-                }
-            """)
-            lbl_role = QLabel("나 (User)")
-            lbl_role.setStyleSheet("color: #79a8f2; font-size: 11px; font-weight: bold; background: transparent;")
-            b_layout.addWidget(lbl_role)
+            # 사용자 메시지: 우측 정렬, 최대 너비 540px, 세로 높이는 내용 크기에 맞춤
+            row_layout.addStretch(1)
+            b_layout.setContentsMargins(14, 10, 14, 10)
+            b_layout.setSpacing(0)
+            bubble_frame.setMaximumWidth(540)
+            bubble_frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            
+            lbl_text = QLabel(text)
+            lbl_text.setWordWrap(True)
+            lbl_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            lbl_text.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent; border: none;")
+            b_layout.addWidget(lbl_text)
+
+            row_layout.addWidget(bubble_frame)
         else:
-            bubble_frame.setStyleSheet("""
-                QFrame {
-                    background-color: #161e2b;
-                    border: 1px solid #243044;
-                    border-radius: 10px;
-                    margin-right: 60px;
-                }
-            """)
-            lbl_role = QLabel("에이전트 (Agent)")
-            lbl_role.setStyleSheet("color: #4cd7f6; font-size: 11px; font-weight: bold; background: transparent;")
-            b_layout.addWidget(lbl_role)
+            # 에이전트 메시지: 좌측 정렬, 가로 80% 비율, 세로 높이는 내용 크기에 맞춤
+            b_layout.setAlignment(Qt.AlignTop)
+            b_layout.setContentsMargins(16, 12, 16, 12)
+            b_layout.setSpacing(6)
+            bubble_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
 
             if logs:
                 thought_widget = ThoughtLogToggleWidget(logs, is_live=False)
                 b_layout.addWidget(thought_widget)
 
-        lbl_text = QLabel(text)
-        lbl_text.setWordWrap(True)
-        lbl_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        lbl_text.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent;")
-        b_layout.addWidget(lbl_text)
+            lbl_text = QLabel(text)
+            lbl_text.setWordWrap(True)
+            lbl_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            lbl_text.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent; border: none;")
+            b_layout.addWidget(lbl_text)
+
+            row_layout.addWidget(bubble_frame, 8)
+            row_layout.addStretch(2)
 
         idx = max(0, self.chat_messages_layout.count() - 1)
-        self.chat_messages_layout.insertWidget(idx, bubble_frame)
+        self.chat_messages_layout.insertWidget(idx, row_widget)
 
     def on_submit_or_stop(self):
         # 1. 만약 현재 실행 중이라면 정지(Stop) 수행
         if self.current_worker and self.current_worker.isRunning():
             self.current_worker.stop()
+            self.current_worker.wait(500)
             self.set_executing_state(False)
             return
 
@@ -1068,15 +1270,16 @@ class AgentRuntimeMainWindow(QMainWindow):
                 if item.widget():
                     item.widget().deleteLater()
 
-        # 1. 사용자 메시지 버블 추가
+        # 1. 사용자 메시지 버블 추가 및 ★파일 즉시 영구 저장★
         self.add_message_bubble("user", text)
         curr_session["messages"].append({
             "role": "user",
             "content": text,
             "created_at": datetime.now().isoformat()
         })
+        update_session_messages(curr_session["id"], curr_session["messages"], title=curr_session["title"])
 
-        # 2. 점(...) 애니메이션 말풍선 표시 (최초 로그 전까지 유지)
+        # 2. 점(...) 애니메이션 말풍선 표시 (input 노드 이후 노드 발생 전까지 유지)
         self.loading_bubble = PureDotsAnimationWidget()
         idx = max(0, self.chat_messages_layout.count() - 1)
         self.chat_messages_layout.insertWidget(idx, self.loading_bubble)
@@ -1086,9 +1289,15 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.chat_scroll.verticalScrollBar().maximum()
         )
 
-        # 3. 비동기 Worker 실행
-        history_messages = curr_session["messages"][:-1]
+        # 3. 비동기 Worker 실행 & active_executions에 등록
         target_sid = self.current_session_id
+        self.active_executions[target_sid] = {
+            "is_running": True,
+            "logs": [],
+            "user_text": text
+        }
+
+        history_messages = curr_session["messages"][:-1]
         self.current_worker = AgentExecutionWorker(
             session_id=target_sid,
             compiled_graph=self.compiled_graph,
@@ -1113,47 +1322,62 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.txt_input.setEnabled(True)
             self.txt_input.setFocus()
 
-    @Slot(str, str)
-    def on_agent_step_log(self, session_id: str, log_message: str):
+    def _create_live_bubble(self, initial_logs: list):
+        row_widget = QWidget()
+        row_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(0)
+        row_layout.setAlignment(Qt.AlignTop)
+
+        bubble_frame = QFrame()
+        bubble_frame.setObjectName("AgentBubbleFrame")
+        bubble_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+
+        b_layout = QVBoxLayout(bubble_frame)
+        b_layout.setAlignment(Qt.AlignTop)
+        b_layout.setContentsMargins(16, 12, 16, 12)
+        b_layout.setSpacing(6)
+
+        self.live_thought_widget = ThoughtLogToggleWidget(initial_logs, is_live=True)
+        b_layout.addWidget(self.live_thought_widget)
+
+        self.live_response_label = QLabel("")
+        self.live_response_label.setWordWrap(True)
+        self.live_response_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.live_response_label.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent; border: none;")
+        self.live_response_label.setVisible(False)
+        b_layout.addWidget(self.live_response_label)
+
+        row_layout.addWidget(bubble_frame, 8)
+        row_layout.addStretch(2)
+
+        idx = max(0, self.chat_messages_layout.count() - 1)
+        self.chat_messages_layout.insertWidget(idx, row_widget)
+
+    @Slot(str, str, str)
+    def on_agent_step_log(self, session_id: str, node_name: str, log_message: str):
+        # 1. 활성 실행 상태 로그 기록
+        if session_id in self.active_executions:
+            self.active_executions[session_id]["logs"].append(log_message)
+
+        # 2. 현재 사용자가 보고 있는 세션이 아니면 UI 업데이트 생략
         if self.current_session_id != session_id:
             return
 
-        # 최초 로그 도착 시 점(...) 애니메이션 말풍선 제거
+        # 3. input 노드는 사용자 텍스트 전송 시 바로 시작되므로 점(...) 애니메이션 유지
+        # input 노드가 아닌 후속 노드(agent, llm, calc, search 등) 또는 시스템 로그일 때 라이브 사고과정으로 전환
+        if node_name == "input":
+            return
+
         if self.loading_bubble:
             self.loading_bubble.stop()
             self.loading_bubble.deleteLater()
             self.loading_bubble = None
 
-        # 실시간 사고과정 로그 위젯 생성 또는 로그 추가
         if not self.live_thought_widget:
-            bubble_frame = QFrame()
-            bubble_frame.setStyleSheet("""
-                QFrame {
-                    background-color: #161e2b;
-                    border: 1px solid #243044;
-                    border-radius: 10px;
-                    margin-right: 60px;
-                }
-            """)
-            b_layout = QVBoxLayout(bubble_frame)
-            b_layout.setContentsMargins(14, 10, 14, 10)
-            b_layout.setSpacing(6)
-
-            lbl_role = QLabel("에이전트 (Agent)")
-            lbl_role.setStyleSheet("color: #4cd7f6; font-size: 11px; font-weight: bold; background: transparent;")
-            b_layout.addWidget(lbl_role)
-
-            self.live_thought_widget = ThoughtLogToggleWidget([log_message], is_live=True)
-            b_layout.addWidget(self.live_thought_widget)
-
-            self.live_response_label = QLabel("")
-            self.live_response_label.setWordWrap(True)
-            self.live_response_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            self.live_response_label.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent;")
-            b_layout.addWidget(self.live_response_label)
-
-            idx = max(0, self.chat_messages_layout.count() - 1)
-            self.chat_messages_layout.insertWidget(idx, bubble_frame)
+            accum_logs = self.active_executions.get(session_id, {}).get("logs", [log_message])
+            self._create_live_bubble(accum_logs)
         else:
             self.live_thought_widget.append_log(log_message)
 
@@ -1164,6 +1388,10 @@ class AgentRuntimeMainWindow(QMainWindow):
 
     @Slot(str, str, list)
     def on_agent_finished(self, session_id: str, output: str, logs: list):
+        if session_id in self.active_executions:
+            self.active_executions[session_id]["is_running"] = False
+
+        # 1. 해당 세션 데이터에 응답 메시지 영구 저장
         all_sessions = load_sessions()
         target_s = next((s for s in all_sessions if s["id"] == session_id), None)
         if target_s:
@@ -1177,6 +1405,7 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         self.sessions = load_sessions()
 
+        # 2. 사용자가 현재 해당 세션을 보고 있는 경우 실시간 UI 완료 처리
         if self.current_session_id == session_id:
             if self.loading_bubble:
                 self.loading_bubble.stop()
@@ -1184,9 +1413,9 @@ class AgentRuntimeMainWindow(QMainWindow):
                 self.loading_bubble = None
 
             if self.live_thought_widget:
-                # 실시간 사고과정 로그 위젯을 완료 상태로 접음
-                self.live_thought_widget.collapse()
+                self.live_thought_widget.finalize()
                 self.live_response_label.setText(output)
+                self.live_response_label.setVisible(True)
                 self.live_thought_widget = None
                 self.live_response_label = None
             else:
@@ -1201,6 +1430,9 @@ class AgentRuntimeMainWindow(QMainWindow):
 
     @Slot(str, str)
     def on_agent_error(self, session_id: str, err_msg: str):
+        if session_id in self.active_executions:
+            self.active_executions[session_id]["is_running"] = False
+
         all_sessions = load_sessions()
         target_s = next((s for s in all_sessions if s["id"] == session_id), None)
         if target_s:
@@ -1221,8 +1453,9 @@ class AgentRuntimeMainWindow(QMainWindow):
                 self.loading_bubble = None
 
             if self.live_thought_widget:
-                self.live_thought_widget.collapse()
+                self.live_thought_widget.finalize()
                 self.live_response_label.setText(f"오류 발생:\n{err_msg}")
+                self.live_response_label.setVisible(True)
                 self.live_thought_widget = None
                 self.live_response_label = None
             else:

@@ -75,10 +75,11 @@ def extract_llm_nodes(workflow_json: dict) -> List[Dict[str, Any]]:
         node_type = n.get("type", "")
         if node_type in ("llm", "agent", "llmNode", "agentNode"):
             config = n.get("config", {}) or n.get("data", {}).get("config", {})
+            label = n.get("label") or n.get("data", {}).get("label") or f"{node_type.upper()} ({n.get('id')})"
             llm_nodes.append({
                 "id": n.get("id"),
                 "type": node_type,
-                "label": n.get("data", {}).get("label") or f"{node_type.upper()} ({n.get('id')})",
+                "label": label,
                 "model": config.get("model", "gemma2:2b"),
                 "base_url": config.get("base_url", ""),
                 "api_key": config.get("api_key", ""),
@@ -98,7 +99,6 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
         node_id = n.get("id")
         if node_id in updated_configs:
             cfg = updated_configs[node_id]
-            # config 객체에 반영
             if "config" not in n:
                 n["config"] = {}
             n["config"].update({
@@ -110,12 +110,6 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
             })
             if "system_prompt" in cfg:
                 n["config"]["system_prompt"] = cfg["system_prompt"]
-                
-            # React Flow data.config 호환
-            if "data" in n and isinstance(n["data"], dict):
-                if "config" not in n["data"]:
-                    n["data"]["config"] = {}
-                n["data"]["config"].update(n["config"])
 
     if file_path and os.path.exists(file_path):
         try:
