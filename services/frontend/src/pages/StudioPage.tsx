@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
 import { WorkflowEditor } from '../components/editor/WorkflowEditor';
 import { NodePalette } from '../components/panel/NodePalette';
@@ -18,8 +18,43 @@ export const StudioPage: React.FC = () => {
   const [outputFormat, setOutputFormat] = useState<'text' | 'json' | 'markdown'>('markdown');
   const [copied, setCopied] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(360);
+  const [isResizing, setIsResizing] = useState(false);
 
   const { isExecuting, executionResult, selectedNode, logs } = useWorkflowStore();
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = window.innerWidth - e.clientX;
+      const minWidth = 280;
+      const maxWidth = Math.max(minWidth, Math.min(800, window.innerWidth - 320));
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setRightSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   const handleSave = () => {
     setSavedNotice(true);
@@ -50,20 +85,7 @@ export const StudioPage: React.FC = () => {
         <div className="w-full flex flex-col h-[calc(100vh-4rem)] max-w-full overflow-hidden bg-background">
           {/* Top Action Toolbar */}
           <section className="w-full px-margin py-space-sm bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-between shadow-sm z-20 shrink-0 border-b border-outline-variant/30">
-            <div className="flex items-center gap-space-md">
-              <button
-                onClick={() => setShowPalette(!showPalette)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                  showPalette
-                    ? 'bg-primary-container/20 text-primary border border-primary/30'
-                    : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
-                }`}
-                title="노드 라이브러리 토글"
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[18px]">account_tree</span>
-              </button>
-
+            <div className="flex items-center gap-space-sm">
               <div className="flex items-center gap-space-xs group cursor-pointer">
                 {isEditingName ? (
                   <input
@@ -89,24 +111,25 @@ export const StudioPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <span className="hidden sm:inline-block text-outline-variant font-body-sm text-body-sm">|</span>
-              <p className="hidden sm:inline-block font-body-sm text-body-sm text-on-surface-variant">
-                노드를 연결하여 나만의 AI Agent를 설계해보세요.
-              </p>
+
+              {/* Icon-only Save Button next to Agent Title */}
+              <button
+                onClick={handleSave}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                  savedNotice
+                    ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_10px_rgba(76,215,246,0.3)]'
+                    : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95'
+                }`}
+                title={savedNotice ? '저장됨' : '에이전트 저장하기'}
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {savedNotice ? 'check' : 'save'}
+                </span>
+              </button>
             </div>
 
             <div className="flex items-center gap-space-sm">
-              <button
-                onClick={handleSave}
-                className="px-space-md py-space-xs h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-sm text-body-sm flex items-center gap-space-xs transition-colors shadow-sm"
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {savedNotice ? 'check' : 'save'}
-                </span>
-                <span>{savedNotice ? '저장됨' : '저장하기'}</span>
-              </button>
-
               <button
                 onClick={triggerRun}
                 disabled={isExecuting}
@@ -129,6 +152,21 @@ export const StudioPage: React.FC = () => {
 
             {/* Center Flow Editor Canvas Area */}
             <div className="flex-1 flex flex-col relative overflow-hidden bg-background">
+              {/* Floating Node Palette Toggle Button at Top-Left */}
+              {!showPalette && (
+                <button
+                  onClick={() => setShowPalette(true)}
+                  className="absolute top-4 left-4 z-20 px-3.5 py-2 rounded-xl bg-surface-container-lowest/90 hover:bg-surface-container border border-outline-variant/40 text-on-surface text-xs font-semibold shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md flex items-center gap-2 hover:border-primary/50 transition-all active:scale-95 group"
+                  title="노드 목록 열기"
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-primary text-[18px] group-hover:scale-110 transition-transform">
+                    account_tree
+                  </span>
+                  <span>노드 목록</span>
+                </button>
+              )}
+
               <WorkflowEditor />
 
               {/* Bottom Execution Shelf */}
@@ -139,7 +177,27 @@ export const StudioPage: React.FC = () => {
             </div>
 
             {/* Right Aside: Property Panel or Execution Results */}
-            <aside className="w-80 shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-l border-outline-variant/30 flex flex-col z-20 shadow-xl overflow-hidden">
+            <aside
+              style={{ width: `${rightSidebarWidth}px` }}
+              className="shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-l border-outline-variant/30 flex flex-col z-20 shadow-xl overflow-hidden relative"
+            >
+              {/* Drag Resize Handle */}
+              <div
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setIsResizing(true);
+                }}
+                className={`absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize z-30 group flex items-center justify-center transition-colors ${
+                  isResizing ? 'bg-primary/40' : 'hover:bg-primary/30'
+                }`}
+                title="드래그하여 너비 조절"
+              >
+                <div
+                  className={`w-[2px] h-10 rounded-full transition-colors ${
+                    isResizing ? 'bg-primary' : 'bg-outline-variant/40 group-hover:bg-primary'
+                  }`}
+                />
+              </div>
               {/* Right Panel Tab Switcher */}
               <div className="p-space-md flex items-center justify-between border-b border-outline-variant/20 shrink-0">
                 <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">

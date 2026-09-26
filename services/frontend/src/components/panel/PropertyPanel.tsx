@@ -9,15 +9,15 @@ export const PropertyPanel: React.FC = () => {
 
   if (!selectedNode) {
     return (
-      <aside className="w-80 shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-l border-outline-variant/30 flex flex-col z-20 shadow-xl overflow-hidden p-space-md justify-center items-center text-center">
+      <div className="w-full flex-1 flex flex-col p-space-md justify-center items-center text-center">
         <div className="w-12 h-12 rounded-2xl bg-surface-container-high flex items-center justify-center text-outline mb-3">
           <span className="material-symbols-outlined text-[24px]">tune</span>
         </div>
         <h3 className="font-display text-sm font-bold text-on-surface">노드 설정</h3>
-        <p className="text-xs text-outline mt-1 max-w-[200px] leading-relaxed">
+        <p className="text-xs text-outline mt-1 max-w-[240px] leading-relaxed">
           캔버스에서 노드를 선택하여 상세 파라미터를 설정하세요.
         </p>
-      </aside>
+      </div>
     );
   }
 
@@ -29,7 +29,7 @@ export const PropertyPanel: React.FC = () => {
   };
 
   return (
-    <aside className="w-80 shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-l border-outline-variant/30 flex flex-col z-20 shadow-xl overflow-hidden">
+    <div className="w-full flex-1 flex flex-col overflow-hidden">
       {/* Panel Header */}
       <div className="p-space-md flex items-center justify-between border-b border-outline-variant/20 shrink-0">
         <div className="flex items-center gap-space-xs">
@@ -148,6 +148,6 @@ export const PropertyPanel: React.FC = () => {
           </div>
         )}
       </div>
-    </aside>
+    </div>
   );
 };
