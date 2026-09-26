@@ -327,6 +327,13 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
       { name: 'eval_mode', org: 'Strict / Fuzzy', badge: '정밀도', context: '일치 검사 강도' },
     ],
     examples: [
+      {
+        title: '키워드 기반 분기',
+        prompt: 'If input contains "날씨" -> WebSearch\nElse -> LLM Chat',
+        resultJson: '{\n  "selected_branch": "WebSearch",\n  "matched_condition": "contains(\'날씨\')",\n  "routed_to": "node_web_search"\n}',
+      },
+    ],
+  },
   agent: {
     id: 'agent',
     name: '자율 에이전트',
