@@ -85,10 +85,32 @@ const NodeWrapper: React.FC<NodeWrapperProps> = ({
         <span className="material-symbols-outlined text-[16px]">help</span>
       </button>
 
-      {/* Active running spinner */}
+      {/* Active Running Centered Spinner & Dim Overlay */}
       {isActive && (
-        <div className="absolute top-2 right-8 p-0.5 text-tertiary animate-spin">
-          <span className="material-symbols-outlined text-[16px]">progress_activity</span>
+        <div className="absolute inset-0 z-30 rounded-2xl bg-surface-container-lowest/75 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5 animate-in fade-in duration-200 pointer-events-none">
+          <svg
+            className="w-7 h-7 animate-spin text-tertiary drop-shadow-[0_0_10px_rgba(76,215,246,0.8)]"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-20"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+            />
+            <path
+              className="opacity-90"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          <span className="text-[10px] font-mono font-bold text-tertiary tracking-wider animate-pulse">
+            RUNNING
+          </span>
         </div>
       )}
 
