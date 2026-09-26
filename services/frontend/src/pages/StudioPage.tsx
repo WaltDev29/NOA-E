@@ -3,11 +3,11 @@ import { Header } from '../components/layout/Header';
 import { WorkflowEditor } from '../components/editor/WorkflowEditor';
 import { NodePalette } from '../components/panel/NodePalette';
 import { PropertyPanel } from '../components/panel/PropertyPanel';
+import { NodeResultPanel } from '../components/panel/NodeResultPanel';
 import { ExecutionPanel } from '../components/execution/ExecutionPanel';
 import { NodeInfoModal } from '../components/editor/NodeInfoModal';
 import { OutputResultModal } from '../components/editor/OutputResultModal';
 import { useWorkflowStore } from '../store/useWorkflowStore';
-import ReactMarkdown from 'react-markdown';
 
 export const StudioPage: React.FC = () => {
   const [agentName, setAgentName] = useState('새로운 에이전트 만들기');
@@ -15,13 +15,22 @@ export const StudioPage: React.FC = () => {
   const [showPalette, setShowPalette] = useState(true);
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'results'>('properties');
-  const [outputFormat, setOutputFormat] = useState<'text' | 'json' | 'markdown'>('markdown');
-  const [copied, setCopied] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState(360);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
 
-  const { isExecuting, executionResult, selectedNode, logs } = useWorkflowStore();
+  const selectedNode = useWorkflowStore((state) => state.selectedNode);
+  const isExecuting = useWorkflowStore((state) => state.isExecuting);
+  const nodeResults = useWorkflowStore((state) => state.nodeResults);
+
+  const canShowResultsTab =
+    selectedNode && selectedNode.type !== 'inputNode' && selectedNode.type !== 'outputNode';
+
+  useEffect(() => {
+    if (!canShowResultsTab && activeRightTab === 'results') {
+      setActiveRightTab('properties');
+    }
+  }, [canShowResultsTab, activeRightTab]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -59,13 +68,6 @@ export const StudioPage: React.FC = () => {
   const handleSave = () => {
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 2000);
-  };
-
-  const handleCopy = () => {
-    if (!executionResult) return;
-    navigator.clipboard.writeText(executionResult);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const triggerRun = () => {
@@ -198,6 +200,7 @@ export const StudioPage: React.FC = () => {
                   }`}
                 />
               </div>
+
               {/* Right Panel Tab Switcher */}
               <div className="p-space-md flex items-center justify-between border-b border-outline-variant/20 shrink-0">
                 <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">
@@ -212,112 +215,30 @@ export const StudioPage: React.FC = () => {
                   >
                     노드 속성
                   </button>
-                  <button
-                    onClick={() => setActiveRightTab('results')}
-                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                      activeRightTab === 'results'
-                        ? 'bg-surface-container-high text-primary shadow-sm'
-                        : 'text-on-surface-variant hover:text-on-surface'
-                    }`}
-                    type="button"
-                  >
-                    실행 결과
-                  </button>
+                  {canShowResultsTab && (
+                    <button
+                      onClick={() => setActiveRightTab('results')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                        activeRightTab === 'results'
+                          ? 'bg-surface-container-high text-primary shadow-sm'
+                          : 'text-on-surface-variant hover:text-on-surface'
+                      }`}
+                      type="button"
+                    >
+                      <span>실행 결과</span>
+                      {selectedNode && nodeResults[selectedNode.id] && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
+                      )}
+                    </button>
+                  )}
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-container/20 text-primary border border-primary/30">
-                  {isExecuting ? '실행 중' : executionResult ? '완료' : '대기 중'}
-                </span>
               </div>
 
               {/* View 1: Properties */}
               {activeRightTab === 'properties' && <PropertyPanel />}
 
-              {/* View 2: Results */}
-              {activeRightTab === 'results' && (
-                <>
-                  <div className="px-space-md py-space-sm bg-surface-container-low/50 flex items-center justify-between border-b border-outline-variant/20 shrink-0">
-                    <div className="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-[12px]">
-                      <span>출력 형식</span>
-                      <div className="relative inline-flex items-center">
-                        <select
-                          value={outputFormat}
-                          onChange={(e) => setOutputFormat(e.target.value as any)}
-                          className="appearance-none bg-surface-container h-7 pl-2.5 pr-7 rounded-lg text-[12px] text-on-surface font-body-sm focus:outline-none cursor-pointer border border-outline-variant/30"
-                        >
-                          <option value="text">텍스트</option>
-                          <option value="json">JSON</option>
-                          <option value="markdown">마크다운</option>
-                        </select>
-                        <span className="material-symbols-outlined absolute right-1.5 text-outline text-[16px] pointer-events-none">
-                          expand_more
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={handleCopy}
-                        className="w-7 h-7 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors"
-                        title="결과 복사"
-                        type="button"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {copied ? 'check' : 'content_copy'}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-space-md flex flex-col gap-space-md">
-                    {/* Metrics Box */}
-                    <div className="flex items-center justify-between p-space-sm rounded-xl bg-surface-container-low/70 border border-outline-variant/20">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-outline uppercase font-mono">Status</span>
-                        <span className="font-mono text-tertiary text-[13px] font-semibold">
-                          {isExecuting ? 'Running' : executionResult ? '200 OK' : 'IDLE'}
-                        </span>
-                      </div>
-                      <div className="w-[1px] h-6 bg-outline-variant/30" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-outline uppercase font-mono">Logs</span>
-                        <span className="font-mono text-secondary text-[13px] font-semibold">
-                          {logs.length} Lines
-                        </span>
-                      </div>
-                      <div className="w-[1px] h-6 bg-outline-variant/30" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-outline uppercase font-mono">Output</span>
-                        <span className="font-mono text-primary text-[13px] font-semibold">
-                          {executionResult ? 'Ready' : 'Empty'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Result Content */}
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-semibold text-on-surface-variant flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-primary" />
-                          최종 산출물 (응답 본문)
-                        </span>
-                        <span className="text-[10px] font-mono text-outline uppercase">{outputFormat}</span>
-                      </div>
-                      <div className="flex-1 p-space-md rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-[13px] text-on-surface leading-relaxed select-text space-y-2 overflow-y-auto shadow-sm">
-                        {executionResult ? (
-                          outputFormat === 'markdown' ? (
-                            <ReactMarkdown>{executionResult}</ReactMarkdown>
-                          ) : (
-                            <pre className="font-mono text-xs whitespace-pre-wrap">{executionResult}</pre>
-                          )
-                        ) : (
-                          <div className="text-outline italic text-xs py-8 text-center">
-                            실행 결과가 여기에 표시됩니다. 상단의 '실행하기' 버튼을 눌러보세요.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* View 2: Node Execution Results */}
+              {activeRightTab === 'results' && canShowResultsTab && <NodeResultPanel />}
             </aside>
           </div>
         </div>
@@ -336,8 +257,16 @@ export const StudioPage: React.FC = () => {
 };
 
 const HiddenRunTrigger: React.FC = () => {
-  const { isExecuting, setIsExecuting, clearLogs, addLog, setActiveNodeId, setExecutionResult, setMessages } =
-    useWorkflowStore();
+  const {
+    isExecuting,
+    setIsExecuting,
+    clearLogs,
+    addLog,
+    setActiveNodeId,
+    setExecutionResult,
+    setMessages,
+    appendNodeStep,
+  } = useWorkflowStore();
 
   const handleRun = async () => {
     const { nodes, edges, messages } = useWorkflowStore.getState();
@@ -391,6 +320,8 @@ const HiddenRunTrigger: React.FC = () => {
     setActiveNodeId(inputNodes[0].id);
     addLog('파이프라인 실행 시작...');
 
+    let previousOutput = inputNodes[0]?.data?.config?.input_text || '';
+
     try {
       const response = await fetch('/api/workflow/run', {
         method: 'POST',
@@ -436,12 +367,35 @@ const HiddenRunTrigger: React.FC = () => {
 
                 addLog(`[${nodeName}] 노드 처리 완료`);
 
+                const targetNode = nodes.find((n) => n.id === nodeName);
+                const nodeInput =
+                  targetNode?.type === 'inputNode'
+                    ? targetNode.data?.config?.input_text || stateUpdates.input_text || ''
+                    : previousOutput;
+                const nodeOutput = stateUpdates.current_output || '';
+
+                appendNodeStep(
+                  nodeName,
+                  {
+                    input: nodeInput,
+                    output: nodeOutput,
+                    logs: stateUpdates.logs,
+                  },
+                  {
+                    nodeType: targetNode?.type,
+                    nodeLabel: targetNode?.data?.label,
+                    status: 'completed',
+                  }
+                );
+
+                previousOutput = nodeOutput || previousOutput;
+
                 if (stateUpdates.logs && Array.isArray(stateUpdates.logs)) {
                   addLog(`  -> ${stateUpdates.logs[stateUpdates.logs.length - 1]}`);
                 }
 
                 if (stateUpdates.current_output) {
-                  const nodeType = nodes.find((n) => n.id === nodeName)?.type;
+                  const nodeType = targetNode?.type;
                   if (nodeType === 'outputNode') {
                     setExecutionResult(stateUpdates.current_output);
                   }

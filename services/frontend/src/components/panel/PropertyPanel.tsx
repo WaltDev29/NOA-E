@@ -6,6 +6,9 @@ export const PropertyPanel: React.FC = () => {
   const updateNodeConfig = useWorkflowStore((state) => state.updateNodeConfig);
   const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const executionResult = useWorkflowStore((state) => state.executionResult);
+  const isExecuting = useWorkflowStore((state) => state.isExecuting);
+  const activeNodeId = useWorkflowStore((state) => state.activeNodeId);
+  const nodeResults = useWorkflowStore((state) => state.nodeResults);
 
   if (!selectedNode) {
     return (
@@ -24,18 +27,66 @@ export const PropertyPanel: React.FC = () => {
   const { id, type, data } = selectedNode;
   const config = data.config || {};
 
+  const getNodeLabel = (node: any) => {
+    if (!node) return '노드';
+    const labels: Record<string, string> = {
+      inputNode: '사용자 입력',
+      llmNode: 'LLM',
+      agentNode: 'Autonomous Agent',
+      searchNode: '웹 검색',
+      calculatorNode: '계산기',
+      outputNode: '결과 출력',
+    };
+    return node.data?.label || labels[node.type] || node.id;
+  };
+
+  const getNodeIcon = (nodeType?: string) => {
+    switch (nodeType) {
+      case 'inputNode':
+        return 'login';
+      case 'llmNode':
+        return 'neurology';
+      case 'agentNode':
+        return 'smart_toy';
+      case 'searchNode':
+        return 'travel_explore';
+      case 'calculatorNode':
+        return 'calculate';
+      case 'outputNode':
+        return 'output';
+      default:
+        return 'tune';
+    }
+  };
+
   const handleChange = (key: string, value: any) => {
     updateNodeConfig(id, { [key]: value });
   };
+
+  const isCurrentRunning = isExecuting && activeNodeId === id;
+  const hasResult = !!nodeResults[id];
 
   return (
     <div className="w-full flex-1 flex flex-col overflow-hidden">
       {/* Panel Header */}
       <div className="p-space-md flex items-center justify-between border-b border-outline-variant/20 shrink-0">
-        <div className="flex items-center gap-space-xs">
-          <span className="material-symbols-outlined text-primary text-[20px]">tune</span>
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-[20px]">
+            {getNodeIcon(type)}
+          </span>
           <span className="font-display text-sm font-bold text-on-surface">
-            {data.label || type} 설정
+            {getNodeLabel(selectedNode)}
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+              isCurrentRunning
+                ? 'bg-tertiary-container/30 text-tertiary border-tertiary/40 animate-pulse'
+                : hasResult
+                ? 'bg-primary-container/20 text-primary border-primary/30'
+                : 'bg-surface-container text-outline border-outline-variant/30'
+            }`}
+          >
+            {isCurrentRunning ? '실행 중' : hasResult ? '완료' : '대기 중'}
           </span>
         </div>
         <button
@@ -75,10 +126,11 @@ export const PropertyPanel: React.FC = () => {
 
         {(type === 'llmNode' || type === 'agentNode') && (
           <>
+            {/* 1. 모델명 */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                LLM 모델명
+                모델명
               </label>
               <input
                 type="text"
@@ -89,6 +141,37 @@ export const PropertyPanel: React.FC = () => {
               />
             </div>
 
+            {/* 2. Base URL */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                Base URL <span className="text-outline font-normal">(선택)</span>
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none transition-colors font-mono"
+                placeholder="http://ollama:11434/v1"
+                value={config.base_url || ''}
+                onChange={(e) => handleChange('base_url', e.target.value)}
+              />
+            </div>
+
+            {/* 3. API Key */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                API Key <span className="text-outline font-normal">(선택)</span>
+              </label>
+              <input
+                type="password"
+                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none transition-colors font-mono"
+                placeholder="sk-..."
+                value={config.api_key || ''}
+                onChange={(e) => handleChange('api_key', e.target.value)}
+              />
+            </div>
+
+            {/* 4. 시스템 프롬프트 */}
             {type === 'llmNode' && (
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
@@ -103,32 +186,6 @@ export const PropertyPanel: React.FC = () => {
                 />
               </div>
             )}
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-on-surface-variant">
-                Custom API Key <span className="text-outline font-normal">(선택)</span>
-              </label>
-              <input
-                type="password"
-                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none transition-colors font-mono"
-                placeholder="sk-..."
-                value={config.api_key || ''}
-                onChange={(e) => handleChange('api_key', e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-on-surface-variant">
-                Custom Base URL <span className="text-outline font-normal">(선택)</span>
-              </label>
-              <input
-                type="text"
-                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none transition-colors font-mono"
-                placeholder="http://ollama:11434/v1"
-                value={config.base_url || ''}
-                onChange={(e) => handleChange('base_url', e.target.value)}
-              />
-            </div>
           </>
         )}
 

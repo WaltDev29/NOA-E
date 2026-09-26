@@ -20,6 +20,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
     setExecutionResult,
     setMessages,
     setActiveNodeId,
+    appendNodeStep,
   } = useWorkflowStore();
 
   const [panelHeight, setPanelHeight] = useState(180);
@@ -112,6 +113,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
 
     addLog('파이프라인 실행 시작...');
 
+    let previousOutput = inputNodes[0]?.data?.config?.input_text || '';
+
     try {
       const response = await fetch('/api/workflow/run', {
         method: 'POST',
@@ -157,12 +160,35 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
 
                 addLog(`[${nodeName}] 노드 처리 완료`);
 
+                const targetNode = nodes.find((n) => n.id === nodeName);
+                const nodeInput =
+                  targetNode?.type === 'inputNode'
+                    ? targetNode.data?.config?.input_text || stateUpdates.input_text || ''
+                    : previousOutput;
+                const nodeOutput = stateUpdates.current_output || '';
+
+                appendNodeStep(
+                  nodeName,
+                  {
+                    input: nodeInput,
+                    output: nodeOutput,
+                    logs: stateUpdates.logs,
+                  },
+                  {
+                    nodeType: targetNode?.type,
+                    nodeLabel: targetNode?.data?.label,
+                    status: 'completed',
+                  }
+                );
+
+                previousOutput = nodeOutput || previousOutput;
+
                 if (stateUpdates.logs && Array.isArray(stateUpdates.logs)) {
                   addLog(`  -> ${stateUpdates.logs[stateUpdates.logs.length - 1]}`);
                 }
 
                 if (stateUpdates.current_output) {
-                  const nodeType = nodes.find((n) => n.id === nodeName)?.type;
+                  const nodeType = targetNode?.type;
                   if (nodeType === 'outputNode') {
                     setExecutionResult(stateUpdates.current_output);
                   }

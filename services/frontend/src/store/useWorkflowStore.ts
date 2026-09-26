@@ -15,6 +15,23 @@ import type {
   OnConnect 
 } from '@xyflow/react';
 
+export interface ExecutionStep {
+  stepIndex: number;
+  input: string;
+  output: string;
+  timestamp: string;
+  logs?: string[];
+}
+
+export interface NodeExecutionResult {
+  nodeId: string;
+  nodeType?: string;
+  nodeLabel?: string;
+  steps: ExecutionStep[];
+  status: 'idle' | 'running' | 'completed' | 'error';
+  timestamp?: string;
+}
+
 interface WorkflowState {
   nodes: Node[];
   edges: Edge[];
@@ -23,6 +40,8 @@ interface WorkflowState {
   messages: any[]; // 대화 이력을 저장하기 위한 상태
   executionResult: string;
   isExecuting: boolean;
+  nodeResults: Record<string, NodeExecutionResult>;
+  selectedResultNodeId: string | null;
   onNodesChange: OnNodesChange<Node>;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -35,6 +54,13 @@ interface WorkflowState {
   setMessages: (messages: any[]) => void;
   setExecutionResult: (result: string) => void;
   setIsExecuting: (isExecuting: boolean) => void;
+  appendNodeStep: (
+    nodeId: string,
+    stepData: { input: string; output: string; logs?: string[] },
+    nodeMeta?: { nodeType?: string; nodeLabel?: string; status?: 'idle' | 'running' | 'completed' | 'error' }
+  ) => void;
+  setSelectedResultNodeId: (nodeId: string | null) => void;
+  clearNodeResults: () => void;
   clearLogs: () => void;
   clearMessages: () => void;
   nodeInfoModal: { isOpen: boolean; nodeType: string | null };
@@ -66,6 +92,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   messages: [],
   executionResult: '',
   isExecuting: false,
+  nodeResults: {},
+  selectedResultNodeId: null,
   onNodesChange: (changes: NodeChange<Node>[]) => {
     set({
       nodes: applyNodeChanges(changes, get().nodes),
@@ -73,7 +101,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     
     // Update selected node if it changed
     const selected = get().nodes.find(n => n.selected);
-    set({ selectedNode: selected || null });
+    set({ 
+      selectedNode: selected || null,
+      selectedResultNodeId: selected ? selected.id : get().selectedResultNodeId,
+    });
   },
   onEdgesChange: (changes: EdgeChange[]) => {
     set({
@@ -90,9 +121,13 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   deleteNode: (nodeId) => set((state) => ({
     nodes: state.nodes.filter(n => n.id !== nodeId),
     edges: state.edges.filter(e => e.source !== nodeId && e.target !== nodeId),
-    selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode
+    selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode,
+    selectedResultNodeId: state.selectedResultNodeId === nodeId ? null : state.selectedResultNodeId,
   })),
-  setSelectedNode: (node) => set({ selectedNode: node }),
+  setSelectedNode: (node) => set({ 
+    selectedNode: node,
+    selectedResultNodeId: node ? node.id : get().selectedResultNodeId,
+  }),
   updateNodeConfig: (nodeId, config) => {
     set({
       nodes: get().nodes.map((node) => {
@@ -112,8 +147,41 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   setMessages: (messages) => set({ messages }),
   setExecutionResult: (result) => set({ executionResult: result }),
   setIsExecuting: (isExecuting) => set({ isExecuting }),
-  clearLogs: () => set({ logs: [], executionResult: '' }),
-  clearMessages: () => set({ messages: [], logs: [], executionResult: '' }),
+  appendNodeStep: (nodeId, stepData, nodeMeta) => set((state) => {
+    const existing = state.nodeResults[nodeId] || {
+      nodeId,
+      nodeType: nodeMeta?.nodeType,
+      nodeLabel: nodeMeta?.nodeLabel,
+      steps: [],
+      status: 'idle',
+    };
+
+    const newStep: ExecutionStep = {
+      stepIndex: existing.steps.length + 1,
+      input: stepData.input,
+      output: stepData.output,
+      timestamp: new Date().toLocaleTimeString(),
+      logs: stepData.logs,
+    };
+
+    return {
+      nodeResults: {
+        ...state.nodeResults,
+        [nodeId]: {
+          ...existing,
+          nodeType: nodeMeta?.nodeType || existing.nodeType,
+          nodeLabel: nodeMeta?.nodeLabel || existing.nodeLabel,
+          status: nodeMeta?.status || 'completed',
+          timestamp: new Date().toLocaleTimeString(),
+          steps: [...existing.steps, newStep],
+        },
+      },
+    };
+  }),
+  setSelectedResultNodeId: (nodeId) => set({ selectedResultNodeId: nodeId }),
+  clearNodeResults: () => set({ nodeResults: {}, selectedResultNodeId: null }),
+  clearLogs: () => set({ logs: [], executionResult: '', nodeResults: {}, selectedResultNodeId: null }),
+  clearMessages: () => set({ messages: [], logs: [], executionResult: '', nodeResults: {}, selectedResultNodeId: null }),
   nodeInfoModal: { isOpen: false, nodeType: null },
   openNodeModal: (nodeType) => set({ nodeInfoModal: { isOpen: true, nodeType } }),
   closeNodeModal: () => set({ nodeInfoModal: { isOpen: false, nodeType: null } }),
