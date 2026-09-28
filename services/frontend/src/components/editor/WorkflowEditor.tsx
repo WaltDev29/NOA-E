@@ -86,12 +86,12 @@ const EditorInner: React.FC = () => {
       });
 
       const labels: Record<string, string> = {
-        inputNode: '사용자 입력',
+        inputNode: 'Input',
         llmNode: 'LLM',
         agentNode: 'Autonomous Agent',
         searchNode: '웹 검색',
         calculatorNode: '계산기 도구',
-        outputNode: '결과 출력',
+        outputNode: 'Output',
       };
 
       const defaultConfigs: Record<string, any> = {

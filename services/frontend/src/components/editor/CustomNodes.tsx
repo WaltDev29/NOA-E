@@ -49,7 +49,6 @@ const NodeWrapper: React.FC<NodeWrapperProps> = ({
   id,
   selected,
   title,
-  subtitle,
   icon,
   badge,
   colorType = 'primary',
@@ -122,9 +121,8 @@ const NodeWrapper: React.FC<NodeWrapperProps> = ({
           <span className="material-symbols-outlined text-[20px]">{icon}</span>
         </div>
         <div className="flex flex-col min-w-0">
-          {badge && <span className={`text-[10px] font-semibold ${style.text}`}>{badge}</span>}
+          {badge && <span className={`text-[10px] font-semibold tracking-wider ${style.text}`}>{badge}</span>}
           <h3 className="font-display text-xs font-bold text-on-surface truncate">{title}</h3>
-          {subtitle && <span className="text-[10px] text-outline truncate">{subtitle}</span>}
         </div>
       </div>
 
@@ -142,9 +140,8 @@ export const InputNode = memo(({ id, data, selected }: any) => {
       <NodeWrapper
         id={id}
         selected={selected}
-        title="사용자 입력"
-        subtitle="시작 노드"
-        badge="START"
+        title={data?.label || "Input"}
+        badge="Input"
         icon="login"
         colorType="tertiary"
         nodeType="inputNode"
@@ -184,9 +181,8 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
       <NodeWrapper
         id={id}
         selected={selected}
-        title="LLM"
-        subtitle="대화형 지능"
-        badge="GENERATIVE"
+        title={data?.label || "LLM"}
+        badge="LLM"
         icon="neurology"
         colorType="secondary"
         nodeType="llmNode"
@@ -222,9 +218,8 @@ export const AgentNode = memo(({ id, data, selected }: any) => {
       <NodeWrapper
         id={id}
         selected={selected}
-        title="Autonomous Agent"
-        subtitle="자율 에이전트"
-        badge="AGENT"
+        title={data?.label || "Autonomous Agent"}
+        badge="Agent"
         icon="smart_toy"
         colorType="secondary"
         nodeType="agentNode"
@@ -248,15 +243,14 @@ export const AgentNode = memo(({ id, data, selected }: any) => {
   );
 });
 
-export const SearchNode = memo(({ id, selected }: any) => {
+export const SearchNode = memo(({ id, data, selected }: any) => {
   return (
     <>
       <NodeWrapper
         id={id}
         selected={selected}
-        title="웹 검색"
-        subtitle="실시간 검색 도구"
-        badge="TOOL"
+        title={data?.label || "웹 검색"}
+        badge="Search"
         icon="travel_explore"
         colorType="primary"
         nodeType="searchNode"
@@ -272,15 +266,14 @@ export const SearchNode = memo(({ id, selected }: any) => {
   );
 });
 
-export const CalculatorNode = memo(({ id, selected }: any) => {
+export const CalculatorNode = memo(({ id, data, selected }: any) => {
   return (
     <>
       <NodeWrapper
         id={id}
         selected={selected}
-        title="계산기 도구"
-        subtitle="수학 연산 도구"
-        badge="TOOL"
+        title={data?.label || "계산기 도구"}
+        badge="Calculator"
         icon="calculate"
         colorType="tertiary"
         nodeType="calculatorNode"
@@ -296,7 +289,7 @@ export const CalculatorNode = memo(({ id, selected }: any) => {
   );
 });
 
-export const OutputNode = memo(({ id, selected }: any) => {
+export const OutputNode = memo(({ id, data, selected }: any) => {
   return (
     <>
       <Handle
@@ -307,9 +300,8 @@ export const OutputNode = memo(({ id, selected }: any) => {
       <NodeWrapper
         id={id}
         selected={selected}
-        title="결과 출력"
-        subtitle="종료 노드"
-        badge="EXIT"
+        title={data?.label || "Output"}
+        badge="Output"
         icon="output"
         colorType="error"
         nodeType="outputNode"

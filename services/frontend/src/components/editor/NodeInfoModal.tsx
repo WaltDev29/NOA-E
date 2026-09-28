@@ -23,7 +23,7 @@ const nodeInfoContent: Record<string, NodeModalInfo> = {
     nodeSlug: 'input',
   },
   llmNode: {
-    title: 'LLM 지능 노드 (LLM Agent)',
+    title: 'LLM 지능 노드 (LLM)',
     icon: 'neurology',
     color: 'secondary',
     desc: '대규모 언어 모델을 나타냅니다. 전달받은 텍스트를 읽고 스스로 판단하여 지능형 답변을 생성합니다.',

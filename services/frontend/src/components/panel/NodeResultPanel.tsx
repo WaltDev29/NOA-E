@@ -62,12 +62,12 @@ export const NodeResultPanel: React.FC = () => {
   const getNodeLabel = (node: any) => {
     if (!node) return '노드';
     const labels: Record<string, string> = {
-      inputNode: '사용자 입력',
+      inputNode: 'Input',
       llmNode: 'LLM',
       agentNode: 'Autonomous Agent',
       searchNode: '웹 검색',
       calculatorNode: '계산기',
-      outputNode: '결과 출력',
+      outputNode: 'Output',
     };
     return node.data?.label || labels[node.type] || node.id;
   };

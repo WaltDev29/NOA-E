@@ -17,8 +17,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
 
   if (!isOpen) return null;
 
-  // JSON 워크플로우 생성 (LLM 노드는 보안상 모델명만 저장)
+  // JSON 워크플로우 생성 (항상 useWorkflowStore의 최신 캔버스 그래프 상태를 직접 참조)
   const generateWorkflowJSON = () => {
+    const currentNodes = useWorkflowStore.getState().nodes;
+    const currentEdges = useWorkflowStore.getState().edges;
+
     const typeMap: Record<string, string> = {
       inputNode: 'input',
       llmNode: 'llm',
@@ -28,7 +31,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       agentNode: 'agent',
     };
 
-    const sanitizedNodes = nodes.map((node) => {
+    const sanitizedNodes = currentNodes.map((node) => {
       const rawConfig = (node.data as any)?.config || {};
       const backendType = typeMap[node.type || ''] || node.type || 'unknown';
 
@@ -51,7 +54,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       };
     });
 
-    const sanitizedEdges = edges.map((edge) => ({
+    const sanitizedEdges = currentEdges.map((edge) => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,

@@ -28,7 +28,17 @@ export const StudioPage: React.FC = () => {
   const clearLogs = useWorkflowStore((state) => state.clearLogs);
   const clearNodeResults = useWorkflowStore((state) => state.clearNodeResults);
   const addLog = useWorkflowStore((state) => state.addLog);
+  const saveToLocalStorage = useWorkflowStore((state) => state.saveToLocalStorage);
+  const loadFromLocalStorage = useWorkflowStore((state) => state.loadFromLocalStorage);
   const [resetNotice, setResetNotice] = useState(false);
+
+  // 컴포넌트 마운트 시 이전에 저장된 로컬스토리지 워크플로우 복원
+  useEffect(() => {
+    const savedName = loadFromLocalStorage();
+    if (savedName) {
+      setAgentName(savedName);
+    }
+  }, [loadFromLocalStorage]);
 
   const canShowResultsTab =
     selectedNode && selectedNode.type !== 'inputNode' && selectedNode.type !== 'outputNode';
@@ -72,10 +82,17 @@ export const StudioPage: React.FC = () => {
     };
   }, [isResizing]);
 
+  // 1. 현재 상태 저장 (로컬스토리지에 저장)
   const handleSave = () => {
-    setIsExportModalOpen(true);
+    saveToLocalStorage(agentName);
     setSavedNotice(true);
+    addLog(`현재 에이전트 [${agentName}]의 캔버스 상태가 브라우저에 저장되었습니다.`);
     setTimeout(() => setSavedNotice(false), 2000);
+  };
+
+  // 2. 다운로드 모달 열기 (현재 그래프 실시간 다운로드)
+  const handleOpenDownloadModal = () => {
+    setIsExportModalOpen(true);
   };
 
   const handleResetMemory = () => {
@@ -131,19 +148,30 @@ export const StudioPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Icon-only Save Button next to Agent Title */}
+              {/* 1. 현재 상태 저장 버튼 */}
               <button
                 onClick={handleSave}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                  savedNotice
-                    ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_10px_rgba(76,215,246,0.3)]'
-                    : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95'
-                }`}
-                title={savedNotice ? '저장됨' : '에이전트 저장하기'}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${savedNotice
+                  ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_10px_rgba(76,215,246,0.3)]'
+                  : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95'
+                  }`}
+                title={savedNotice ? '저장됨' : '현재 상태 저장'}
                 type="button"
               >
                 <span className="material-symbols-outlined text-[18px]">
                   {savedNotice ? 'check' : 'save'}
+                </span>
+              </button>
+
+              {/* 2. 저장 버튼 우측에 배치된 다운로드 버튼 */}
+              <button
+                onClick={handleOpenDownloadModal}
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent hover:bg-surface-container-high text-outline hover:text-secondary active:scale-95 transition-all"
+                title="에이전트 JSON 다운로드"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  download
                 </span>
               </button>
             </div>
@@ -153,11 +181,10 @@ export const StudioPage: React.FC = () => {
               <button
                 onClick={handleResetMemory}
                 disabled={isExecuting}
-                className={`px-3.5 py-space-xs h-9 rounded-lg border font-body-sm text-body-sm font-semibold flex items-center gap-1.5 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                  resetNotice
-                    ? 'bg-[#ba1a1a] text-white border-[#ff5449] shadow-[0_0_16px_rgba(255,84,73,0.5)]'
-                    : 'bg-[#ba1a1a]/15 hover:bg-[#ba1a1a]/30 text-[#ffb4ab] hover:text-white border-[#ff5449]/40 hover:border-[#ff5449]/80 shadow-[0_0_12px_rgba(255,84,73,0.15)]'
-                }`}
+                className={`px-3.5 py-space-xs h-9 rounded-lg border font-body-sm text-body-sm font-semibold flex items-center gap-1.5 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${resetNotice
+                  ? 'bg-[#ba1a1a] text-white border-[#ff5449] shadow-[0_0_16px_rgba(255,84,73,0.5)]'
+                  : 'bg-[#ba1a1a]/15 hover:bg-[#ba1a1a]/30 text-[#ffb4ab] hover:text-white border-[#ff5449]/40 hover:border-[#ff5449]/80 shadow-[0_0_12px_rgba(255,84,73,0.15)]'
+                  }`}
                 title="에이전트 대화 기억 및 실행 메모리 초기화"
                 type="button"
               >
@@ -167,18 +194,20 @@ export const StudioPage: React.FC = () => {
                 <span>{resetNotice ? '초기화됨' : '메모리 초기화'}</span>
               </button>
 
-              {/* 실행하기 버튼 */}
+              {/* 실행 / 정지 버튼 */}
               <button
                 onClick={triggerRun}
-                disabled={isExecuting}
-                className="px-space-lg py-space-xs h-9 rounded-lg bg-gradient-to-r from-inverse-primary via-primary-container to-secondary-container hover:brightness-110 text-on-surface font-body-sm text-body-sm font-semibold flex items-center gap-space-xs shadow-[0_0_20px_rgba(77,142,255,0.4)] transition-all transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`px-space-lg py-space-xs h-9 rounded-lg font-body-sm text-body-sm font-semibold flex items-center gap-space-xs transition-all transform active:scale-95 cursor-pointer ${isExecuting
+                  ? 'bg-[#ba1a1a] hover:bg-[#cf2222] text-white border border-[#ff5449] shadow-[0_0_16px_rgba(255,84,73,0.5)]'
+                  : 'bg-gradient-to-r from-inverse-primary via-primary-container to-secondary-container hover:brightness-110 text-on-surface shadow-[0_0_20px_rgba(77,142,255,0.4)]'
+                  }`}
                 id="run-pipeline-btn"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px] text-on-surface">
-                  {isExecuting ? 'progress_activity' : 'play_arrow'}
+                <span className="material-symbols-outlined text-[18px]">
+                  {isExecuting ? 'stop' : 'play_arrow'}
                 </span>
-                <span>{isExecuting ? '실행 중...' : '실행하기'}</span>
+                <span>{isExecuting ? '정지' : '실행하기'}</span>
               </button>
             </div>
           </section>
@@ -225,15 +254,13 @@ export const StudioPage: React.FC = () => {
                   e.preventDefault();
                   setIsResizing(true);
                 }}
-                className={`absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize z-30 group flex items-center justify-center transition-colors ${
-                  isResizing ? 'bg-primary/40' : 'hover:bg-primary/30'
-                }`}
+                className={`absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize z-30 group flex items-center justify-center transition-colors ${isResizing ? 'bg-primary/40' : 'hover:bg-primary/30'
+                  }`}
                 title="드래그하여 너비 조절"
               >
                 <div
-                  className={`w-[2px] h-10 rounded-full transition-colors ${
-                    isResizing ? 'bg-primary' : 'bg-outline-variant/40 group-hover:bg-primary'
-                  }`}
+                  className={`w-[2px] h-10 rounded-full transition-colors ${isResizing ? 'bg-primary' : 'bg-outline-variant/40 group-hover:bg-primary'
+                    }`}
                 />
               </div>
 
@@ -242,11 +269,10 @@ export const StudioPage: React.FC = () => {
                 <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">
                   <button
                     onClick={() => setActiveRightTab('properties')}
-                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                      activeRightTab === 'properties'
-                        ? 'bg-surface-container-high text-primary shadow-sm'
-                        : 'text-on-surface-variant hover:text-on-surface'
-                    }`}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeRightTab === 'properties'
+                      ? 'bg-surface-container-high text-primary shadow-sm'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                      }`}
                     type="button"
                   >
                     노드 속성
@@ -254,11 +280,10 @@ export const StudioPage: React.FC = () => {
                   {canShowResultsTab && (
                     <button
                       onClick={() => setActiveRightTab('results')}
-                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                        activeRightTab === 'results'
-                          ? 'bg-surface-container-high text-primary shadow-sm'
-                          : 'text-on-surface-variant hover:text-on-surface'
-                      }`}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${activeRightTab === 'results'
+                        ? 'bg-surface-container-high text-primary shadow-sm'
+                        : 'text-on-surface-variant hover:text-on-surface'
+                        }`}
                       type="button"
                     >
                       <span>실행 결과</span>
@@ -298,6 +323,8 @@ export const StudioPage: React.FC = () => {
 };
 
 const HiddenRunTrigger: React.FC = () => {
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   const {
     isExecuting,
     setIsExecuting,
@@ -310,6 +337,18 @@ const HiddenRunTrigger: React.FC = () => {
   } = useWorkflowStore();
 
   const handleRun = async () => {
+    // 1. 이미 실행 중이라면 중단(Abort)
+    if (isExecuting) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setIsExecuting(false);
+      setActiveNodeId(null);
+      addLog('[중단] 사용자에 의해 실행이 중단되었습니다.');
+      return;
+    }
+
     const { nodes, edges, messages } = useWorkflowStore.getState();
 
     const inputNodes = nodes.filter((n) => n.type === 'inputNode');
@@ -356,6 +395,9 @@ const HiddenRunTrigger: React.FC = () => {
       }
     }
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsExecuting(true);
     clearLogs();
     setActiveNodeId(inputNodes[0].id);
@@ -368,6 +410,7 @@ const HiddenRunTrigger: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodes, edges, messages }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -460,13 +503,18 @@ const HiddenRunTrigger: React.FC = () => {
         }
       }
     } catch (error: any) {
-      addLog(`요청 실패: ${error.message}`);
+      if (error.name === 'AbortError') {
+        addLog('사용자에 의해 실행이 중단되었습니다.');
+      } else {
+        addLog(`요청 실패: ${error.message}`);
+      }
       setActiveNodeId(null);
     } finally {
+      abortControllerRef.current = null;
       setIsExecuting(false);
       setActiveNodeId(null);
     }
   };
 
-  return <button id="studio-hidden-run-btn" onClick={handleRun} disabled={isExecuting} />;
+  return <button id="studio-hidden-run-btn" onClick={handleRun} />;
 };

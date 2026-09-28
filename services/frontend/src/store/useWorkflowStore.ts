@@ -50,6 +50,9 @@ interface WorkflowState {
   deleteNode: (nodeId: string) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeConfig: (nodeId: string, config: any) => void;
+  updateNodeLabel: (nodeId: string, label: string) => void;
+  saveToLocalStorage: (agentName: string) => void;
+  loadFromLocalStorage: () => string | null;
   addLog: (log: string) => void;
   setMessages: (messages: any[]) => void;
   setExecutionResult: (result: string) => void;
@@ -75,7 +78,7 @@ interface WorkflowState {
 
 const initialNodes: Node[] = [
   { id: 'input-1', type: 'inputNode', position: { x: 100, y: 100 }, data: { label: 'Input', config: {} } },
-  { id: 'llm-1', type: 'llmNode', position: { x: 400, y: 100 }, data: { label: 'LLM Agent', config: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' } } },
+  { id: 'llm-1', type: 'llmNode', position: { x: 400, y: 100 }, data: { label: 'LLM', config: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' } } },
   { id: 'output-1', type: 'outputNode', position: { x: 700, y: 100 }, data: { label: 'Output', config: {} } },
 ];
 
@@ -142,6 +145,68 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         return node;
       }),
     });
+  },
+  updateNodeLabel: (nodeId, label) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === nodeId) {
+          const updatedNode = { ...node, data: { ...node.data, label } };
+          if (get().selectedNode?.id === nodeId) {
+            set({ selectedNode: updatedNode });
+          }
+          return updatedNode;
+        }
+        return node;
+      }),
+    });
+  },
+  saveToLocalStorage: (agentName: string) => {
+    try {
+      const state = get();
+      const payload = {
+        agentName,
+        nodes: state.nodes,
+        edges: state.edges,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem('noa_saved_workflow', JSON.stringify(payload));
+    } catch (e) {
+      console.error('Failed to save workflow to localStorage:', e);
+    }
+  },
+  loadFromLocalStorage: () => {
+    try {
+      const raw = localStorage.getItem('noa_saved_workflow');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed.nodes && parsed.edges) {
+        // 기존 브라우저 로컬 스토리지에 남아있던 레거시 라벨 자동 마이그레이션
+        const migratedNodes = parsed.nodes.map((node: any) => {
+          let label = node.data?.label;
+          if (label === 'LLM Agent') label = 'LLM';
+          if (label === '사용자 입력') label = 'Input';
+          if (label === '결과 출력') label = 'Output';
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: label || (node.type === 'inputNode' ? 'Input' : node.type === 'outputNode' ? 'Output' : node.type === 'llmNode' ? 'LLM' : node.id),
+            },
+          };
+        });
+
+        set({
+          nodes: migratedNodes,
+          edges: parsed.edges,
+          selectedNode: null,
+          selectedResultNodeId: null,
+        });
+        return parsed.agentName || null;
+      }
+    } catch (e) {
+      console.error('Failed to load workflow from localStorage:', e);
+    }
+    return null;
   },
   addLog: (log) => set((state) => ({ logs: [...state.logs, log] })),
   setMessages: (messages) => set({ messages }),

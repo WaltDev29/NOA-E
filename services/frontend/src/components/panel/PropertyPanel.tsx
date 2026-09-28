@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 
 export const PropertyPanel: React.FC = () => {
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
   const updateNodeConfig = useWorkflowStore((state) => state.updateNodeConfig);
+  const updateNodeLabel = useWorkflowStore((state) => state.updateNodeLabel);
   const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const executionResult = useWorkflowStore((state) => state.executionResult);
   const isExecuting = useWorkflowStore((state) => state.isExecuting);
   const activeNodeId = useWorkflowStore((state) => state.activeNodeId);
   const nodeResults = useWorkflowStore((state) => state.nodeResults);
+
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [tempLabel, setTempLabel] = useState('');
+
+  const currentNodeId = selectedNode?.id;
+  const currentLabel = (selectedNode?.data as any)?.label || '';
+
+  useEffect(() => {
+    setIsEditingLabel(false);
+    setTempLabel(currentLabel);
+  }, [currentNodeId]);
 
   if (!selectedNode) {
     return (
@@ -27,17 +39,16 @@ export const PropertyPanel: React.FC = () => {
   const { id, type, data } = selectedNode;
   const config = data.config || {};
 
-  const getNodeLabel = (node: any) => {
-    if (!node) return '노드';
+  const getNodeDefaultName = (nodeType?: string) => {
     const labels: Record<string, string> = {
-      inputNode: '사용자 입력',
+      inputNode: 'Input',
       llmNode: 'LLM',
       agentNode: 'Autonomous Agent',
       searchNode: '웹 검색',
       calculatorNode: '계산기',
-      outputNode: '결과 출력',
+      outputNode: 'Output',
     };
-    return node.data?.label || labels[node.type] || node.id;
+    return labels[nodeType || ''] || nodeType || '노드';
   };
 
   const getNodeIcon = (nodeType?: string) => {
@@ -63,35 +74,77 @@ export const PropertyPanel: React.FC = () => {
     updateNodeConfig(id, { [key]: value });
   };
 
+  const handleStartEdit = () => {
+    setTempLabel(currentLabel || getNodeDefaultName(type));
+    setIsEditingLabel(true);
+  };
+
+  const handleFinishEdit = () => {
+    setIsEditingLabel(false);
+    const trimmed = tempLabel.trim();
+    updateNodeLabel(id, trimmed || getNodeDefaultName(type));
+  };
+
   const isCurrentRunning = isExecuting && activeNodeId === id;
   const hasResult = !!nodeResults[id];
 
   return (
     <div className="w-full flex-1 flex flex-col overflow-hidden">
       {/* Panel Header */}
-      <div className="p-space-md flex items-center justify-between border-b border-outline-variant/20 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-[20px]">
+      <div className="p-space-md flex items-center justify-between border-b border-outline-variant/20 shrink-0 gap-2">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="material-symbols-outlined text-primary text-[20px] shrink-0">
             {getNodeIcon(type)}
           </span>
-          <span className="font-display text-sm font-bold text-on-surface">
-            {getNodeLabel(selectedNode)}
-          </span>
+
+          {/* 노드 이름 인라인 편집 / 일반 텍스트 표시 */}
+          {isEditingLabel ? (
+            <input
+              type="text"
+              value={tempLabel}
+              onChange={(e) => setTempLabel(e.target.value)}
+              onBlur={handleFinishEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleFinishEdit();
+                if (e.key === 'Escape') setIsEditingLabel(false);
+              }}
+              autoFocus
+              className="bg-surface-container border border-primary px-1.5 py-0.5 rounded text-xs text-on-surface font-bold focus:outline-none flex-1 min-w-0"
+            />
+          ) : (
+            <div className="flex items-center gap-1 min-w-0 group cursor-pointer" onClick={handleStartEdit}>
+              <span className="font-display text-sm font-bold text-on-surface truncate">
+                {currentLabel || getNodeDefaultName(type)}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStartEdit();
+                }}
+                className="w-5 h-5 rounded flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors shrink-0"
+                title="노드 이름 수정"
+              >
+                <span className="material-symbols-outlined text-[15px]">edit</span>
+              </button>
+            </div>
+          )}
+
           <span
-            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-              isCurrentRunning
-                ? 'bg-tertiary-container/30 text-tertiary border-tertiary/40 animate-pulse'
-                : hasResult
+            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${isCurrentRunning
+              ? 'bg-tertiary-container/30 text-tertiary border-tertiary/40 animate-pulse'
+              : hasResult
                 ? 'bg-primary-container/20 text-primary border-primary/30'
                 : 'bg-surface-container text-outline border-outline-variant/30'
-            }`}
+              }`}
           >
             {isCurrentRunning ? '실행 중' : hasResult ? '완료' : '대기 중'}
           </span>
         </div>
+
         <button
           onClick={() => deleteNode(id)}
-          className="w-7 h-7 rounded-lg hover:bg-error-container/30 text-error flex items-center justify-center transition-colors"
+          className="w-7 h-7 rounded-lg hover:bg-error-container/30 text-error flex items-center justify-center transition-colors shrink-0"
           title="노드 삭제"
           type="button"
         >
@@ -100,8 +153,8 @@ export const PropertyPanel: React.FC = () => {
       </div>
 
       <div className="px-space-md py-1.5 bg-surface-container-low/50 border-b border-outline-variant/20 flex items-center justify-between font-mono text-[11px] text-outline">
-        <span>NODE ID:</span>
-        <span className="text-secondary">{id}</span>
+        <span>NODE ID / TYPE:</span>
+        <span className="text-secondary">{id} ({type})</span>
       </div>
 
       {/* Panel Body */}
@@ -130,7 +183,7 @@ export const PropertyPanel: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                모델명
+                Model
               </label>
               <input
                 type="text"

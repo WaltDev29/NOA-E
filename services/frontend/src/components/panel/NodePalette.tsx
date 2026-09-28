@@ -17,9 +17,8 @@ interface PaletteNodeItem {
 const PALETTE_ITEMS: PaletteNodeItem[] = [
   {
     type: 'inputNode',
-    name: '사용자 입력',
-    subtitle: '파이프라인 시작',
-    badge: 'START',
+    name: 'Input',
+    subtitle: '사용자 입력',
     icon: 'login',
     category: '기본',
     color: 'tertiary',
@@ -28,7 +27,6 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     type: 'llmNode',
     name: 'LLM',
     subtitle: '대화형 AI 모델',
-    badge: 'v4.0',
     icon: 'neurology',
     category: 'LLM',
     color: 'secondary',
@@ -37,7 +35,6 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     type: 'searchNode',
     name: '웹 검색',
     subtitle: '웹에서 정보 검색',
-    badge: 'SERP',
     icon: 'travel_explore',
     category: '도구',
     color: 'primary',
@@ -46,7 +43,6 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     type: 'calculatorNode',
     name: '계산기 도구',
     subtitle: '정밀 수학 연산',
-    badge: 'MATH',
     icon: 'calculate',
     category: '도구',
     color: 'tertiary',
@@ -55,16 +51,14 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     type: 'agentNode',
     name: 'Autonomous Agent',
     subtitle: '자율 에이전트',
-    badge: 'AUTO',
     icon: 'smart_toy',
     category: 'LLM',
     color: 'secondary',
   },
   {
     type: 'outputNode',
-    name: '결과 출력',
+    name: 'Output',
     subtitle: '최종 결과 렌더링',
-    badge: 'EXIT',
     icon: 'output',
     category: '기본',
     color: 'error',
@@ -133,11 +127,10 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${
-                isActive
+              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${isActive
                   ? 'bg-primary-container/25 text-primary border border-primary/40'
                   : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
-              }`}
+                }`}
               type="button"
             >
               {cat}
@@ -157,27 +150,21 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
               className="group flex items-center gap-space-sm p-2.5 rounded-xl bg-surface-container-low/70 hover:bg-surface-container hover:translate-x-1 cursor-grab active:cursor-grabbing transition-all border border-outline-variant/20 hover:border-outline-variant/50 shadow-sm"
             >
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${
-                  item.color === 'secondary'
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${item.color === 'secondary'
                     ? 'bg-secondary-container/30 text-secondary shadow-[0_0_12px_rgba(208,188,255,0.25)]'
                     : item.color === 'tertiary'
-                    ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_12px_rgba(76,215,246,0.25)]'
-                    : item.color === 'error'
-                    ? 'bg-error-container/30 text-error shadow-[0_0_12px_rgba(255,180,171,0.25)]'
-                    : 'bg-primary-container/20 text-primary shadow-[0_0_12px_rgba(77,142,255,0.25)]'
-                }`}
+                      ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_12px_rgba(76,215,246,0.25)]'
+                      : item.color === 'error'
+                        ? 'bg-error-container/30 text-error shadow-[0_0_12px_rgba(255,180,171,0.25)]'
+                        : 'bg-primary-container/20 text-primary shadow-[0_0_12px_rgba(77,142,255,0.25)]'
+                  }`}
               >
                 <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-xs font-semibold text-on-surface truncate">
-                    {item.name}
-                  </p>
-                  {item.badge && (
-                    <span className="text-[10px] font-mono text-outline">{item.badge}</span>
-                  )}
-                </div>
+                <p className="font-display text-xs font-semibold text-on-surface truncate">
+                  {item.name}
+                </p>
                 <p className="text-[11px] text-outline truncate">{item.subtitle}</p>
               </div>
               <span className="material-symbols-outlined text-outline group-hover:text-primary text-[18px]">
