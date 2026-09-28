@@ -6,11 +6,12 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame,
-    QDialog, QFileDialog, QMessageBox, QCheckBox, QGroupBox, QSizePolicy
+    QDialog, QFileDialog, QMessageBox, QCheckBox, QGroupBox, QSizePolicy,
+    QTabWidget, QListWidget, QListWidgetItem, QAbstractItemView
 )
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSize
 from PySide6.QtGui import QFont, QCursor
 
 # Path setup
@@ -23,15 +24,17 @@ for p in [current_dir, parent_dir]:
 try:
     from runtime.core.engine.compiler import WorkflowCompiler
     from runtime.storage import (
-        load_sessions, create_new_session, delete_session,
-        update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow
+        load_sessions, save_sessions, create_new_session, delete_session,
+        update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
+        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path
     )
     from runtime.config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 except ModuleNotFoundError:
     from core.engine.compiler import WorkflowCompiler
     from storage import (
-        load_sessions, create_new_session, delete_session,
-        update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow
+        load_sessions, save_sessions, create_new_session, delete_session,
+        update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
+        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path
     )
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 
@@ -200,6 +203,61 @@ QLineEdit:focus, QTextEdit:focus {
 /* Dialog */
 QDialog {
     background-color: #141923;
+}
+
+/* Tab Widget */
+QTabWidget::pane {
+    border: 1px solid #283548;
+    background-color: #141923;
+    border-radius: 8px;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #1a2230;
+    border: 1px solid #283548;
+    color: #94a3b8;
+    padding: 9px 20px;
+    margin-right: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    font-weight: 600;
+}
+
+QTabBar::tab:selected {
+    background-color: #141923;
+    border-bottom-color: #141923;
+    color: #4d8eff;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #232d3f;
+    color: #e6edf3;
+}
+
+/* Agent List in Settings */
+QListWidget#AgentListWidget {
+    background-color: #0f131a;
+    border: 1px solid #263345;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QListWidget#AgentListWidget::item {
+    background-color: #161c26;
+    border: 1px solid #222c3c;
+    border-radius: 6px;
+    margin: 4px 2px;
+}
+
+QListWidget#AgentListWidget::item:selected {
+    background-color: #1a2538;
+    border: 1px solid #4d8eff;
+}
+
+QListWidget#AgentListWidget::item:hover {
+    background-color: #1e2636;
+    border-color: #3b82f6;
 }
 """
 
@@ -606,27 +664,41 @@ class SessionListItemWidget(QWidget):
 # -------------------------------------------------------------
 # 단일 화면으로 통합된 에이전트 설정 다이얼로그 (모델명 수정 완벽 지원)
 # -------------------------------------------------------------
+# -------------------------------------------------------------
+# 탭 기반 에이전트 설정 다이얼로그 (에이전트 목록 탭 기본 제공)
+# -------------------------------------------------------------
 class SettingsDialog(QDialog):
     def __init__(self, parent=None, workflow_dict=None, workflow_path=None):
         super().__init__(parent)
-        self.setWindowTitle("에이전트 로드 및 LLM 노드 설정")
-        self.resize(680, 560)
+        self.setWindowTitle("에이전트 설정 및 관리")
+        self.resize(720, 600)
         self.workflow_dict = workflow_dict
         self.workflow_path = workflow_path
         self.node_input_widgets = {}
+        self.registered_agents = load_agents_registry()
+        self.selected_agent_path = workflow_path
 
         self.init_ui()
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(16)
+        main_layout.setSpacing(14)
+
+        # 탭 위젯 생성
+        self.tabs = QTabWidget()
 
         # -----------------------------
-        # 1. 상단: 에이전트 로드 영역
+        # Tab 1: 에이전트 목록 (기본 탭)
         # -----------------------------
-        grp_load = QGroupBox("에이전트 파일 로드")
-        grp_load.setStyleSheet("""
+        tab_agents = QWidget()
+        t_agents_layout = QVBoxLayout(tab_agents)
+        t_agents_layout.setContentsMargins(14, 16, 14, 14)
+        t_agents_layout.setSpacing(12)
+
+        # 상단: 새 에이전트 불러오기 영역
+        grp_browse = QGroupBox("새 에이전트 파일 불러오기")
+        grp_browse.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #283548;
@@ -636,43 +708,47 @@ class SettingsDialog(QDialog):
                 background-color: transparent;
             }
         """)
-        g_load_layout = QVBoxLayout(grp_load)
-        g_load_layout.setContentsMargins(12, 12, 12, 12)
-        g_load_layout.setSpacing(8)
+        g_browse_layout = QHBoxLayout(grp_browse)
+        g_browse_layout.setContentsMargins(12, 12, 12, 12)
+        g_browse_layout.setSpacing(8)
 
-        h_file = QHBoxLayout()
-        self.txt_file_path = QLineEdit()
-        self.txt_file_path.setReadOnly(True)
-        self.txt_file_path.setPlaceholderText("선택된 워크플로우 JSON 파일 없음")
+        self.txt_selected_file = QLineEdit()
+        self.txt_selected_file.setReadOnly(True)
+        self.txt_selected_file.setPlaceholderText("선택된 워크플로우 JSON 파일 없음")
         if self.workflow_path:
-            self.txt_file_path.setText(self.workflow_path)
-        h_file.addWidget(self.txt_file_path)
+            self.txt_selected_file.setText(self.workflow_path)
+        g_browse_layout.addWidget(self.txt_selected_file)
 
-        btn_browse = QPushButton("에이전트 로드")
+        btn_browse = QPushButton("파일 찾아보기")
         btn_browse.setObjectName("PrimaryButton")
         btn_browse.clicked.connect(self.on_browse_and_load_file)
-        h_file.addWidget(btn_browse)
-        g_load_layout.addLayout(h_file)
+        g_browse_layout.addWidget(btn_browse)
+        t_agents_layout.addWidget(grp_browse)
 
-        main_layout.addWidget(grp_load)
+        # 중단: 등록된 에이전트 목록
+        lbl_list_title = QLabel("등록된 에이전트 목록 (선택 후 [저장] 클릭 시 해당 에이전트로 즉시 전환됩니다)")
+        lbl_list_title.setStyleSheet("font-size: 12px; font-weight: 600; color: #94a3b8;")
+        t_agents_layout.addWidget(lbl_list_title)
+
+        self.agent_list_widget = QListWidget()
+        self.agent_list_widget.setObjectName("AgentListWidget")
+        self.agent_list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.agent_list_widget.itemClicked.connect(self.on_agent_item_clicked)
+        t_agents_layout.addWidget(self.agent_list_widget)
+
+        self.refresh_agents_list_ui()
 
         # -----------------------------
-        # 2. 중단: LLM 노드 설정 영역
+        # Tab 2: LLM 노드 설정
         # -----------------------------
-        grp_llm = QGroupBox("LLM 노드 설정")
-        grp_llm.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #283548;
-                border-radius: 6px;
-                padding-top: 14px;
-                color: #4cd7f6;
-                background-color: transparent;
-            }
-        """)
-        g_llm_layout = QVBoxLayout(grp_llm)
-        g_llm_layout.setContentsMargins(12, 12, 12, 12)
-        g_llm_layout.setSpacing(8)
+        tab_llm = QWidget()
+        t_llm_layout = QVBoxLayout(tab_llm)
+        t_llm_layout.setContentsMargins(14, 16, 14, 14)
+        t_llm_layout.setSpacing(12)
+
+        self.lbl_llm_info = QLabel("현재 선택된 워크플로우의 LLM / Agent 노드 설정을 구성합니다.")
+        self.lbl_llm_info.setStyleSheet("color: #4cd7f6; font-size: 12px; font-weight: bold;")
+        t_llm_layout.addWidget(self.lbl_llm_info)
 
         self.scroll_llm = QScrollArea()
         self.scroll_llm.setWidgetResizable(True)
@@ -682,12 +758,17 @@ class SettingsDialog(QDialog):
         self.scroll_layout.setContentsMargins(0, 0, 0, 0)
         self.scroll_layout.setSpacing(12)
         self.scroll_llm.setWidget(self.scroll_content)
-        g_llm_layout.addWidget(self.scroll_llm)
+        t_llm_layout.addWidget(self.scroll_llm)
 
-        main_layout.addWidget(grp_llm)
+        # 탭 추가 (에이전트 목록이 첫 번째 탭)
+        self.tabs.addTab(tab_agents, "에이전트 목록")
+        self.tabs.addTab(tab_llm, "LLM 노드 설정")
+        self.tabs.setCurrentIndex(0) # 기본 탭으로 에이전트 목록 표시
+
+        main_layout.addWidget(self.tabs)
 
         # -----------------------------
-        # 3. 하단: [저장] & [닫기]
+        # 하단: [저장] & [닫기]
         # -----------------------------
         h_bottom = QHBoxLayout()
         h_bottom.addStretch()
@@ -707,6 +788,103 @@ class SettingsDialog(QDialog):
 
         self.refresh_llm_nodes_ui()
 
+    def refresh_agents_list_ui(self):
+        self.agent_list_widget.clear()
+        self.registered_agents = load_agents_registry()
+        
+        if not self.registered_agents:
+            item = QListWidgetItem("등록된 에이전트가 없습니다. 상단의 [파일 찾아보기]로 에이전트를 추가하세요.")
+            item.setFlags(Qt.NoItemFlags)
+            self.agent_list_widget.addItem(item)
+            return
+
+        for idx, agent in enumerate(self.registered_agents):
+            name = agent.get("name", "이름 없는 에이전트")
+            path = agent.get("path", "")
+            desc = agent.get("description", "설명 없음")
+            agent_id = agent.get("id", "")
+            
+            # 아이템 카드 위젯 생성
+            item_widget = QWidget()
+            g_layout = QGridLayout(item_widget)
+            g_layout.setAlignment(Qt.AlignTop)
+            g_layout.setContentsMargins(14, 12, 14, 12)
+            g_layout.setHorizontalSpacing(8)
+            g_layout.setVerticalSpacing(4)
+
+            # 1. 에이전트 이름 헤더 (상단 정렬)
+            lbl_name = QLabel(name)
+            lbl_name.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffffff; background: transparent; border: none;")
+            g_layout.addWidget(lbl_name, 0, 0, 1, 2, Qt.AlignTop)
+
+            # 2. 에이전트 ID (상단 정렬)
+            lbl_id_key = QLabel("ID:")
+            lbl_id_key.setFixedWidth(42)
+            lbl_id_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_id_key.setStyleSheet("font-size: 11px; font-weight: 600; color: #7dd3fc; background: transparent; border: none;")
+            lbl_id_val = QLabel(agent_id)
+            lbl_id_val.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_id_val.setStyleSheet("font-size: 11px; font-family: monospace; color: #7dd3fc; background: transparent; border: none;")
+            g_layout.addWidget(lbl_id_key, 1, 0, Qt.AlignTop)
+            g_layout.addWidget(lbl_id_val, 1, 1, Qt.AlignTop)
+
+            # 3. 경로 정보 (상단 정렬, 긴 경로 자동 줄바꿈)
+            lbl_path_key = QLabel("경로:")
+            lbl_path_key.setFixedWidth(42)
+            lbl_path_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_path_key.setStyleSheet("font-size: 11px; font-weight: 600; color: #94a3b8; background: transparent; border: none;")
+            lbl_path_val = QLabel(path)
+            lbl_path_val.setWordWrap(True)
+            lbl_path_val.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_path_val.setStyleSheet("font-size: 11px; color: #94a3b8; background: transparent; border: none;")
+            g_layout.addWidget(lbl_path_key, 2, 0, Qt.AlignTop)
+            g_layout.addWidget(lbl_path_val, 2, 1, Qt.AlignTop)
+
+            # 4. 설명 정보 (상단 정렬, 긴 설명 자동 줄바꿈)
+            lbl_desc_key = QLabel("설명:")
+            lbl_desc_key.setFixedWidth(42)
+            lbl_desc_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_desc_key.setStyleSheet("font-size: 11px; font-weight: 600; color: #64748b; background: transparent; border: none;")
+            lbl_desc_val = QLabel(desc)
+            lbl_desc_val.setWordWrap(True)
+            lbl_desc_val.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            lbl_desc_val.setStyleSheet("font-size: 11px; color: #cbd5e1; background: transparent; border: none;")
+            g_layout.addWidget(lbl_desc_key, 3, 0, Qt.AlignTop)
+            g_layout.addWidget(lbl_desc_val, 3, 1, Qt.AlignTop)
+
+            item = QListWidgetItem()
+            item.setData(Qt.UserRole, agent)
+            # 상단 정렬 상태에서 내부 텍스트 크기에 맞게 충분한 높이 계산
+            item.setSizeHint(QSize(0, max(124, item_widget.sizeHint().height() + 8)))
+
+            self.agent_list_widget.addItem(item)
+            self.agent_list_widget.setItemWidget(item, item_widget)
+
+            # 현재 활성화된 에이전트와 경로가 일치하면 자동 선택
+            if self.selected_agent_path and (path == self.selected_agent_path or agent_id == self.selected_agent_path):
+                self.agent_list_widget.setCurrentItem(item)
+
+    def on_agent_item_clicked(self, item: QListWidgetItem):
+        agent_data = item.data(Qt.UserRole)
+        if not agent_data:
+            return
+        
+        file_path = agent_data.get("path")
+        if file_path and os.path.exists(file_path):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = json.load(f)
+                self.workflow_dict = content
+                self.workflow_path = file_path
+                self.selected_agent_path = file_path
+                self.txt_selected_file.setText(file_path)
+                self.refresh_llm_nodes_ui()
+            except Exception as e:
+                QMessageBox.warning(self, "파일 열기 실패", f"에이전트 파일을 읽을 수 없습니다:\n{e}")
+        else:
+            QMessageBox.warning(self, "경로 오류", f"해당 에이전트 파일이 존재하지 않습니다:\n{file_path}")
+
     def on_browse_and_load_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self, "에이전트 워크플로우 JSON 선택", "", "JSON Files (*.json)"
@@ -717,14 +895,27 @@ class SettingsDialog(QDialog):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = json.load(f)
+
+            meta = content.get("metadata", {})
+            agent_id = meta.get("agent_id") or f"agent-{os.path.splitext(os.path.basename(file_path))[0]}"
+            agent_name = meta.get("agent_name", os.path.basename(file_path))
+            desc = meta.get("description", "")
+
+            # 에이전트 목록에 등록 및 저장
+            register_agent(agent_id=agent_id, agent_name=agent_name, file_path=file_path, description=desc)
+
             self.workflow_dict = content
             self.workflow_path = file_path
-            self.txt_file_path.setText(file_path)
+            self.selected_agent_path = file_path
+            self.txt_selected_file.setText(file_path)
+
+            self.refresh_agents_list_ui()
             self.refresh_llm_nodes_ui()
+
             QMessageBox.information(
                 self,
                 "로드 완료",
-                f"에이전트 '{content.get('metadata', {}).get('agent_name', os.path.basename(file_path))}'를 성공적으로 불러왔습니다."
+                f"에이전트 '{agent_name}'를 성공적으로 불러와 에이전트 목록에 추가했습니다."
             )
         except Exception as e:
             QMessageBox.critical(self, "오류", f"에이전트 파일을 로드하는 중 오류가 발생했습니다:\n{e}")
@@ -738,7 +929,7 @@ class SettingsDialog(QDialog):
         self.node_input_widgets.clear()
 
         if not self.workflow_dict:
-            lbl = QLabel("상단의 [에이전트 로드] 버튼을 눌러 워크플로우 JSON 파일을 불러오세요.")
+            lbl = QLabel("에이전트 목록 탭에서 에이전트를 선택하거나 새 파일을 불러오세요.")
             lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent; border: none;")
             lbl.setAlignment(Qt.AlignCenter)
             self.scroll_layout.addWidget(lbl)
@@ -772,7 +963,21 @@ class SettingsDialog(QDialog):
             lbl_header.setStyleSheet("color: #ffffff; font-size: 12px; background: transparent; border: none;")
             c_layout.addWidget(lbl_header)
 
-            chk_custom = QCheckBox("외부 커스텀 API (Model, Base URL, API Key) 사용")
+            # 1. 모델명 입력 필드 (항상 직접 수정 가능하도록 상단에 배치)
+            h_m = QHBoxLayout()
+            lbl_m = QLabel("Model:")
+            lbl_m.setFixedWidth(70)
+            lbl_m.setStyleSheet("color: #4cd7f6; font-weight: bold;")
+            h_m.addWidget(lbl_m)
+            txt_model = QLineEdit()
+            # 현재 노드에 실제로 설정되어 있는 모델명 표시
+            txt_model.setText(node.get("model") or DEFAULT_MODEL)
+            txt_model.setPlaceholderText("예: gemma2:2b, qwen2.5:7b, gpt-4o-mini")
+            h_m.addWidget(txt_model)
+            c_layout.addLayout(h_m)
+
+            # 2. 외부 커스텀 API (Base URL, API Key) 사용 체크박스
+            chk_custom = QCheckBox("외부 커스텀 API 엔드포인트 (Base URL, API Key) 사용")
             chk_custom.setChecked(node["is_custom"])
             c_layout.addWidget(chk_custom)
 
@@ -781,24 +986,13 @@ class SettingsDialog(QDialog):
             cust_layout.setContentsMargins(0, 4, 0, 4)
             cust_layout.setSpacing(6)
 
-            # Model (외부 API 커스텀 시에만 표시)
-            h_m = QHBoxLayout()
-            lbl_m = QLabel("Model:")
-            lbl_m.setFixedWidth(70)
-            h_m.addWidget(lbl_m)
-            txt_model = QLineEdit()
-            txt_model.setText(node["model"] if node["model"] != DEFAULT_MODEL else "gpt-4o-mini")
-            txt_model.setPlaceholderText("예: gpt-4o-mini, claude-3-5-sonnet")
-            h_m.addWidget(txt_model)
-            cust_layout.addLayout(h_m)
-
             # Base URL
             h_u = QHBoxLayout()
             lbl_u = QLabel("Base URL:")
             lbl_u.setFixedWidth(70)
             h_u.addWidget(lbl_u)
             txt_url = QLineEdit()
-            txt_url.setText(node["base_url"])
+            txt_url.setText(node.get("base_url", ""))
             txt_url.setPlaceholderText("예: https://api.openai.com/v1 (비워두면 기본값)")
             h_u.addWidget(txt_url)
             cust_layout.addLayout(h_u)
@@ -810,7 +1004,7 @@ class SettingsDialog(QDialog):
             h_k.addWidget(lbl_k)
             txt_key = QLineEdit()
             txt_key.setEchoMode(QLineEdit.Password)
-            txt_key.setText(node["api_key"])
+            txt_key.setText(node.get("api_key", ""))
             txt_key.setPlaceholderText("sk-...")
             h_k.addWidget(txt_key)
             cust_layout.addLayout(h_k)
@@ -833,14 +1027,14 @@ class SettingsDialog(QDialog):
 
     def on_save_settings(self):
         if not self.workflow_dict:
-            QMessageBox.warning(self, "경고", "먼저 에이전트 파일을 로드해주세요.")
+            QMessageBox.warning(self, "경고", "먼저 에이전트를 선택하거나 로드해주세요.")
             return
 
         updated_configs = {}
         for node_id, w in self.node_input_widgets.items():
             is_custom = w["chk_custom"].isChecked()
-            # 커스텀 사용 시 입력된 model/url/key 저장, 아닐 시 기본값 저장
-            model_val = w["txt_model"].text().strip() if is_custom else (w["node_info"].get("model") or DEFAULT_MODEL)
+            # 사용자가 입력한 모델명을 항상 우선 적용
+            model_val = w["txt_model"].text().strip() or (w["node_info"].get("model") or DEFAULT_MODEL)
             updated_configs[node_id] = {
                 "is_custom": is_custom,
                 "model": model_val,
@@ -852,6 +1046,10 @@ class SettingsDialog(QDialog):
         self.workflow_dict = update_llm_configs_in_workflow(
             self.workflow_dict, updated_configs, self.workflow_path
         )
+
+        if self.workflow_path:
+            set_last_agent_path(self.workflow_path)
+
         self.accept()
 
 
@@ -865,9 +1063,11 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.resize(1080, 740)
         self.setStyleSheet(DARK_STYLESHEET)
 
-        self.sessions = load_sessions()
-        self.current_session_id = self.sessions[0]["id"] if self.sessions else None
-        self.is_new_chat_mode = False
+        self.current_agent_id: Optional[str] = None
+        self.current_agent_name: str = "Local Agent"
+        self.sessions: List[Dict[str, Any]] = []
+        self.current_session_id: Optional[str] = None
+        self.is_new_chat_mode: bool = False
 
         self.workflow_dict = None
         self.workflow_path = None
@@ -1002,22 +1202,29 @@ class AgentRuntimeMainWindow(QMainWindow):
         r_layout.addWidget(self.input_container)
         main_layout.addWidget(right_panel)
 
-        self.refresh_sessions_list_ui()
-        self.render_current_session_messages()
-
     def load_default_or_last_workflow(self):
-        sample_path = os.path.join(current_dir, "sample_agent.json")
-        if os.path.exists(sample_path):
+        # 1. 가장 마지막에 사용했던 에이전트 경로 확인
+        last_path = get_last_agent_path()
+        target_path = None
+
+        if last_path and os.path.exists(last_path):
+            target_path = last_path
+        else:
+            sample_path = os.path.join(current_dir, "sample_agent.json")
+            if os.path.exists(sample_path):
+                target_path = sample_path
+
+        if target_path and os.path.exists(target_path):
             try:
-                with open(sample_path, "r", encoding="utf-8") as f:
+                with open(target_path, "r", encoding="utf-8") as f:
                     content = json.load(f)
                 self.workflow_dict = content
-                self.workflow_path = sample_path
-                self.compile_and_update_agent(content)
-            except Exception:
-                pass
+                self.workflow_path = target_path
+                self.compile_and_update_agent(content, target_path)
+            except Exception as e:
+                print(f"Failed to auto-load workflow: {e}")
 
-    def compile_and_update_agent(self, workflow_dict: dict):
+    def compile_and_update_agent(self, workflow_dict: dict, file_path: Optional[str] = None):
         try:
             compiler = WorkflowCompiler()
             type_map = {
@@ -1044,10 +1251,33 @@ class AgentRuntimeMainWindow(QMainWindow):
                 ]
             }
             self.compiled_graph = compiler.compile_workflow(normalized_wf)
-            agent_name = workflow_dict.get("metadata", {}).get("agent_name", "Local Agent")
-            agent_desc = workflow_dict.get("metadata", {}).get("description", "설명 없음")
-            self.lbl_agent_name.setText(agent_name)
+            
+            meta = workflow_dict.get("metadata", {})
+            self.current_agent_name = meta.get("agent_name", "Local Agent")
+            agent_desc = meta.get("description", "설명 없음")
+            
+            # Agent ID 설정 (없으면 파일명 기반 고유 ID 생성)
+            fallback_id = f"agent-{os.path.splitext(os.path.basename(file_path))[0]}" if file_path else "default-agent"
+            self.current_agent_id = meta.get("agent_id") or fallback_id
+
+            if file_path:
+                register_agent(
+                    agent_id=self.current_agent_id,
+                    agent_name=self.current_agent_name,
+                    file_path=file_path,
+                    description=agent_desc
+                )
+
+            self.lbl_agent_name.setText(self.current_agent_name)
             self.lbl_agent_desc.setText(agent_desc)
+
+            # 에이전트별 대화 세션 기록 로드
+            self.sessions = load_sessions(self.current_agent_id)
+            self.current_session_id = self.sessions[0]["id"] if self.sessions else None
+            self.is_new_chat_mode = False
+            
+            self.refresh_sessions_list_ui()
+            self.render_current_session_messages()
             return True, ""
         except Exception as e:
             self.lbl_agent_name.setText("컴파일 실패")
@@ -1060,7 +1290,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
 
-        self.sessions = load_sessions()
+        self.sessions = load_sessions(self.current_agent_id)
         for s in self.sessions:
             is_selected = (s["id"] == self.current_session_id and not self.is_new_chat_mode)
             item_widget = SessionListItemWidget(s["id"], s["title"], is_selected)
@@ -1083,13 +1313,14 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.txt_input.setFocus()
 
     def on_session_deleted(self, session_id: str):
-        delete_session(session_id)
-        self.sessions = load_sessions()
-        if self.current_session_id == session_id:
-            self.current_session_id = self.sessions[0]["id"] if self.sessions else None
-            self.is_new_chat_mode = False
-        self.refresh_sessions_list_ui()
-        self.render_current_session_messages()
+        if self.current_agent_id:
+            delete_session(self.current_agent_id, session_id)
+            self.sessions = load_sessions(self.current_agent_id)
+            if self.current_session_id == session_id:
+                self.current_session_id = self.sessions[0]["id"] if self.sessions else None
+                self.is_new_chat_mode = False
+            self.refresh_sessions_list_ui()
+            self.render_current_session_messages()
 
     def on_open_settings(self):
         dialog = SettingsDialog(self, self.workflow_dict, self.workflow_path)
@@ -1097,7 +1328,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.workflow_dict = dialog.workflow_dict
             self.workflow_path = dialog.workflow_path
             if self.workflow_dict:
-                success, err = self.compile_and_update_agent(self.workflow_dict)
+                success, err = self.compile_and_update_agent(self.workflow_dict, self.workflow_path)
                 if not success:
                     QMessageBox.critical(self, "컴파일 오류", f"에이전트 컴파일에 실패했습니다:\n{err}")
 
@@ -1187,7 +1418,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         b_layout = QVBoxLayout(bubble_frame)
 
         if is_user:
-            # 사용자 메시지: 우측 정렬, 최대 너비 540px, 세로 높이는 내용 크기에 맞춤
             row_layout.addStretch(1)
             b_layout.setContentsMargins(14, 10, 14, 10)
             b_layout.setSpacing(0)
@@ -1202,7 +1432,6 @@ class AgentRuntimeMainWindow(QMainWindow):
 
             row_layout.addWidget(bubble_frame)
         else:
-            # 에이전트 메시지: 좌측 정렬, 가로 80% 비율, 세로 높이는 내용 크기에 맞춤
             b_layout.setAlignment(Qt.AlignTop)
             b_layout.setContentsMargins(16, 12, 16, 12)
             b_layout.setSpacing(6)
@@ -1237,17 +1466,21 @@ class AgentRuntimeMainWindow(QMainWindow):
         if not text:
             return
 
-        if not self.compiled_graph:
+        if not self.compiled_graph or not self.current_agent_id:
             QMessageBox.warning(self, "에이전트 미로드", "실행 가능한 에이전트가 없습니다.\n좌측 하단 [에이전트 로드 / 설정]에서 워크플로우를 불러와주세요.")
             return
 
         # 새 세션 모드였다면 실제 세션 생성
         if not self.current_session_id or self.is_new_chat_mode:
             title = text[:18]
-            new_s = create_new_session(title=title)
+            new_s = create_new_session(
+                agent_id=self.current_agent_id,
+                title=title,
+                agent_name=self.current_agent_name
+            )
             self.current_session_id = new_s["id"]
             self.is_new_chat_mode = False
-            self.sessions = load_sessions()
+            self.sessions = load_sessions(self.current_agent_id)
             self.refresh_sessions_list_ui()
 
         curr_session = next((s for s in self.sessions if s["id"] == self.current_session_id), None)
@@ -1270,16 +1503,21 @@ class AgentRuntimeMainWindow(QMainWindow):
                 if item.widget():
                     item.widget().deleteLater()
 
-        # 1. 사용자 메시지 버블 추가 및 ★파일 즉시 영구 저장★
+        # 1. 사용자 메시지 버블 추가 및 에이전트별 파일 영구 저장
         self.add_message_bubble("user", text)
         curr_session["messages"].append({
             "role": "user",
             "content": text,
             "created_at": datetime.now().isoformat()
         })
-        update_session_messages(curr_session["id"], curr_session["messages"], title=curr_session["title"])
+        update_session_messages(
+            self.current_agent_id,
+            curr_session["id"],
+            curr_session["messages"],
+            title=curr_session["title"]
+        )
 
-        # 2. 점(...) 애니메이션 말풍선 표시 (input 노드 이후 노드 발생 전까지 유지)
+        # 2. 점(...) 애니메이션 말풍선 표시
         self.loading_bubble = PureDotsAnimationWidget()
         idx = max(0, self.chat_messages_layout.count() - 1)
         self.chat_messages_layout.insertWidget(idx, self.loading_bubble)
@@ -1357,16 +1595,12 @@ class AgentRuntimeMainWindow(QMainWindow):
 
     @Slot(str, str, str)
     def on_agent_step_log(self, session_id: str, node_name: str, log_message: str):
-        # 1. 활성 실행 상태 로그 기록
         if session_id in self.active_executions:
             self.active_executions[session_id]["logs"].append(log_message)
 
-        # 2. 현재 사용자가 보고 있는 세션이 아니면 UI 업데이트 생략
         if self.current_session_id != session_id:
             return
 
-        # 3. input 노드는 사용자 텍스트 전송 시 바로 시작되므로 점(...) 애니메이션 유지
-        # input 노드가 아닌 후속 노드(agent, llm, calc, search 등) 또는 시스템 로그일 때 라이브 사고과정으로 전환
         if node_name == "input":
             return
 
@@ -1391,21 +1625,26 @@ class AgentRuntimeMainWindow(QMainWindow):
         if session_id in self.active_executions:
             self.active_executions[session_id]["is_running"] = False
 
-        # 1. 해당 세션 데이터에 응답 메시지 영구 저장
-        all_sessions = load_sessions()
-        target_s = next((s for s in all_sessions if s["id"] == session_id), None)
-        if target_s:
-            target_s["messages"].append({
-                "role": "assistant",
-                "content": output,
-                "logs": logs,
-                "created_at": datetime.now().isoformat()
-            })
-            update_session_messages(target_s["id"], target_s["messages"], logs=logs, title=target_s["title"])
+        if self.current_agent_id:
+            all_sessions = load_sessions(self.current_agent_id)
+            target_s = next((s for s in all_sessions if s["id"] == session_id), None)
+            if target_s:
+                target_s["messages"].append({
+                    "role": "assistant",
+                    "content": output,
+                    "logs": logs,
+                    "created_at": datetime.now().isoformat()
+                })
+                update_session_messages(
+                    self.current_agent_id,
+                    target_s["id"],
+                    target_s["messages"],
+                    logs=logs,
+                    title=target_s["title"]
+                )
 
-        self.sessions = load_sessions()
+            self.sessions = load_sessions(self.current_agent_id)
 
-        # 2. 사용자가 현재 해당 세션을 보고 있는 경우 실시간 UI 완료 처리
         if self.current_session_id == session_id:
             if self.loading_bubble:
                 self.loading_bubble.stop()
@@ -1433,18 +1672,24 @@ class AgentRuntimeMainWindow(QMainWindow):
         if session_id in self.active_executions:
             self.active_executions[session_id]["is_running"] = False
 
-        all_sessions = load_sessions()
-        target_s = next((s for s in all_sessions if s["id"] == session_id), None)
-        if target_s:
-            target_s["messages"].append({
-                "role": "assistant",
-                "content": f"오류로 인해 응답을 생성하지 못했습니다:\n{err_msg}",
-                "logs": [f"Error: {err_msg}"],
-                "created_at": datetime.now().isoformat()
-            })
-            update_session_messages(target_s["id"], target_s["messages"], title=target_s["title"])
+        if self.current_agent_id:
+            all_sessions = load_sessions(self.current_agent_id)
+            target_s = next((s for s in all_sessions if s["id"] == session_id), None)
+            if target_s:
+                target_s["messages"].append({
+                    "role": "assistant",
+                    "content": f"오류로 인해 응답을 생성하지 못했습니다:\n{err_msg}",
+                    "logs": [f"Error: {err_msg}"],
+                    "created_at": datetime.now().isoformat()
+                })
+                update_session_messages(
+                    self.current_agent_id,
+                    target_s["id"],
+                    target_s["messages"],
+                    title=target_s["title"]
+                )
 
-        self.sessions = load_sessions()
+            self.sessions = load_sessions(self.current_agent_id)
 
         if self.current_session_id == session_id:
             if self.loading_bubble:
