@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from '../../router/Router';
+import { useTheme } from '../../context/ThemeContext';
 import logoImg from '../../assets/logo.png';
 
 interface NotificationItem {
@@ -36,6 +37,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 
 export const Header: React.FC = () => {
   const { pathname } = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const notiRef = useRef<HTMLDivElement>(null);
@@ -131,6 +133,19 @@ export const Header: React.FC = () => {
 
         {/* Right Status Actions */}
         <div className="flex items-center gap-3">
+          {/* Theme Toggle Button */}
+          <button
+            aria-label={theme === 'dark' ? '라이트 테마로 전환' : '다크 테마로 전환'}
+            title={theme === 'dark' ? '라이트 테마로 전환' : '다크 테마로 전환'}
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-surface-container text-on-surface-variant hover:text-primary hover:bg-surface-container-high active:scale-95 shadow-sm"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[20px] transition-transform duration-300">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+
           {/* Notification Button & Dropdown */}
           <div className="relative" ref={notiRef}>
             <button

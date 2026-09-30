@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame,
     QDialog, QFileDialog, QMessageBox, QCheckBox, QGroupBox, QSizePolicy,
-    QTabWidget, QListWidget, QListWidgetItem, QAbstractItemView
+    QTabWidget, QListWidget, QListWidgetItem, QAbstractItemView,
+    QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSize
 from PySide6.QtGui import QFont, QCursor
@@ -26,7 +27,8 @@ try:
     from runtime.storage import (
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
-        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path
+        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
+        get_app_theme, set_app_theme
     )
     from runtime.config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 except ModuleNotFoundError:
@@ -34,7 +36,8 @@ except ModuleNotFoundError:
     from storage import (
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
-        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path
+        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
+        get_app_theme, set_app_theme
     )
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 
@@ -169,16 +172,31 @@ QPushButton:pressed {
     border-bottom: 1px solid #222938;
 }
 
+#ChatHeaderLabel {
+    font-size: 15px;
+    font-weight: bold;
+    color: #ffffff;
+    background: transparent;
+    border: none;
+}
+
 /* Message Bubbles */
 #UserBubbleFrame {
     background-color: #1e2e45;
     border: 1px solid #2d4263;
     border-radius: 10px;
 }
+#UserBubbleFrame QLabel {
+    color: #f0f6fc;
+}
+
 #AgentBubbleFrame {
     background-color: #161e2b;
     border: 1px solid #243044;
     border-radius: 10px;
+}
+#AgentBubbleFrame QLabel {
+    color: #e6edf3;
 }
 
 /* Scroll Area */
@@ -200,9 +218,35 @@ QLineEdit:focus, QTextEdit:focus {
     border: 1px solid #4d8eff;
 }
 
+#InputContainerFrame {
+    background-color: #141923;
+    border-top: 1px solid #222938;
+    padding: 14px 22px;
+}
+
 /* Dialog */
 QDialog {
     background-color: #141923;
+    color: #e6edf3;
+}
+
+/* Radio Buttons */
+QRadioButton {
+    color: #e6edf3;
+    font-size: 13px;
+    spacing: 8px;
+    background: transparent;
+}
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1px solid #3d4d68;
+    background-color: #161c27;
+}
+QRadioButton::indicator:checked {
+    background-color: #4d8eff;
+    border: 3px solid #141923;
 }
 
 /* Tab Widget */
@@ -250,14 +294,376 @@ QListWidget#AgentListWidget::item {
     margin: 4px 2px;
 }
 
+/* Thought Log & Pure Dots (Dark) */
+#ThoughtLogToggleBtn {
+    background-color: #171f2b;
+    border: 1px solid #263245;
+    border-radius: 6px;
+    color: #8bb8ff;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: left;
+    padding: 7px 10px;
+}
+#ThoughtLogToggleBtn:hover {
+    background-color: #1f2a3a;
+    border-color: #4d8eff;
+}
+#ThoughtLogLiveArea, #ThoughtLogBox {
+    background-color: #0d121a;
+    border: 1px solid #243245;
+    border-radius: 6px;
+}
+#ThoughtLogItemFrame {
+    background-color: #141b26;
+    border: 1px solid #263345;
+    border-radius: 5px;
+}
+#ThoughtLogItemLabel {
+    color: #b0c4de;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    background: transparent;
+    border: none;
+}
+#ThoughtPendingDots {
+    color: #4d8eff;
+    font-size: 11px;
+    font-style: italic;
+    background: transparent;
+    border: none;
+    padding: 4px;
+}
+#PureDotsFrame {
+    background-color: #161e2b;
+    border: 1px solid #243044;
+    border-radius: 10px;
+}
+#PureDotsLabel {
+    color: #4d8eff;
+    font-size: 16px;
+    font-weight: bold;
+    background: transparent;
+    border: none;
+}
+"""
+
+LIGHT_STYLESHEET = """
+QMainWindow, QWidget {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
+    font-size: 13px;
+}
+
+QLabel {
+    background-color: transparent;
+    border: none;
+    color: #0f172a;
+}
+
+/* Sidebar */
+#SidebarFrame {
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
+}
+
+#AppBrandLabel {
+    font-size: 17px;
+    font-weight: 800;
+    color: #2563eb;
+    letter-spacing: 0.5px;
+    background-color: transparent;
+    border: none;
+}
+
+#AgentTitle {
+    font-size: 14px;
+    font-weight: bold;
+    color: #0f172a;
+    background-color: transparent;
+    border: none;
+}
+
+#AgentDesc {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.35;
+    background-color: transparent;
+    border: none;
+}
+
+/* Buttons */
+QPushButton {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #1e293b;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: #e2e8f0;
+    border-color: #2563eb;
+}
+QPushButton:pressed {
+    background-color: #cbd5e1;
+}
+
+#PrimaryButton {
+    background-color: #2563eb;
+    border: 1px solid #1d4ed8;
+    color: #ffffff;
+    font-weight: bold;
+}
+#PrimaryButton:hover {
+    background-color: #1d4ed8;
+    border-color: #1e40af;
+}
+
+#StopButton {
+    background-color: #dc2626;
+    border: 1px solid #b91c1c;
+    color: #ffffff;
+    font-weight: bold;
+}
+#StopButton:hover {
+    background-color: #b91c1c;
+    border-color: #991b1b;
+}
+
+#SettingsButton {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 6px;
+}
+#SettingsButton:hover {
+    background-color: #e2e8f0;
+    border-color: #2563eb;
+    color: #0f172a;
+}
+
+/* Session Item */
+#SessionItemWidget {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+#SessionItemWidget[selected="true"] {
+    background-color: #eff6ff;
+    border: 1px solid #3b82f6;
+}
+
+#SessionDeleteBtn {
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+#SessionDeleteBtn:hover {
+    background-color: #dc2626;
+    border-color: #b91c1c;
+    color: #ffffff;
+}
+
+/* Chat Header */
+#ChatHeader {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+#ChatHeaderLabel {
+    font-size: 15px;
+    font-weight: bold;
+    color: #0f172a;
+    background: transparent;
+    border: none;
+}
+
+/* Message Bubbles */
+#UserBubbleFrame {
+    background-color: #e0edff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+}
+#UserBubbleFrame QLabel {
+    color: #0f172a;
+}
+
+#AgentBubbleFrame {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+#AgentBubbleFrame QLabel {
+    color: #1e293b;
+}
+
+/* Scroll Area */
+QScrollArea {
+    background-color: transparent;
+    border: none;
+}
+
+/* Input Box */
+QLineEdit, QTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: #0f172a;
+    selection-background-color: #bfdbfe;
+    selection-color: #0f172a;
+}
+QLineEdit:focus, QTextEdit:focus {
+    border: 1px solid #2563eb;
+}
+
+#InputContainerFrame {
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 14px 22px;
+}
+
+/* Dialog */
+QDialog {
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
+/* Radio Buttons */
+QRadioButton {
+    color: #0f172a;
+    font-size: 13px;
+    spacing: 8px;
+    background: transparent;
+}
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1px solid #94a3b8;
+    background-color: #ffffff;
+}
+QRadioButton::indicator:checked {
+    background-color: #2563eb;
+    border: 3px solid #ffffff;
+}
+
+/* Tab Widget */
+QTabWidget::pane {
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    border-radius: 8px;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    padding: 9px 20px;
+    margin-right: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    font-weight: 600;
+}
+
+QTabBar::tab:selected {
+    background-color: #ffffff;
+    border-bottom-color: #ffffff;
+    color: #2563eb;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* Agent List in Settings */
+QListWidget#AgentListWidget {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QListWidget#AgentListWidget::item {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin: 4px 2px;
+}
+
 QListWidget#AgentListWidget::item:selected {
-    background-color: #1a2538;
-    border: 1px solid #4d8eff;
+    background-color: #eff6ff;
+    border: 1px solid #3b82f6;
 }
 
 QListWidget#AgentListWidget::item:hover {
-    background-color: #1e2636;
-    border-color: #3b82f6;
+    background-color: #f1f5f9;
+    border-color: #60a5fa;
+}
+
+/* Thought Log & Pure Dots (Light) */
+#ThoughtLogToggleBtn {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: left;
+    padding: 7px 10px;
+}
+#ThoughtLogToggleBtn:hover {
+    background-color: #dbeafe;
+    border-color: #2563eb;
+}
+#ThoughtLogLiveArea, #ThoughtLogBox {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+#ThoughtLogItemFrame {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+}
+#ThoughtLogItemLabel {
+    color: #334155;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    background: transparent;
+    border: none;
+}
+#ThoughtPendingDots {
+    color: #2563eb;
+    font-size: 11px;
+    font-style: italic;
+    background: transparent;
+    border: none;
+    padding: 4px;
+}
+#PureDotsFrame {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+}
+#PureDotsLabel {
+    color: #2563eb;
+    font-size: 16px;
+    font-weight: bold;
+    background: transparent;
+    border: none;
 }
 """
 
@@ -340,23 +746,8 @@ class ThoughtLogToggleWidget(QWidget):
         layout.setSpacing(4)
 
         self.btn_toggle = QPushButton("사고 과정 보기" if not self.is_expanded else "사고 과정 접기")
+        self.btn_toggle.setObjectName("ThoughtLogToggleBtn")
         self.btn_toggle.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.btn_toggle.setStyleSheet("""
-            QPushButton {
-                background-color: #171f2b;
-                border: 1px solid #263245;
-                border-radius: 6px;
-                color: #8bb8ff;
-                font-size: 11px;
-                font-weight: bold;
-                text-align: left;
-                padding: 7px 10px;
-            }
-            QPushButton:hover {
-                background-color: #1f2a3a;
-                border-color: #4d8eff;
-            }
-        """)
         self.btn_toggle.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_toggle.clicked.connect(self.toggle)
         layout.addWidget(self.btn_toggle)
@@ -365,38 +756,12 @@ class ThoughtLogToggleWidget(QWidget):
         # 1. 실행 중(Live) 전용 스크롤 컨테이너 (200px 고정 + 자동 스크롤)
         # -------------------------------------------------------------
         self.live_scroll_area = QScrollArea()
+        self.live_scroll_area.setObjectName("ThoughtLogLiveArea")
         self.live_scroll_area.setWidgetResizable(True)
         self.live_scroll_area.setFrameShape(QFrame.NoFrame)
         self.live_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.live_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.live_scroll_area.setFixedHeight(200)
-        self.live_scroll_area.setStyleSheet("""
-            QScrollArea {
-                background-color: #0d121a;
-                border: 1px solid #243245;
-                border-radius: 6px;
-            }
-            QScrollBar:vertical {
-                border: none;
-                background: #0d121a;
-                width: 6px;
-                margin: 4px 2px 4px 0px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical {
-                background: #2a374a;
-                min-height: 20px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background: #4d8eff;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                border: none;
-                background: none;
-                height: 0px;
-            }
-        """)
 
         self.live_content_widget = QWidget()
         self.live_content_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -412,14 +777,8 @@ class ThoughtLogToggleWidget(QWidget):
         # 2. 완료 후(Finalized) 전용 전체 확장 컨테이너 (고정 높이 없이 내부 요소 전체 노출)
         # -------------------------------------------------------------
         self.static_content_box = QFrame()
+        self.static_content_box.setObjectName("ThoughtLogBox")
         self.static_content_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        self.static_content_box.setStyleSheet("""
-            QFrame {
-                background-color: #0d121a;
-                border: 1px solid #243245;
-                border-radius: 6px;
-            }
-        """)
         self.static_layout = QVBoxLayout(self.static_content_box)
         self.static_layout.setAlignment(Qt.AlignTop)
         self.static_layout.setContentsMargins(6, 6, 6, 6)
@@ -431,8 +790,8 @@ class ThoughtLogToggleWidget(QWidget):
 
         # 다음 노드 실행 대기 애니메이션 라벨 (실행 중 스크롤 영역에만 표시)
         self.lbl_pending_dots = QLabel("다음 노드 실행 대기 중 .")
+        self.lbl_pending_dots.setObjectName("ThoughtPendingDots")
         self.lbl_pending_dots.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        self.lbl_pending_dots.setStyleSheet("color: #4d8eff; font-size: 11px; font-style: italic; background: transparent; border: none; padding: 4px;")
         self.lbl_pending_dots.setVisible(not self.is_finalized)
         self.live_layout.addWidget(self.lbl_pending_dots)
 
@@ -458,30 +817,17 @@ class ThoughtLogToggleWidget(QWidget):
 
     def _create_log_item_frame(self, log_text: str) -> QFrame:
         item_frame = QFrame()
+        item_frame.setObjectName("ThoughtLogItemFrame")
         item_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        item_frame.setStyleSheet("""
-            QFrame {
-                background-color: #141b26;
-                border: 1px solid #263345;
-                border-radius: 5px;
-            }
-        """)
         f_layout = QVBoxLayout(item_frame)
         f_layout.setContentsMargins(10, 6, 10, 6)
         f_layout.setSpacing(0)
 
         lbl = QLabel(f"• {log_text}")
+        lbl.setObjectName("ThoughtLogItemLabel")
         lbl.setWordWrap(True)
         lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        lbl.setStyleSheet("""
-            color: #b0c4de;
-            font-family: monospace;
-            font-size: 11px;
-            line-height: 1.4;
-            background: transparent;
-            border: none;
-        """)
         f_layout.addWidget(lbl)
         return item_frame
 
@@ -562,21 +908,13 @@ class PureDotsAnimationWidget(QWidget):
         row_layout.setAlignment(Qt.AlignTop)
 
         self.bubble_frame = QFrame()
-        self.bubble_frame.setObjectName("AgentBubbleFrame")
+        self.bubble_frame.setObjectName("PureDotsFrame")
         self.bubble_frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        self.bubble_frame.setStyleSheet("""
-            QFrame#AgentBubbleFrame {
-                background-color: #161e2b;
-                border: 1px solid #243044;
-                border-radius: 10px;
-                padding: 6px 12px;
-            }
-        """)
         f_layout = QHBoxLayout(self.bubble_frame)
         f_layout.setContentsMargins(8, 4, 8, 4)
 
         self.lbl_dots = QLabel(". . .")
-        self.lbl_dots.setStyleSheet("color: #4d8eff; font-size: 16px; font-weight: bold; background: transparent; border: none;")
+        self.lbl_dots.setObjectName("PureDotsLabel")
         f_layout.addWidget(self.lbl_dots)
 
         row_layout.addWidget(self.bubble_frame)
@@ -623,7 +961,7 @@ class SessionListItemWidget(QWidget):
         f_layout.setSpacing(6)
 
         self.lbl_title = QLabel(self.title)
-        self.lbl_title.setStyleSheet("font-size: 12px; color: #e6edf3; font-weight: 500; background: transparent; border: none;")
+        self.lbl_title.setStyleSheet("font-size: 12px; font-weight: 500; background: transparent; border: none;")
         f_layout.addWidget(self.lbl_title, 1)
 
         self.btn_del = QPushButton("삭제")
@@ -760,9 +1098,51 @@ class SettingsDialog(QDialog):
         self.scroll_llm.setWidget(self.scroll_content)
         t_llm_layout.addWidget(self.scroll_llm)
 
+        # -----------------------------
+        # Tab 3: 화면 테마 및 환경 설정
+        # -----------------------------
+        tab_theme = QWidget()
+        t_theme_layout = QVBoxLayout(tab_theme)
+        t_theme_layout.setContentsMargins(16, 18, 16, 16)
+        t_theme_layout.setSpacing(14)
+
+        lbl_theme_title = QLabel("화면 테마 설정 (Theme Preference)")
+        lbl_theme_title.setStyleSheet("font-size: 13px; font-weight: bold; color: #4d8eff;")
+        t_theme_layout.addWidget(lbl_theme_title)
+
+        grp_theme = QGroupBox("애플리케이션 인터페이스 모드")
+        grp_theme.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #283548;
+                border-radius: 6px;
+                padding-top: 14px;
+                background-color: transparent;
+            }
+        """)
+        g_theme_layout = QVBoxLayout(grp_theme)
+        g_theme_layout.setContentsMargins(14, 16, 14, 16)
+        g_theme_layout.setSpacing(12)
+
+        self.current_app_theme = get_app_theme()
+
+        self.radio_dark = QRadioButton("🌙 다크 테마 (Dark Mode) - 눈의 피로를 덜어주는 차분한 다크 UI")
+        self.radio_light = QRadioButton("☀️ 화이트 테마 (Light Mode) - 밝고 선명한 화이트/라이트 UI")
+
+        if self.current_app_theme == "light":
+            self.radio_light.setChecked(True)
+        else:
+            self.radio_dark.setChecked(True)
+
+        g_theme_layout.addWidget(self.radio_dark)
+        g_theme_layout.addWidget(self.radio_light)
+        t_theme_layout.addWidget(grp_theme)
+        t_theme_layout.addStretch()
+
         # 탭 추가 (에이전트 목록이 첫 번째 탭)
         self.tabs.addTab(tab_agents, "에이전트 목록")
         self.tabs.addTab(tab_llm, "LLM 노드 설정")
+        self.tabs.addTab(tab_theme, "화면 테마 설정")
         self.tabs.setCurrentIndex(0) # 기본 탭으로 에이전트 목록 표시
 
         main_layout.addWidget(self.tabs)
@@ -1026,8 +1406,13 @@ class SettingsDialog(QDialog):
         self.scroll_layout.addStretch()
 
     def on_save_settings(self):
+        # 테마 설정 저장
+        selected_theme = "light" if self.radio_light.isChecked() else "dark"
+        self.selected_theme = selected_theme
+        set_app_theme(selected_theme)
+
         if not self.workflow_dict:
-            QMessageBox.warning(self, "경고", "먼저 에이전트를 선택하거나 로드해주세요.")
+            self.accept()
             return
 
         updated_configs = {}
@@ -1061,7 +1446,9 @@ class AgentRuntimeMainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("NOA-E Agent Runtime")
         self.resize(1080, 740)
-        self.setStyleSheet(DARK_STYLESHEET)
+
+        self.current_theme = get_app_theme()
+        self.apply_theme(self.current_theme)
 
         self.current_agent_id: Optional[str] = None
         self.current_agent_name: str = "Local Agent"
@@ -1082,6 +1469,14 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         self.init_ui()
         self.load_default_or_last_workflow()
+
+    def apply_theme(self, theme: str):
+        self.current_theme = theme
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(LIGHT_STYLESHEET if theme == "light" else DARK_STYLESHEET)
+        else:
+            self.setStyleSheet(LIGHT_STYLESHEET if theme == "light" else DARK_STYLESHEET)
 
     def init_ui(self):
         central_widget = QWidget()
@@ -1164,7 +1559,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         h_layout = QHBoxLayout(header)
         h_layout.setContentsMargins(22, 16, 22, 16)
         self.lbl_chat_title = QLabel("새로운 대화")
-        self.lbl_chat_title.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff; background: transparent; border: none;")
+        self.lbl_chat_title.setObjectName("ChatHeaderLabel")
         h_layout.addWidget(self.lbl_chat_title)
         h_layout.addStretch()
         r_layout.addWidget(header)
@@ -1183,7 +1578,7 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         # 하단 입력 영역
         self.input_container = QFrame()
-        self.input_container.setStyleSheet("background-color: #141923; border-top: 1px solid #222938; padding: 14px 22px;")
+        self.input_container.setObjectName("InputContainerFrame")
         in_layout = QHBoxLayout(self.input_container)
         in_layout.setContentsMargins(0, 0, 0, 0)
         in_layout.setSpacing(10)
@@ -1325,6 +1720,11 @@ class AgentRuntimeMainWindow(QMainWindow):
     def on_open_settings(self):
         dialog = SettingsDialog(self, self.workflow_dict, self.workflow_path)
         if dialog.exec() == QDialog.Accepted:
+            if hasattr(dialog, "selected_theme") and dialog.selected_theme != self.current_theme:
+                self.apply_theme(dialog.selected_theme)
+                self.refresh_sessions_list_ui()
+                self.render_current_session_messages()
+
             self.workflow_dict = dialog.workflow_dict
             self.workflow_path = dialog.workflow_path
             if self.workflow_dict:
@@ -1427,7 +1827,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             lbl_text = QLabel(text)
             lbl_text.setWordWrap(True)
             lbl_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            lbl_text.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent; border: none;")
+            lbl_text.setStyleSheet("font-size: 13px; line-height: 1.45; background: transparent; border: none;")
             b_layout.addWidget(lbl_text)
 
             row_layout.addWidget(bubble_frame)
@@ -1444,7 +1844,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             lbl_text = QLabel(text)
             lbl_text.setWordWrap(True)
             lbl_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            lbl_text.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent; border: none;")
+            lbl_text.setStyleSheet("font-size: 13px; line-height: 1.45; background: transparent; border: none;")
             b_layout.addWidget(lbl_text)
 
             row_layout.addWidget(bubble_frame, 8)
@@ -1583,7 +1983,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.live_response_label = QLabel("")
         self.live_response_label.setWordWrap(True)
         self.live_response_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.live_response_label.setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.45; background: transparent; border: none;")
+        self.live_response_label.setStyleSheet("font-size: 13px; line-height: 1.45; background: transparent; border: none;")
         self.live_response_label.setVisible(False)
         b_layout.addWidget(self.live_response_label)
 

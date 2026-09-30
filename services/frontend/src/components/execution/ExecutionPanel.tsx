@@ -280,21 +280,21 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
       {/* Drawer Content Display */}
       <div className="flex-1 p-space-md flex flex-col relative overflow-y-auto font-mono text-xs leading-relaxed space-y-1 select-text bg-[#060e20]">
         {logs.length === 0 && !isExecuting && (
-          <div className="flex items-center gap-2 text-outline">
+          <div className="flex items-center gap-2 text-slate-300">
             <span className="text-tertiary">[SYSTEM]</span>
-            <span>파이프라인 환경 구성 완료. 상단 '실행하기' 버튼을 누르면 에이전트 워크플로우가 시작됩니다.</span>
+            <span className="text-white">파이프라인 환경 구성 완료. 상단 '실행하기' 버튼을 누르면 에이전트 워크플로우가 시작됩니다.</span>
           </div>
         )}
         {logs.map((log, i) => (
-          <div key={i} className="flex items-start gap-2 text-on-surface-variant">
+          <div key={i} className="flex items-start gap-2 text-slate-300">
             <span className="text-tertiary shrink-0">➜</span>
-            <span className="text-on-surface">{log}</span>
+            <span className="text-white font-mono">{log}</span>
           </div>
         ))}
         {isExecuting && (
           <div className="flex items-center gap-2 text-tertiary animate-pulse mt-1">
             <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
-            <span>노드 파이프라인 처리 중...</span>
+            <span className="text-white">노드 파이프라인 처리 중...</span>
           </div>
         )}
       </div>

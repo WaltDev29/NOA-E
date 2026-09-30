@@ -6,6 +6,7 @@ import { NodeInstructionPage } from './pages/NodeInstructionPage';
 import { LearnPage } from './pages/LearnPage';
 import { TemplatesPage } from './pages/TemplatesPage';
 import { MyPage } from './pages/MyPage';
+import { ThemeProvider } from './context/ThemeContext';
 import logoImg from './assets/logo.png';
 
 const NotFoundPage: React.FC = () => {
@@ -64,8 +65,10 @@ const AppRoutes: React.FC = () => {
 
 export default function App() {
   return (
-    <RouterProvider>
-      <AppRoutes />
-    </RouterProvider>
+    <ThemeProvider>
+      <RouterProvider>
+        <AppRoutes />
+      </RouterProvider>
+    </ThemeProvider>
   );
 }

@@ -9,6 +9,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useWorkflowStore } from '../../store/useWorkflowStore';
+import { useTheme } from '../../context/ThemeContext';
 import {
   InputNode,
   LLMNode,
@@ -49,6 +50,7 @@ const getUniqueId = (type: string, currentNodes: any[]) => {
 };
 
 const EditorInner: React.FC = () => {
+  const { theme } = useTheme();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
@@ -213,8 +215,8 @@ const EditorInner: React.FC = () => {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        colorMode="dark"
-        className="bg-[#0b1326]"
+        colorMode={theme}
+        className="bg-background"
         panOnDrag={true}
         panOnScroll={true}
         zoomOnScroll={true}
@@ -230,12 +232,12 @@ const EditorInner: React.FC = () => {
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1.5}
-          color="rgba(218, 226, 253, 0.12)"
+          color={theme === 'dark' ? "rgba(218, 226, 253, 0.12)" : "rgba(15, 23, 42, 0.18)"}
         />
         <Controls
           position="bottom-right"
           showInteractive={false}
-          className="!bg-surface-container-lowest/90 !backdrop-blur-md !border !border-outline-variant/40 !rounded-xl !p-1 !shadow-lg"
+          className="!bg-surface-container-low !backdrop-blur-md !border !border-outline-variant/60 !rounded-xl !p-1 !shadow-xl"
         />
       </ReactFlow>
     </div>

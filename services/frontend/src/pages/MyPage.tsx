@@ -2,6 +2,7 @@ import React from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link } from '../router/Router';
+import { useTheme } from '../context/ThemeContext';
 
 interface AgentProject {
   id: string;
@@ -127,6 +128,8 @@ const AGENT_PROJECTS: AgentProject[] = [
 ];
 
 export const MyPage: React.FC = () => {
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen flex flex-col">
       <Header />
@@ -162,6 +165,75 @@ export const MyPage: React.FC = () => {
               <span className="material-symbols-outlined text-[16px]">edit</span>
               <span>정보 수정</span>
             </button>
+          </div>
+
+          {/* 2. 환경 설정 (테마 모드 설정) */}
+          <div className="rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 p-6 flex flex-col gap-4 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-on-surface text-base flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-primary">palette</span>
+                  <span>화면 테마 설정</span>
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  NOA-E 서비스의 인터페이스 테마(다크/화이트 모드)를 선택할 수 있습니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+              {/* Dark Theme Card */}
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`p-4 rounded-xl border text-left flex items-center gap-4 transition-all ${
+                  theme === 'dark'
+                    ? 'bg-surface-container-high border-primary ring-2 ring-primary/40 shadow-[0_0_14px_rgba(77,142,255,0.25)]'
+                    : 'bg-surface-container-lowest/60 border-outline-variant/30 hover:border-outline-variant/60'
+                }`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#0b1326] border border-[#2d3449] flex items-center justify-center text-[#adc6ff] shrink-0 shadow-inner">
+                  <span className="material-symbols-outlined text-[24px]">dark_mode</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-on-surface">다크 테마 (Dark Mode)</span>
+                    {theme === 'dark' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_6px_rgba(77,142,255,0.8)]" />
+                    )}
+                  </div>
+                  <span className="text-xs text-on-surface-variant line-clamp-1 mt-0.5">
+                    어두운 배경과 편안한 시각적 몰입감
+                  </span>
+                </div>
+              </button>
+
+              {/* Light Theme Card */}
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`p-4 rounded-xl border text-left flex items-center gap-4 transition-all ${
+                  theme === 'light'
+                    ? 'bg-surface-container-high border-primary ring-2 ring-primary/40 shadow-[0_0_14px_rgba(37,99,235,0.25)]'
+                    : 'bg-surface-container-lowest/60 border-outline-variant/30 hover:border-outline-variant/60'
+                }`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#ffffff] border border-[#e2e8f0] flex items-center justify-center text-[#2563eb] shrink-0 shadow-sm">
+                  <span className="material-symbols-outlined text-[24px]">light_mode</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-on-surface">화이트 테마 (Light Mode)</span>
+                    {theme === 'light' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_6px_rgba(37,99,235,0.8)]" />
+                    )}
+                  </div>
+                  <span className="text-xs text-on-surface-variant line-clamp-1 mt-0.5">
+                    깔끔하고 화사한 밝은 배경 모드
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* 2. My Agent Projects Section (3-Column Grid) */}

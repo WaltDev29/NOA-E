@@ -6,11 +6,45 @@ from datetime import datetime
 
 STORAGE_DIR = os.path.join(os.path.dirname(__file__), ".storage")
 AGENTS_REGISTRY_FILE = os.path.join(STORAGE_DIR, "agents.json")
+SETTINGS_FILE = os.path.join(STORAGE_DIR, "settings.json")
 CHATS_DIR = os.path.join(STORAGE_DIR, "chats")
 
 def ensure_storage_dirs():
     os.makedirs(STORAGE_DIR, exist_ok=True)
     os.makedirs(CHATS_DIR, exist_ok=True)
+
+# -------------------------------------------------------------
+# 전역 환경 설정 관리 (테마 등)
+# -------------------------------------------------------------
+def get_app_settings() -> Dict[str, Any]:
+    ensure_storage_dirs()
+    if not os.path.exists(SETTINGS_FILE):
+        return {"theme": "dark"}
+    try:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+            return {"theme": "dark"}
+    except Exception:
+        return {"theme": "dark"}
+
+def save_app_settings(settings: Dict[str, Any]):
+    ensure_storage_dirs()
+    try:
+        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Failed to save settings: {e}")
+
+def get_app_theme() -> str:
+    settings = get_app_settings()
+    return settings.get("theme", "dark")
+
+def set_app_theme(theme: str):
+    settings = get_app_settings()
+    settings["theme"] = theme
+    save_app_settings(settings)
 
 # -------------------------------------------------------------
 # 에이전트 목록 (Agents Registry) 및 최근 에이전트 관리
