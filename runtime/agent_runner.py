@@ -139,8 +139,21 @@ def run_pyside_gui():
         from gui import launch_gui
     launch_gui()
 
+def _attach_console():
+    """Windows 환경에서 GUI 앱으로 패키징되었을 때 터미널 호출 시 표준 입출력을 콘솔에 연결"""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            if ctypes.windll.kernel32.AttachConsole(-1):
+                sys.stdout = open("CONOUT$", "w", encoding="utf-8")
+                sys.stderr = open("CONOUT$", "w", encoding="utf-8")
+                sys.stdin = open("CONIN$", "r", encoding="utf-8")
+        except Exception:
+            pass
+
 def main():
-    parser = argparse.ArgumentParser(description="NOA-E Local Agent Runtime Runner (PySide6 GUI / CLI)")
+    _attach_console()
+    parser = argparse.ArgumentParser(description="NOA-E Desktop Runner (PySide6 GUI / CLI)")
     parser.add_argument("--workflow", "-w", type=str, help="실행할 워크플로우 JSON 파일 경로")
     parser.add_argument("--cli", action="store_true", help="CLI 터미널 대화 모드로 실행")
     parser.add_argument("--gui", action="store_true", help="PySide6 GUI 모드로 실행")

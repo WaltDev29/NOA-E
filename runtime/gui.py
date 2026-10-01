@@ -1281,13 +1281,20 @@ class SettingsDialog(QDialog):
             agent_name = meta.get("agent_name", os.path.basename(file_path))
             desc = meta.get("description", "")
 
-            # 에이전트 목록에 등록 및 저장
-            register_agent(agent_id=agent_id, agent_name=agent_name, file_path=file_path, description=desc)
+            # 에이전트 목록에 등록 및 .storage/agents에 복사 저장
+            reg_info = register_agent(
+                agent_id=agent_id,
+                agent_name=agent_name,
+                file_path=file_path,
+                description=desc,
+                workflow_dict=content
+            )
+            saved_path = reg_info.get("path", file_path)
 
             self.workflow_dict = content
-            self.workflow_path = file_path
-            self.selected_agent_path = file_path
-            self.txt_selected_file.setText(file_path)
+            self.workflow_path = saved_path
+            self.selected_agent_path = saved_path
+            self.txt_selected_file.setText(saved_path)
 
             self.refresh_agents_list_ui()
             self.refresh_llm_nodes_ui()
@@ -1444,7 +1451,7 @@ class SettingsDialog(QDialog):
 class AgentRuntimeMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("NOA-E Agent Runtime")
+        self.setWindowTitle("NOA-E Desktop")
         self.resize(1080, 740)
 
         self.current_theme = get_app_theme()
@@ -1656,12 +1663,14 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.current_agent_id = meta.get("agent_id") or fallback_id
 
             if file_path:
-                register_agent(
+                reg_info = register_agent(
                     agent_id=self.current_agent_id,
                     agent_name=self.current_agent_name,
                     file_path=file_path,
-                    description=agent_desc
+                    description=agent_desc,
+                    workflow_dict=workflow_dict
                 )
+                self.workflow_path = reg_info.get("path", file_path)
 
             self.lbl_agent_name.setText(self.current_agent_name)
             self.lbl_agent_desc.setText(agent_desc)
