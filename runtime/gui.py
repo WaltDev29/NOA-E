@@ -1451,7 +1451,7 @@ class SettingsDialog(QDialog):
 class AgentRuntimeMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("NOA-E Agent Runtime")
+        self.setWindowTitle("NOA-E Desktop")
         self.resize(1080, 740)
 
         self.current_theme = get_app_theme()

@@ -79,3 +79,7 @@ Desktop.ini
 
 *.md
 .storage
+
+# PyInstaller & Inno Setup 빌드 산출물
+*.spec
+installer_output/

@@ -1,11 +1,11 @@
 """
-NOA-E Agent Runtime PyInstaller 빌드 스크립트 (PySide6 Native GUI)
------------------------------------------------------------------
+NOA-E Desktop PyInstaller 빌드 스크립트 (PySide6 Native GUI)
+------------------------------------------------------------
 사용법:
   1. pip install pyinstaller PySide6
   2. python build_exe.py
 
-빌드가 완료되면 dist/NOA-E_Agent_Runtime/ 디렉토리에 실행 파일이 생성됩니다.
+빌드가 완료되면 dist/noa-e/ 디렉토리에 실행 파일(noa-e.exe)이 생성됩니다.
 """
 
 import os
@@ -14,7 +14,7 @@ import subprocess
 
 def build():
     print("======================================================")
-    print(" 🚀 NOA-E Agent Runtime (PySide6) EXE 빌드 시작")
+    print(" 🚀 NOA-E Desktop (PySide6) EXE 빌드 시작")
     print("======================================================")
     
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,9 +22,9 @@ def build():
     
     cmd = [
         sys.executable, "-m", "PyInstaller",
-        "--name=NOA-E_Agent_Runtime",
+        "--name=noa-e",
         "--onedir",
-        "--windowed", # GUI 앱으로 콘솔 창 숨김 (CLI 실행은 별도 인자로 가능)
+        "--windowed", # GUI 앱으로 콘솔 창 숨김 (CLI 실행 시 콘솔 자동 연결)
         "--noconfirm",
         "--clean",
         f"--add-data={os.path.join(current_dir, 'gui.py')};.",
@@ -47,7 +47,7 @@ def build():
     
     if result.returncode == 0:
         print("\n======================================================")
-        print(" ✔ 빌드 완료! dist/NOA-E_Agent_Runtime/ 디렉토리를 확인하세요.")
+        print(" ✔ 빌드 완료! dist/noa-e/ 디렉토리를 확인하세요.")
         print("======================================================")
     else:
         print("\n❌ 빌드 실패. 오류 메시지를 확인하세요.")
