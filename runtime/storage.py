@@ -1,16 +1,27 @@
-import json
 import os
+import sys
+import json
 import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-STORAGE_DIR = os.path.join(os.path.dirname(__file__), ".storage")
-AGENTS_REGISTRY_FILE = os.path.join(STORAGE_DIR, "agents.json")
+def get_base_dir() -> str:
+    """
+    PyInstaller로 패키징된 실행 파일(.exe) 환경에서는 exe가 위치한 디렉토리를,
+    일반 스크립트 환경에서는 storage.py가 위치한 디렉토리를 반환합니다.
+    """
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+STORAGE_DIR = os.path.join(get_base_dir(), ".storage")
+AGENTS_DIR = os.path.join(STORAGE_DIR, "agents")
 SETTINGS_FILE = os.path.join(STORAGE_DIR, "settings.json")
 CHATS_DIR = os.path.join(STORAGE_DIR, "chats")
 
 def ensure_storage_dirs():
     os.makedirs(STORAGE_DIR, exist_ok=True)
+    os.makedirs(AGENTS_DIR, exist_ok=True)
     os.makedirs(CHATS_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
@@ -47,100 +58,146 @@ def set_app_theme(theme: str):
     save_app_settings(settings)
 
 # -------------------------------------------------------------
-# 에이전트 목록 (Agents Registry) 및 최근 에이전트 관리
+# 에이전트 개별 파일(.storage/agents/{agent_id}.json) 관리
 # -------------------------------------------------------------
+def _safe_agent_filename(agent_id: str) -> str:
+    safe_id = "".join([c for c in agent_id if c.isalnum() or c in ("-", "_")]) or "default_agent"
+    return f"{safe_id}.json"
+
 def load_agents_registry() -> List[Dict[str, Any]]:
+    """
+    .storage/agents/ 디렉토리 내의 모든 에이전트 JSON 파일을 읽어서
+    last_used_at 최신순으로 정렬된 에이전트 목록을 반환합니다.
+    """
     ensure_storage_dirs()
-    if not os.path.exists(AGENTS_REGISTRY_FILE):
-        return []
-    try:
-        with open(AGENTS_REGISTRY_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
-            return []
-    except Exception:
+    agents = []
+
+    if not os.path.exists(AGENTS_DIR):
         return []
 
-def save_agents_registry(agents: List[Dict[str, Any]]):
-    ensure_storage_dirs()
-    try:
-        with open(AGENTS_REGISTRY_FILE, "w", encoding="utf-8") as f:
-            json.dump(agents, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Failed to save agents registry: {e}")
+    for filename in os.listdir(AGENTS_DIR):
+        if not filename.endswith(".json"):
+            continue
+        file_path = os.path.join(AGENTS_DIR, filename)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = json.load(f)
+
+            meta = content.get("metadata", {})
+            agent_id = meta.get("agent_id") or os.path.splitext(filename)[0]
+            agent_name = meta.get("agent_name", os.path.splitext(filename)[0])
+            desc = meta.get("description", "")
+            registered_at = meta.get("registered_at", "")
+            last_used_at = meta.get("last_used_at", "")
+
+            agents.append({
+                "id": agent_id,
+                "name": agent_name,
+                "path": file_path,
+                "description": desc,
+                "registered_at": registered_at,
+                "last_used_at": last_used_at,
+            })
+        except Exception as e:
+            print(f"Failed to load agent file {file_path}: {e}")
+
+    # last_used_at 최신순으로 내림차순 정렬
+    agents.sort(key=lambda x: x.get("last_used_at", ""), reverse=True)
+    return agents
 
 def get_last_agent_path() -> Optional[str]:
     """
-    agents.json에서 가장 최근에 사용된(last_used_at 최신) 에이전트의 경로를 반환합니다.
+    .storage/agents/에 보관된 에이전트 중 가장 최근에 사용된(last_used_at 최신) 에이전트의 경로를 반환합니다.
     """
     agents = load_agents_registry()
     if not agents:
         return None
     
-    # last_used_at 기준으로 정렬
     valid_agents = [a for a in agents if a.get("path") and os.path.exists(a["path"])]
     if not valid_agents:
-        return agents[0].get("path")
+        return None
     
-    valid_agents.sort(key=lambda x: x.get("last_used_at", ""), reverse=True)
     return valid_agents[0].get("path")
 
 def set_last_agent_path(file_path: str):
     """
-    해당 경로의 에이전트를 agents.json 내에서 최신 사용 상태로 갱신하고 맨 앞으로 이동시킵니다.
+    해당 에이전트 JSON 파일의 metadata.last_used_at을 현재 시각으로 갱신합니다.
     """
-    if not file_path:
+    if not file_path or not os.path.exists(file_path):
         return
-    agents = load_agents_registry()
-    now_iso = datetime.now().isoformat()
-    matched = None
-    for a in agents:
-        if a.get("path") == file_path:
-            matched = a
-            break
-            
-    if matched:
-        matched["last_used_at"] = now_iso
-        agents.remove(matched)
-        agents.insert(0, matched)
-        save_agents_registry(agents)
 
-def register_agent(agent_id: str, agent_name: str, file_path: str, description: str = "") -> Dict[str, Any]:
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+
+        if "metadata" not in content or not isinstance(content["metadata"], dict):
+            content["metadata"] = {}
+
+        now_iso = datetime.now().isoformat()
+        content["metadata"]["last_used_at"] = now_iso
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(content, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Failed to update last_used_at for {file_path}: {e}")
+
+def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = None, description: str = "", workflow_dict: Optional[dict] = None) -> Dict[str, Any]:
     """
-    에이전트를 불러올 때 해당 에이전트의 경로와 메타데이터를 에이전트 목록에 등록 또는 갱신합니다.
+    불러온 에이전트 JSON 파일을 .storage/agents/{agent_id}.json 에 복사/저장하며,
+    metadata에 registered_at, last_used_at 필드를 추가/갱신합니다.
     """
-    agents = load_agents_registry()
+    ensure_storage_dirs()
     now_iso = datetime.now().isoformat()
-    
-    existing = None
-    for a in agents:
-        if a.get("id") == agent_id or (file_path and a.get("path") == file_path):
-            existing = a
-            break
-            
-    if existing:
-        existing["id"] = agent_id
-        existing["name"] = agent_name
-        existing["path"] = file_path
-        existing["description"] = description
-        existing["last_used_at"] = now_iso
-        registered_item = existing
-        agents.remove(existing)
-        agents.insert(0, registered_item)
-    else:
-        registered_item = {
-            "id": agent_id,
-            "name": agent_name,
-            "path": file_path,
-            "description": description,
-            "registered_at": now_iso,
-            "last_used_at": now_iso,
+
+    content = None
+    if workflow_dict:
+        content = dict(workflow_dict)
+    elif file_path and os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = json.load(f)
+        except Exception as e:
+            print(f"Failed to read source agent file {file_path}: {e}")
+
+    if not content:
+        content = {
+            "metadata": {},
+            "nodes": [],
+            "edges": []
         }
-        agents.insert(0, registered_item)
 
-    save_agents_registry(agents)
-    return registered_item
+    if "metadata" not in content or not isinstance(content["metadata"], dict):
+        content["metadata"] = {}
+
+    meta = content["metadata"]
+    meta["agent_id"] = agent_id
+    meta["agent_name"] = agent_name
+    if description:
+        meta["description"] = description
+
+    # registered_at은 기존 값이 있으면 유지, 없으면 현재 시각
+    if not meta.get("registered_at"):
+        meta["registered_at"] = now_iso
+    # last_used_at은 현재 시각으로 갱신
+    meta["last_used_at"] = now_iso
+
+    target_filename = _safe_agent_filename(agent_id)
+    target_path = os.path.join(AGENTS_DIR, target_filename)
+
+    try:
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(content, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Failed to save agent to {target_path}: {e}")
+
+    return {
+        "id": agent_id,
+        "name": agent_name,
+        "path": target_path,
+        "description": meta.get("description", description),
+        "registered_at": meta.get("registered_at", now_iso),
+        "last_used_at": now_iso
+    }
 
 # -------------------------------------------------------------
 # 에이전트별 세션 및 대화 내역 독립 관리 ({agent_id}.json)
