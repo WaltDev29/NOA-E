@@ -31,7 +31,6 @@ def build():
         f"--add-data={os.path.join(current_dir, 'core')};core",
         f"--add-data={os.path.join(current_dir, 'config.py')};.",
         f"--add-data={os.path.join(current_dir, 'storage.py')};.",
-        f"--add-data={os.path.join(current_dir, 'sample_agent.json')};.",
         "--hidden-import=PySide6",
         "--hidden-import=PySide6.QtCore",
         "--hidden-import=PySide6.QtWidgets",
