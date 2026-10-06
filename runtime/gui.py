@@ -13,7 +13,15 @@ from PySide6.QtWidgets import (
     QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSize
-from PySide6.QtGui import QFont, QCursor
+from PySide6.QtGui import QFont, QCursor, QIcon, QPixmap
+
+# Windows 작업표시줄 아이콘 분리 표시를 위한 AppUserModelID 설정
+if sys.platform == "win32":
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("noae.desktop.client.v1")
+    except Exception:
+        pass
 
 # Path setup
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +36,7 @@ try:
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
         load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
-        get_app_theme, set_app_theme
+        get_app_theme, set_app_theme, get_asset_path
     )
     from runtime.config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 except ModuleNotFoundError:
@@ -37,7 +45,7 @@ except ModuleNotFoundError:
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
         load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
-        get_app_theme, set_app_theme
+        get_app_theme, set_app_theme, get_asset_path
     )
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 
@@ -1010,6 +1018,9 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("에이전트 설정 및 관리")
         self.resize(720, 600)
+        icon_path = get_asset_path("icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         self.workflow_dict = workflow_dict
         self.workflow_path = workflow_path
         self.node_input_widgets = {}
@@ -1454,6 +1465,13 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.setWindowTitle("NOA-E Desktop")
         self.resize(1080, 740)
 
+        icon_path = get_asset_path("icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+            app = QApplication.instance()
+            if app:
+                app.setWindowIcon(QIcon(icon_path))
+
         self.current_theme = get_app_theme()
         self.apply_theme(self.current_theme)
 
@@ -1503,10 +1521,19 @@ class AgentRuntimeMainWindow(QMainWindow):
         s_layout.setContentsMargins(18, 20, 18, 18)
         s_layout.setSpacing(12)
 
-        # 서비스명
-        lbl_brand = QLabel("NOA-E Runtime")
-        lbl_brand.setObjectName("AppBrandLabel")
-        s_layout.addWidget(lbl_brand)
+        # 서비스 로고 (NOA-E Logo 단독 표시, 아이콘 추가 없음)
+        logo_path = get_asset_path("logo.png")
+        if os.path.exists(logo_path):
+            lbl_brand = QLabel()
+            pixmap = QPixmap(logo_path)
+            if not pixmap.isNull():
+                lbl_brand.setPixmap(pixmap.scaledToHeight(28, Qt.TransformationMode.SmoothTransformation))
+            lbl_brand.setObjectName("AppBrandLogo")
+            s_layout.addWidget(lbl_brand)
+        else:
+            lbl_brand = QLabel("NOA-E Desktop")
+            lbl_brand.setObjectName("AppBrandLabel")
+            s_layout.addWidget(lbl_brand)
 
         # 에이전트 이름
         self.lbl_agent_name = QLabel("에이전트 미로드")

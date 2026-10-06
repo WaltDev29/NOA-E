@@ -25,6 +25,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=installer_output
 OutputBaseFilename=NOA-E_Desktop_Setup_v{#MyAppVersion}
+SetupIconFile=assets\icon.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

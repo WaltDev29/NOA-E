@@ -14,6 +14,29 @@ def get_base_dir() -> str:
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
+def get_asset_path(filename: str) -> str:
+    """assets 디렉터리 내 에셋(아이콘, 로고 등)의 절대 경로를 안전하게 반환합니다."""
+    base = get_base_dir()
+    p1 = os.path.join(base, "assets", filename)
+    if os.path.exists(p1):
+        return p1
+    meipass = getattr(sys, '_MEIPASS', None)
+    if meipass:
+        p2 = os.path.join(meipass, "assets", filename)
+        if os.path.exists(p2):
+            return p2
+        p2_direct = os.path.join(meipass, filename)
+        if os.path.exists(p2_direct):
+            return p2_direct
+    p3 = os.path.join(base, filename)
+    if os.path.exists(p3):
+        return p3
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    p4 = os.path.join(src_dir, "assets", filename)
+    if os.path.exists(p4):
+        return p4
+    return p1
+
 STORAGE_DIR = os.path.join(get_base_dir(), ".storage")
 AGENTS_DIR = os.path.join(STORAGE_DIR, "agents")
 SETTINGS_FILE = os.path.join(STORAGE_DIR, "settings.json")

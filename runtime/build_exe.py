@@ -20,6 +20,9 @@ def build():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     entry_point = os.path.join(current_dir, "agent_runner.py")
     
+    assets_dir = os.path.join(current_dir, "assets")
+    icon_file = os.path.join(assets_dir, "icon.ico")
+
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--name=noa-e",
@@ -31,6 +34,7 @@ def build():
         f"--add-data={os.path.join(current_dir, 'core')};core",
         f"--add-data={os.path.join(current_dir, 'config.py')};.",
         f"--add-data={os.path.join(current_dir, 'storage.py')};.",
+        f"--add-data={assets_dir};assets",
         "--hidden-import=PySide6",
         "--hidden-import=PySide6.QtCore",
         "--hidden-import=PySide6.QtWidgets",
@@ -39,8 +43,12 @@ def build():
         "--hidden-import=langgraph",
         "--hidden-import=langchain_openai",
         "--hidden-import=colorama",
-        entry_point
     ]
+
+    if os.path.exists(icon_file):
+        cmd.append(f"--icon={icon_file}")
+
+    cmd.append(entry_point)
     
     print(f"실행 명령어: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=current_dir)
