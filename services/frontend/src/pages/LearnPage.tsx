@@ -84,27 +84,27 @@ const TOPICS_DATA: Record<string, Topic> = {
               컴퓨터는 사람의 글자를 그대로 읽지 못하고 숫자만 이해할 수 있습니다. 그래서 문장을 <strong className="text-primary">'토큰(Token)'</strong>이라는 작은 글자 조각으로 나눈 뒤 고유한 번호(숫자)로 변환합니다.
             </p>
 
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-3 font-mono text-xs">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-3 font-mono text-xs text-slate-200">
               <div className="flex items-center gap-2 text-tertiary font-bold">
                 <span className="material-symbols-outlined text-[16px]">token</span>
                 <span>토큰화(Tokenization) 과정 엿보기</span>
               </div>
-              <div className="space-y-2 text-on-surface-variant">
+              <div className="space-y-2 text-slate-300">
                 <div className="flex items-center gap-2">
-                  <span className="text-outline w-24">1. 원래 문장:</span>
-                  <span className="text-on-surface font-sans font-bold bg-surface-container px-2 py-0.5 rounded">
+                  <span className="text-slate-400 w-24">1. 원래 문장:</span>
+                  <span className="text-white font-sans font-bold bg-white/10 px-2 py-0.5 rounded">
                     "인공지능 에이전트"
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-outline w-24">2. 조각내기:</span>
-                  <span className="text-primary bg-primary/15 px-2 py-0.5 rounded border border-primary/30">
+                  <span className="text-slate-400 w-24">2. 조각내기:</span>
+                  <span className="text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
                     [ "인공", "지능", " ", "에이", "전트" ] (총 5개 토큰)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-outline w-24">3. 숫자로 변환:</span>
-                  <span className="text-secondary bg-secondary/15 px-2 py-0.5 rounded border border-secondary/30">
+                  <span className="text-slate-400 w-24">3. 숫자로 변환:</span>
+                  <span className="text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
                     [ 48291, 19204, 220, 39102, 1192 ]
                   </span>
                 </div>
@@ -132,7 +132,7 @@ const TOPICS_DATA: Record<string, Topic> = {
                 <span className="material-symbols-outlined text-[16px]">shield_person</span>
                 <span>시스템 프롬프트 실제 적용 예시</span>
               </div>
-              <pre className="text-xs font-mono text-on-surface bg-[#060e20] p-3 rounded-lg border border-outline-variant/20 leading-relaxed overflow-x-auto">
+              <pre className="text-xs font-mono text-slate-100 bg-[#060e20] p-3 rounded-lg border border-outline-variant/20 leading-relaxed overflow-x-auto">
 {`# 역할: 중학생 코딩 멘토
 # 성격: 다정하고 칭찬을 아끼지 않음
 # 규칙:
@@ -299,9 +299,9 @@ const TOPICS_DATA: Record<string, Topic> = {
               설명만 길게 늘어놓는 것보다, <strong className="text-primary">"이런 식으로 답해줘"</strong> 하고 예시(Shot)를 1~2개 직접 보여주면 인공지능이 그 패턴을 즉시 복제하여 정확하게 대답합니다.
             </p>
 
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs text-slate-200">
               <div className="text-primary font-bold">Few-Shot 프롬프트 실제 예시 (감정 분석기)</div>
-              <pre className="text-on-surface-variant overflow-x-auto text-[11px] leading-relaxed">
+              <pre className="text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
 {`다음 문장의 감정을 [긍정] 또는 [부정]으로 분류해줘:
 
 예시 1: "오늘 날씨가 너무 화창해서 기분이 좋아!" -> [긍정]
@@ -309,7 +309,7 @@ const TOPICS_DATA: Record<string, Topic> = {
 
 질문: "생각보다 음식이 훨씬 맛있어서 깜짝 놀랐습니다." ->`}
               </pre>
-              <div className="p-2 rounded bg-primary/20 text-primary font-bold text-[11px]">
+              <div className="p-2 rounded bg-primary/20 text-cyan-300 font-bold text-[11px]">
                 🤖 AI 출력: [긍정] (군더더기 없이 원하는 단어만 정확히 출력!)
               </div>
             </div>
@@ -348,9 +348,9 @@ const TOPICS_DATA: Record<string, Topic> = {
               AI 스튜디오에서 여러 노드를 연결할 때, 줄글로 된 긴 텍스트보다는 컴퓨터가 즉시 해석할 수 있는 <strong className="text-secondary">'JSON'</strong> 형식으로 답변을 출력하도록 지시하면 데이터 파이프라인을 매끄럽게 구축할 수 있습니다.
             </p>
 
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs text-slate-200">
               <div className="text-secondary font-bold">JSON 출력 요청 프롬프트 예시</div>
-              <pre className="text-on-surface-variant overflow-x-auto text-[11px] leading-relaxed">
+              <pre className="text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
 {`"사용자 리뷰에서 핵심 키워드 3개와 만족도 점수(1~5)를 JSON으로 추출해줘."
 
 {
@@ -458,24 +458,24 @@ const TOPICS_DATA: Record<string, Topic> = {
               에이전트가 문제를 해결할 때 사용하는 가장 유명한 생각 알고리즘이 바로 <strong className="text-tertiary">ReAct(Reason + Act)</strong>입니다. 스스로 추론하고, 도구를 실행하며, 결과를 관찰하여 다음 행동을 결정합니다.
             </p>
 
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-3 font-mono text-xs">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-3 font-mono text-xs text-slate-200">
               <div className="text-tertiary font-bold flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">sync</span>
                 <span>실제 ReAct 루프 동작 시나리오</span>
               </div>
-              <div className="space-y-2 text-on-surface-variant">
-                <p className="text-secondary font-semibold">❓ 사용자: "아이유의 최신 앨범 발매일과 현재 나이를 알려줘."</p>
-                <div className="p-2.5 rounded bg-surface-container/70 border border-outline-variant/20 space-y-1">
-                  <p className="text-primary font-bold">🧠 Thought 1: 최신 앨범 발매일을 먼저 인터넷에서 검색해야겠다.</p>
-                  <p className="text-tertiary font-bold">🛠️ Action 1: search_web("아이유 최신 앨범 발매일")</p>
-                  <p className="text-outline">👀 Observation 1: 검색 결과: 2024년 2월 20일 'The Winning' 발매 확인.</p>
+              <div className="space-y-2 text-slate-300">
+                <p className="text-amber-300 font-semibold">❓ 사용자: "아이유의 최신 앨범 발매일과 현재 나이를 알려줘."</p>
+                <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-1">
+                  <p className="text-cyan-400 font-bold">🧠 Thought 1: 최신 앨범 발매일을 먼저 인터넷에서 검색해야겠다.</p>
+                  <p className="text-emerald-400 font-bold">🛠️ Action 1: search_web("아이유 최신 앨범 발매일")</p>
+                  <p className="text-slate-400">👀 Observation 1: 검색 결과: 2024년 2월 20일 'The Winning' 발매 확인.</p>
                 </div>
-                <div className="p-2.5 rounded bg-surface-container/70 border border-outline-variant/20 space-y-1">
-                  <p className="text-primary font-bold">🧠 Thought 2: 이제 아이유의 출생 연도를 찾아서 올해 나이를 계산기로 빼야겠다.</p>
-                  <p className="text-tertiary font-bold">🛠️ Action 2: calculator("2026 - 1993")</p>
-                  <p className="text-outline">👀 Observation 2: 계산 결과: 33</p>
+                <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-1">
+                  <p className="text-cyan-400 font-bold">🧠 Thought 2: 이제 아이유의 출생 연도를 찾아서 올해 나이를 계산기로 빼야겠다.</p>
+                  <p className="text-emerald-400 font-bold">🛠️ Action 2: calculator("2026 - 1993")</p>
+                  <p className="text-slate-400">👀 Observation 2: 계산 결과: 33</p>
                 </div>
-                <p className="text-white font-bold bg-primary-container/20 p-2.5 rounded border border-primary/40">
+                <p className="text-white font-bold bg-primary/20 p-2.5 rounded border border-primary/40">
                   🎉 Final Answer: 아이유의 가장 최근 앨범은 2024년 2월 발매된 'The Winning'이며, 2026년 기준 만 33세입니다.
                 </p>
               </div>
@@ -624,9 +624,9 @@ const TOPICS_DATA: Record<string, Topic> = {
               인공지능이 도구를 실행하는 방식은 마법이 아닙니다. 인공지능은 코드를 직접 실행할 수 없기 때문에, 컴퓨터에게 <strong className="text-primary">"이 함수를 이 값으로 실행해줘!"</strong>라고 아주 정확한 규격(JSON 포맷)으로 쪽지를 써서 건넵니다.
             </p>
 
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs">
-              <div className="text-primary font-bold">인공지능이 컴퓨터에게 보내는 쪽지 (JSON Tool Call)</div>
-              <pre className="text-on-surface-variant overflow-x-auto text-[11px] leading-relaxed">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs text-slate-200">
+              <div className="text-cyan-400 font-bold">인공지능이 컴퓨터에게 보내는 쪽지 (JSON Tool Call)</div>
+              <pre className="text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
 {`{
   "name": "search_web",
   "arguments": {
@@ -635,7 +635,7 @@ const TOPICS_DATA: Record<string, Topic> = {
   }
 }`}
               </pre>
-              <p className="text-[11px] text-tertiary pt-1">
+              <p className="text-[11px] text-emerald-400 pt-1">
                 ➔ 컴퓨터가 위 명령을 받아 실제 인터넷을 검색한 뒤, 검색된 뉴스 결과를 다시 인공지능에게 전달합니다!
               </p>
             </div>
@@ -750,9 +750,9 @@ const TOPICS_DATA: Record<string, Topic> = {
               사서가 방대한 문서에서 원하는 문장을 초고속으로 찾는 비결은 <strong className="text-primary">'벡터 임베딩(Vector Embedding)'</strong>입니다. 문장을 수백 개의 숫자(좌표)로 바꾸면, 의미가 비슷한 문장끼리는 지도 위에서 가까운 거리에 위치하게 됩니다.
             </p>
 
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs">
-              <div className="text-primary font-bold">의미적 유사도 거리 예시</div>
-              <div className="space-y-1.5 text-on-surface-variant text-[11px]">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-2 font-mono text-xs text-slate-200">
+              <div className="text-cyan-400 font-bold">의미적 유사도 거리 예시</div>
+              <div className="space-y-1.5 text-slate-300 text-[11px]">
                 <p>📍 "강아지" 와 "멍멍이" ➔ 의미가 매우 비슷함 (거리: 0.1 아주 가까움)</p>
                 <p>📍 "강아지" 와 "고양이" ➔ 같은 동물/반려동물 (거리: 0.3 비교적 가까움)</p>
                 <p>📍 "강아지" 와 "비행기" ➔ 전혀 관련 없음 (거리: 0.9 아주 멂)</p>
@@ -1004,9 +1004,9 @@ const TOPICS_DATA: Record<string, Topic> = {
         summary: '시작부터 끝까지 5분 만에 조립하는 첫 번째 AI 파이프라인',
         content: (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-3 font-mono text-xs">
-              <div className="text-primary font-bold">🛠️ 뉴스 요약 봇 조립 레시피</div>
-              <div className="space-y-2 text-on-surface-variant text-[11px]">
+            <div className="p-4 rounded-xl bg-[#060e20] border border-outline-variant/30 space-y-3 font-mono text-xs text-slate-200">
+              <div className="text-cyan-400 font-bold">🛠️ 뉴스 요약 봇 조립 레시피</div>
+              <div className="space-y-2 text-slate-300 text-[11px]">
                 <p>1️⃣ [Start 노드]: "오늘의 IT 뉴스 알려줘" 입력</p>
                 <p>2️⃣ [Web Search 도구 노드]: 구글/네이버 IT 뉴스 검색 실행</p>
                 <p>3️⃣ [LLM 노드]: "검색된 기사를 중학생도 이해하기 쉽게 3줄 불릿포인트로 요약해줘"</p>
