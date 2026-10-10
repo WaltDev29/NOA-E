@@ -1,5 +1,7 @@
 # 🚀 NOA-E (Node Oriented Agent - Education)
 
+<img width="2170" height="725" alt="logo_with_bg" src="https://github.com/user-attachments/assets/2237d965-94e4-4cb6-b6f1-ce27b105c69a" />
+
 > NOA-E는 **React Flow** 기반의 직관적인 시각적 노드 에디터와 **FastAPI + LangGraph** 엔진, 그리고 독립형 데스크톱 실행기를 통해 AI Agent를 학습하고 설계하여 로컬 환경에서 직접 실행하는 교육·실습 플랫폼입니다.
 
 ---
