@@ -4,13 +4,16 @@ import { Footer } from '../components/layout/Footer';
 import { Link } from '../router/Router';
 import { TEMPLATES_DATA } from './TemplatesPage';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import { workflowApi } from '../services/workflowApi';
 import type { WorkflowDetail } from '../services/workflowApi';
 
 export const MainPage: React.FC = () => {
   const { user } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const [myWorkflows, setMyWorkflows] = useState<WorkflowDetail[]>([]);
   const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMouseDown = useRef(false);
@@ -39,11 +42,42 @@ export const MainPage: React.FC = () => {
     loadWorkflows();
   }, [user?.id]);
 
+  // 메뉴 바깥 클릭 시 닫기
+  useEffect(() => {
+    const handleGlobalClick = () => setOpenMenuId(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
+  const handleDuplicateWorkflow = async (e: React.MouseEvent, workflowId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpenMenuId(null);
+    if (!user?.id) return;
+
+    try {
+      const duplicated = await workflowApi.duplicate(workflowId, user.id);
+      setMyWorkflows((prev) => [duplicated, ...prev]);
+    } catch (err) {
+      console.error('Failed to duplicate workflow:', err);
+      showAlert('에이전트 복제 중 오류가 발생했습니다.', { type: 'error' });
+    }
+  };
+
   const handleDeleteWorkflow = async (e: React.MouseEvent, workflowId: string, title: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setOpenMenuId(null);
     if (!user?.id) return;
-    if (!window.confirm(`'${title}' 에이전트를 정말 삭제하시겠습니까?`)) {
+
+    const confirmed = await showConfirm(`'${title}' 에이전트를 정말 삭제하시겠습니까?`, {
+      title: '에이전트 삭제',
+      type: 'warning',
+      isDanger: true,
+      confirmText: '삭제',
+      cancelText: '취소',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -52,7 +86,7 @@ export const MainPage: React.FC = () => {
       setMyWorkflows((prev) => prev.filter((w) => w.id !== workflowId));
     } catch (err) {
       console.error('Failed to delete workflow:', err);
-      alert('에이전트 삭제 중 오류가 발생했습니다.');
+      showAlert('에이전트 삭제 중 오류가 발생했습니다.', { type: 'error' });
     }
   };
 
@@ -362,9 +396,6 @@ export const MainPage: React.FC = () => {
                   </div>
                   <div className="flex flex-col gap-1 max-w-sm">
                     <p className="text-sm font-bold text-on-surface">아직 제작한 에이전트가 없습니다</p>
-                    <p className="text-xs text-outline leading-relaxed">
-                      시각적 노드 에디터에서 직관적으로 나만의 AI Agent를 설계하고 직접 실행해보세요!
-                    </p>
                   </div>
                   <Link
                     to="/noa-e/studio"
@@ -391,18 +422,49 @@ export const MainPage: React.FC = () => {
                       key={agent.id}
                       className="w-[290px] sm:w-[320px] shrink-0 rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 hover:border-primary/50 overflow-hidden flex flex-col group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm select-none relative"
                     >
-                      {/* Top Delete Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteWorkflow(e, agent.id, agent.title)}
-                        title="에이전트 삭제"
-                        className="absolute top-3 right-3 z-20 w-8 h-8 rounded-lg bg-surface-container/80 hover:bg-error-container text-outline hover:text-error border border-outline-variant/30 transition-all flex items-center justify-center opacity-70 group-hover:opacity-100 backdrop-blur-md active:scale-95"
-                      >
-                        <span className="material-symbols-outlined text-[17px]">delete</span>
-                      </button>
+                      {/* More Menu (...) Button & Dropdown */}
+                      <div className="absolute top-3 right-3 z-30">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpenMenuId((prev) => (prev === agent.id ? null : agent.id));
+                          }}
+                          title="더보기"
+                          className="w-8 h-8 rounded-lg bg-surface-container/80 hover:bg-surface-bright text-outline hover:text-on-surface border border-outline-variant/30 transition-all flex items-center justify-center opacity-80 group-hover:opacity-100 backdrop-blur-md active:scale-95 shadow-sm"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {openMenuId === agent.id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 mt-1.5 w-32 rounded-xl bg-surface-container-high/95 border border-outline-variant/40 shadow-xl backdrop-blur-xl p-1.5 z-40 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => handleDuplicateWorkflow(e, agent.id)}
+                              className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-on-surface hover:bg-surface-bright flex items-center gap-2 transition-colors text-left"
+                            >
+                              <span className="material-symbols-outlined text-[15px] text-primary">content_copy</span>
+                              <span>복제하기</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteWorkflow(e, agent.id, agent.title)}
+                              className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-error hover:bg-error-container/30 flex items-center gap-2 transition-colors text-left"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">delete</span>
+                              <span>삭제하기</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
 
                       <Link
-                        to="/noa-e/studio"
+                        to={`/noa-e/studio?id=${agent.id}`}
                         onClick={handleCardClick}
                         draggable={false}
                         className="flex flex-col flex-1"

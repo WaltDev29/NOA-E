@@ -11,6 +11,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { ModalProvider } from './context/ModalContext';
 import logoImg from './assets/logo.png';
 
 const NotFoundPage: React.FC = () => {
@@ -89,9 +90,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <RouterProvider>
-          <AppRoutes />
-        </RouterProvider>
+        <ModalProvider>
+          <RouterProvider>
+            <AppRoutes />
+          </RouterProvider>
+        </ModalProvider>
       </AuthProvider>
     </ThemeProvider>
   );

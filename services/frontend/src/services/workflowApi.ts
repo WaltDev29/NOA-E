@@ -44,6 +44,18 @@ export const workflowApi = {
     return res.data;
   },
 
+  async getById(workflowId: string): Promise<WorkflowDetail> {
+    const res = await apiClient.get<WorkflowDetail>(`/${workflowId}`);
+    return res.data;
+  },
+
+  async duplicate(workflowId: string, userId: string): Promise<WorkflowDetail> {
+    const res = await apiClient.post<WorkflowDetail>(`/${workflowId}/duplicate`, null, {
+      params: { user_id: userId },
+    });
+    return res.data;
+  },
+
   async delete(workflowId: string, userId: string): Promise<void> {
     await apiClient.delete(`/${workflowId}`, {
       params: { user_id: userId },

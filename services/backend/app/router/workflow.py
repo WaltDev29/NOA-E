@@ -26,13 +26,26 @@ def save_workflow(req: WorkflowSaveRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
+    clean_title = req.title.strip()
+    if not clean_title:
+        raise HTTPException(status_code=400, detail="에이전트 이름을 입력해주세요.")
+
     # 2. 기존 워크플로우 업데이트 또는 신규 생성
     if req.id:
         try:
             wf_uuid = uuid.UUID(req.id)
             wf = db.get(AgentWorkflow, wf_uuid)
             if wf and wf.user_id == user_uuid:
-                wf.title = req.title
+                # 수정 시 동일 사용자 내 다른 에이전트와 이름 중복 확인
+                dup_stmt = select(AgentWorkflow).where(
+                    AgentWorkflow.user_id == user_uuid,
+                    AgentWorkflow.title == clean_title,
+                    AgentWorkflow.id != wf_uuid
+                )
+                if db.execute(dup_stmt).scalar_one_or_none():
+                    raise HTTPException(status_code=400, detail=f"'{clean_title}' 이름의 에이전트가 이미 존재합니다.")
+
+                wf.title = clean_title
                 wf.description = req.description
                 wf.graph_data = req.graph_data
                 db.commit()
@@ -49,10 +62,17 @@ def save_workflow(req: WorkflowSaveRequest, db: Session = Depends(get_db)):
         except ValueError:
             pass
 
-    # 신규 워크플로우 생성
+    # 신규 생성 시 동일 사용자 내 이름 중복 확인
+    dup_stmt = select(AgentWorkflow).where(
+        AgentWorkflow.user_id == user_uuid,
+        AgentWorkflow.title == clean_title
+    )
+    if db.execute(dup_stmt).scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"'{clean_title}' 이름의 에이전트가 이미 존재합니다.")
+
     new_wf = AgentWorkflow(
         user_id=user_uuid,
-        title=req.title,
+        title=clean_title,
         description=req.description,
         graph_data=req.graph_data,
     )
@@ -96,6 +116,80 @@ def get_my_workflows(user_id: str = Query(..., description="사용자 ID"), db: 
         )
         for w in workflows
     ]
+
+@router.get("/{workflow_id}", response_model=WorkflowDetailResponse, summary="단일 워크플로우 상세 조회")
+def get_workflow_by_id(workflow_id: str, db: Session = Depends(get_db)):
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="유효하지 않은 ID 형식입니다.")
+
+    wf = db.get(AgentWorkflow, wf_uuid)
+    if not wf:
+        raise HTTPException(status_code=404, detail="워크플로우를 찾을 수 없습니다.")
+
+    return WorkflowDetailResponse(
+        id=str(wf.id),
+        user_id=str(wf.user_id),
+        title=wf.title,
+        description=wf.description,
+        graph_data=wf.graph_data,
+        created_at=wf.created_at.isoformat(),
+        updated_at=wf.updated_at.isoformat(),
+    )
+
+@router.post("/{workflow_id}/duplicate", response_model=WorkflowDetailResponse, summary="에이전트 워크플로우 복제")
+def duplicate_workflow(
+    workflow_id: str,
+    user_id: str = Query(..., description="사용자 ID"),
+    db: Session = Depends(get_db)
+):
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="유효하지 않은 ID 형식입니다.")
+
+    wf = db.get(AgentWorkflow, wf_uuid)
+    if not wf or wf.user_id != user_uuid:
+        raise HTTPException(status_code=404, detail="복제할 워크플로우를 찾을 수 없거나 권한이 없습니다.")
+
+    # 복제 이름 결정 규칙:
+    # 1. '이름(복사본)' 시도
+    # 2. 존재하면 '이름(복사본1)', '이름(복사본2)' ... 순차 증가 검사
+    base_title = wf.title
+    # 만약 이미 끝이 (복사본) 또는 (복사본N)이면 기본 명칭 유지
+    stmt_all_titles = select(AgentWorkflow.title).where(AgentWorkflow.user_id == user_uuid)
+    existing_titles = set(db.execute(stmt_all_titles).scalars().all())
+
+    candidate = f"{base_title}(복사본)"
+    if candidate in existing_titles:
+        counter = 1
+        while True:
+            candidate = f"{base_title}(복사본{counter})"
+            if candidate not in existing_titles:
+                break
+            counter += 1
+
+    new_wf = AgentWorkflow(
+        user_id=user_uuid,
+        title=candidate,
+        description=wf.description,
+        graph_data=wf.graph_data,
+    )
+    db.add(new_wf)
+    db.commit()
+    db.refresh(new_wf)
+
+    return WorkflowDetailResponse(
+        id=str(new_wf.id),
+        user_id=str(new_wf.user_id),
+        title=new_wf.title,
+        description=new_wf.description,
+        graph_data=new_wf.graph_data,
+        created_at=new_wf.created_at.isoformat(),
+        updated_at=new_wf.updated_at.isoformat(),
+    )
 
 @router.delete("/{workflow_id}", status_code=status.HTTP_200_OK, summary="에이전트 워크플로우 삭제")
 def delete_workflow(

@@ -135,7 +135,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     set({
       nodes: get().nodes.map((node) => {
         if (node.id === nodeId) {
-          const updatedNode = { ...node, data: { ...node.data, config: { ...node.data.config, ...config } } };
+          const updatedNode = { ...node, data: { ...node.data, config: { ...(node.data as any)?.config, ...config } } };
           // If the updated node is also the selected node, update selectedNode state
           if (get().selectedNode?.id === nodeId) {
             set({ selectedNode: updatedNode });

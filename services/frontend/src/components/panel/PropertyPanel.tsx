@@ -37,7 +37,7 @@ export const PropertyPanel: React.FC = () => {
   }
 
   const { id, type, data } = selectedNode;
-  const config = data.config || {};
+  const config = (data as any)?.config || {};
 
   const getNodeDefaultName = (nodeType?: string) => {
     const labels: Record<string, string> = {
