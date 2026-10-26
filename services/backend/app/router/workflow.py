@@ -1,10 +1,124 @@
 import json
-from fastapi import APIRouter
+import uuid
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import select, desc
+
 from app.core.engine.compiler import WorkflowCompiler
-from app.schemas.workflow import WorkflowRequest
+from app.schemas.workflow import WorkflowRequest, WorkflowSaveRequest, WorkflowDetailResponse
+from app.db.session import get_db
+from app.models.workflow import AgentWorkflow
+from app.models.user import User
 
 router = APIRouter()
+
+@router.post("/save", response_model=WorkflowDetailResponse, summary="워크플로우 저장/수정")
+def save_workflow(req: WorkflowSaveRequest, db: Session = Depends(get_db)):
+    # 1. 사용자 존재 여부 확인
+    try:
+        user_uuid = uuid.UUID(req.user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="유효하지 않은 사용자 ID입니다.")
+
+    user = db.get(User, user_uuid)
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    # 2. 기존 워크플로우 업데이트 또는 신규 생성
+    if req.id:
+        try:
+            wf_uuid = uuid.UUID(req.id)
+            wf = db.get(AgentWorkflow, wf_uuid)
+            if wf and wf.user_id == user_uuid:
+                wf.title = req.title
+                wf.description = req.description
+                wf.graph_data = req.graph_data
+                db.commit()
+                db.refresh(wf)
+                return WorkflowDetailResponse(
+                    id=str(wf.id),
+                    user_id=str(wf.user_id),
+                    title=wf.title,
+                    description=wf.description,
+                    graph_data=wf.graph_data,
+                    created_at=wf.created_at.isoformat(),
+                    updated_at=wf.updated_at.isoformat(),
+                )
+        except ValueError:
+            pass
+
+    # 신규 워크플로우 생성
+    new_wf = AgentWorkflow(
+        user_id=user_uuid,
+        title=req.title,
+        description=req.description,
+        graph_data=req.graph_data,
+    )
+    db.add(new_wf)
+    db.commit()
+    db.refresh(new_wf)
+
+    return WorkflowDetailResponse(
+        id=str(new_wf.id),
+        user_id=str(new_wf.user_id),
+        title=new_wf.title,
+        description=new_wf.description,
+        graph_data=new_wf.graph_data,
+        created_at=new_wf.created_at.isoformat(),
+        updated_at=new_wf.updated_at.isoformat(),
+    )
+
+@router.get("/my", response_model=List[WorkflowDetailResponse], summary="내 에이전트 워크플로우 목록 조회")
+def get_my_workflows(user_id: str = Query(..., description="사용자 ID"), db: Session = Depends(get_db)):
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="유효하지 않은 사용자 ID입니다.")
+
+    stmt = (
+        select(AgentWorkflow)
+        .where(AgentWorkflow.user_id == user_uuid)
+        .order_by(desc(AgentWorkflow.updated_at))
+    )
+    workflows = db.execute(stmt).scalars().all()
+
+    return [
+        WorkflowDetailResponse(
+            id=str(w.id),
+            user_id=str(w.user_id),
+            title=w.title,
+            description=w.description,
+            graph_data=w.graph_data,
+            created_at=w.created_at.isoformat(),
+            updated_at=w.updated_at.isoformat(),
+        )
+        for w in workflows
+    ]
+
+@router.delete("/{workflow_id}", status_code=status.HTTP_200_OK, summary="에이전트 워크플로우 삭제")
+def delete_workflow(
+    workflow_id: str,
+    user_id: str = Query(..., description="사용자 ID"),
+    db: Session = Depends(get_db)
+):
+    try:
+        wf_uuid = uuid.UUID(workflow_id)
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="유효하지 않은 ID 형식입니다.")
+
+    wf = db.get(AgentWorkflow, wf_uuid)
+    if not wf:
+        raise HTTPException(status_code=404, detail="워크플로우를 찾을 수 없습니다.")
+
+    if wf.user_id != user_uuid:
+        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
+
+    db.delete(wf)
+    db.commit()
+    return {"message": "에이전트 워크플로우가 성공적으로 삭제되었습니다."}
 
 @router.post("/run")
 async def run_workflow(request: WorkflowRequest):

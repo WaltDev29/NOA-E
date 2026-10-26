@@ -9,18 +9,25 @@ import { NodeInfoModal } from '../components/editor/NodeInfoModal';
 import { OutputResultModal } from '../components/editor/OutputResultModal';
 import { ExportModal } from '../components/panel/ExportModal';
 import { useWorkflowStore } from '../store/useWorkflowStore';
+import { useAuth } from '../context/AuthContext';
+import { workflowApi } from '../services/workflowApi';
 
 export const StudioPage: React.FC = () => {
+  const { user } = useAuth();
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(undefined);
   const [agentName, setAgentName] = useState('새로운 에이전트 만들기');
   const [isEditingName, setIsEditingName] = useState(false);
   const [showPalette, setShowPalette] = useState(true);
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'results'>('properties');
   const [savedNotice, setSavedNotice] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
 
+  const nodes = useWorkflowStore((state) => state.nodes);
+  const edges = useWorkflowStore((state) => state.edges);
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
   const isExecuting = useWorkflowStore((state) => state.isExecuting);
   const nodeResults = useWorkflowStore((state) => state.nodeResults);
@@ -82,12 +89,35 @@ export const StudioPage: React.FC = () => {
     };
   }, [isResizing]);
 
-  // 1. 현재 상태 저장 (로컬스토리지에 저장)
-  const handleSave = () => {
+  // 1. 현재 상태 저장 (DB 영속화 및 로컬 백업)
+  const handleSave = async () => {
     saveToLocalStorage(agentName);
-    setSavedNotice(true);
-    addLog(`현재 에이전트 [${agentName}]의 캔버스 상태가 브라우저에 저장되었습니다.`);
-    setTimeout(() => setSavedNotice(false), 2000);
+
+    if (user?.id) {
+      try {
+        setIsSaving(true);
+        const result = await workflowApi.save({
+          id: currentWorkflowId,
+          user_id: user.id,
+          title: agentName,
+          graph_data: { nodes, edges },
+        });
+        setCurrentWorkflowId(result.id);
+        setSavedNotice(true);
+        addLog(`에이전트 [${agentName}]가 데이터베이스(DB)에 성공적으로 저장되었습니다.`);
+      } catch (err) {
+        console.error('Failed to save workflow to DB:', err);
+        addLog(`[경고] DB 저장 실패. 로컬 브라우저에 임시 저장되었습니다.`);
+        setSavedNotice(true);
+      } finally {
+        setIsSaving(false);
+        setTimeout(() => setSavedNotice(false), 2500);
+      }
+    } else {
+      setSavedNotice(true);
+      addLog(`현재 에이전트 [${agentName}]의 상태가 로컬 브라우저에 저장되었습니다.`);
+      setTimeout(() => setSavedNotice(false), 2000);
+    }
   };
 
   // 2. 다운로드 모달 열기 (현재 그래프 실시간 다운로드)
@@ -151,16 +181,21 @@ export const StudioPage: React.FC = () => {
               {/* 1. 현재 상태 저장 버튼 */}
               <button
                 onClick={handleSave}
+                disabled={isSaving}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${savedNotice
                   ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_10px_rgba(76,215,246,0.3)]'
-                  : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95'
+                  : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95 disabled:opacity-50'
                   }`}
                 title={savedNotice ? '저장됨' : '현재 상태 저장'}
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">
-                  {savedNotice ? 'check' : 'save'}
-                </span>
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-[18px]">
+                    {savedNotice ? 'check' : 'save'}
+                  </span>
+                )}
               </button>
 
               {/* 2. 저장 버튼 우측에 배치된 다운로드 버튼 */}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from '../../router/Router';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.png';
 
 interface NotificationItem {
@@ -38,6 +39,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 export const Header: React.FC = () => {
   const { pathname } = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const notiRef = useRef<HTMLDivElement>(null);
@@ -131,7 +133,7 @@ export const Header: React.FC = () => {
           </nav>
         </div>
 
-        {/* Right Status Actions */}
+          {/* Right Status Actions */}
         <div className="flex items-center gap-3">
           {/* Theme Toggle Button */}
           <button
@@ -146,86 +148,121 @@ export const Header: React.FC = () => {
             </span>
           </button>
 
-          {/* Notification Button & Dropdown */}
-          <div className="relative" ref={notiRef}>
-            <button
-              aria-label="알림"
-              onClick={() => setIsNotificationOpen((prev) => !prev)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all relative ${
-                isNotificationOpen
-                  ? 'bg-surface-container-highest text-primary shadow-sm'
-                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
-              }`}
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_rgba(77,142,255,0.8)] animate-pulse" />
-              )}
-            </button>
+          {/* Notification Button & Dropdown (로그인 시에만 알림 활성화) */}
+          {isAuthenticated && (
+            <div className="relative" ref={notiRef}>
+              <button
+                aria-label="알림"
+                onClick={() => setIsNotificationOpen((prev) => !prev)}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all relative ${
+                  isNotificationOpen
+                    ? 'bg-surface-container-highest text-primary shadow-sm'
+                    : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+                }`}
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[20px]">notifications</span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_rgba(77,142,255,0.8)] animate-pulse" />
+                )}
+              </button>
 
-            {/* Notification Dropdown Menu */}
-            {isNotificationOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-surface-container-low/95 border border-outline-variant/30 shadow-2xl backdrop-blur-xl p-4 z-50 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-on-surface text-sm">알림</span>
+              {/* Notification Dropdown Menu */}
+              {isNotificationOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-surface-container-low/95 border border-outline-variant/30 shadow-2xl backdrop-blur-xl p-4 z-50 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-on-surface text-sm">알림</span>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-mono font-bold">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
                     {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-mono font-bold">
-                        {unreadCount} new
-                      </span>
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-outline hover:text-primary transition-colors font-medium"
+                        type="button"
+                      >
+                        모두 읽음
+                      </button>
                     )}
                   </div>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="text-xs text-outline hover:text-primary transition-colors font-medium"
-                      type="button"
-                    >
-                      모두 읽음
-                    </button>
-                  )}
-                </div>
 
-                {/* Notifications List */}
-                <div className="flex flex-col gap-2 max-h-72 overflow-y-auto no-scrollbar">
-                  {notifications.map((noti) => (
-                    <div
-                      key={noti.id}
-                      className={`p-3 rounded-xl transition-all flex items-start gap-3 ${
-                        noti.isUnread
-                          ? 'bg-surface-container/90 border border-primary/20'
-                          : 'bg-surface-container-lowest/40 opacity-70'
-                      }`}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                      <div className="flex flex-col flex-1">
-                        <span className="text-xs font-semibold text-on-surface leading-snug">
-                          {noti.title}
-                        </span>
-                        <span className="text-[10px] text-outline mt-1 font-mono">
-                          {noti.time}
-                        </span>
+                  {/* Notifications List */}
+                  <div className="flex flex-col gap-2 max-h-72 overflow-y-auto no-scrollbar">
+                    {notifications.map((noti) => (
+                      <div
+                        key={noti.id}
+                        className={`p-3 rounded-xl transition-all flex items-start gap-3 ${
+                          noti.isUnread
+                            ? 'bg-surface-container/90 border border-primary/20'
+                            : 'bg-surface-container-lowest/40 opacity-70'
+                        }`}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                        <div className="flex flex-col flex-1">
+                          <span className="text-xs font-semibold text-on-surface leading-snug">
+                            {noti.title}
+                          </span>
+                          <span className="text-[10px] text-outline mt-1 font-mono">
+                            {noti.time}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
-          {/* My Page Avatar Button */}
-          <Link
-            to="/noa-e/mypage"
-            aria-label="마이페이지"
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-              isMyPage
-                ? 'bg-primary text-on-primary ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_14px_rgba(77,142,255,0.5)]'
-                : 'bg-primary-container text-white hover:brightness-110 shadow-[0_0_10px_rgba(77,142,255,0.35)] hover:scale-105 active:scale-95'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[20px]">person</span>
-          </Link>
+          {/* User Auth Section */}
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/noa-e/mypage"
+                aria-label="마이페이지"
+                title={`${user.name}님의 마이페이지`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${
+                  isMyPage
+                    ? 'bg-primary text-on-primary shadow-[0_0_14px_rgba(77,142,255,0.5)]'
+                    : 'bg-surface-container hover:bg-surface-container-high text-on-surface'
+                }`}
+              >
+                <div className="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-white text-xs font-bold">
+                  {user.name.slice(0, 1).toUpperCase()}
+                </div>
+                <span className="text-xs font-medium max-w-[80px] truncate hidden sm:inline">
+                  {user.name}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                title="로그아웃"
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-surface-container text-on-surface-variant hover:text-error hover:bg-surface-container-high active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">logout</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/noa-e/login"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-on-surface hover:text-primary hover:bg-surface-container transition-all"
+              >
+                로그인
+              </Link>
+              <Link
+                to="/noa-e/register"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-inverse-primary to-primary-container text-on-surface text-xs font-semibold shadow-[0_0_14px_rgba(77,142,255,0.3)] hover:brightness-110 active:scale-95 transition-all"
+              >
+                회원가입
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>
