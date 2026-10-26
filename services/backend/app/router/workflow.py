@@ -1,27 +1,10 @@
 import json
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import List, Dict, Any
-
 from app.core.engine.compiler import WorkflowCompiler
+from app.schemas.workflow import WorkflowRequest
 
 router = APIRouter()
-
-class EdgeModel(BaseModel):
-    id: str
-    source: str
-    target: str
-
-class NodeModel(BaseModel):
-    id: str
-    type: str
-    data: Dict[str, Any]
-
-class WorkflowRequest(BaseModel):
-    nodes: List[NodeModel]
-    edges: List[EdgeModel]
-    messages: List[Dict[str, Any]] = []
 
 @router.post("/run")
 async def run_workflow(request: WorkflowRequest):
