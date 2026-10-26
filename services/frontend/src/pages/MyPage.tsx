@@ -1,134 +1,79 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link } from '../router/Router';
 import { useTheme } from '../context/ThemeContext';
-
-interface AgentProject {
-  id: string;
-  name: string;
-  updatedAt: string;
-  themeColor: string;
-  dotColor: string;
-  graphSvg: React.ReactNode;
-}
-
-const AGENT_PROJECTS: AgentProject[] = [
-  {
-    id: '1',
-    name: '스마트 영어 튜터',
-    updatedAt: '2026. 09. 26 16:20',
-    themeColor: 'border-primary/40 hover:border-primary',
-    dotColor: '#4d8eff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 50 60 C 90 60, 100 40, 130 40" stroke="#4d8eff" strokeWidth="2" strokeDasharray="3 3" />
-        <path d="M 130 40 C 160 40, 170 60, 210 60" stroke="#4d8eff" strokeWidth="2" />
-        <rect x="20" y="44" width="36" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="38" y="64" fill="#adc6ff" fontSize="10" textAnchor="middle" fontFamily="monospace">IN</text>
-        <rect x="110" y="24" width="48" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="134" y="44" fill="#d0bcff" fontSize="10" fontWeight="bold" textAnchor="middle">LLM</text>
-        <rect x="200" y="44" width="42" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="221" y="64" fill="#4cd7f6" fontSize="10" textAnchor="middle" fontFamily="monospace">OUT</text>
-      </svg>
-    ),
-  },
-  {
-    id: '2',
-    name: '보고서 요약 봇',
-    updatedAt: '2026. 09. 25 18:45',
-    themeColor: 'border-secondary/40 hover:border-secondary',
-    dotColor: '#d0bcff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 135 60 L 175 60" stroke="#c4abff" strokeWidth="2" strokeDasharray="3 3" />
-        <path d="M 215 60 L 235 60" stroke="#4cd7f6" strokeWidth="2" />
-        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="90" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="113" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">DOC</text>
-        <rect x="170" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="193" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">LLM</text>
-      </svg>
-    ),
-  },
-  {
-    id: '3',
-    name: '파이썬 연산기',
-    updatedAt: '2026. 09. 23 11:10',
-    themeColor: 'border-tertiary/40 hover:border-tertiary',
-    dotColor: '#4cd7f6',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 45 C 80 45, 90 75, 125 75" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 165 75 C 185 75, 195 45, 220 45" stroke="#4cd7f6" strokeWidth="2" strokeDasharray="3 3" />
-        <rect x="15" y="30" width="34" height="30" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="120" y="60" width="48" height="30" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="144" y="79" fill="#4cd7f6" fontSize="10" textAnchor="middle" fontFamily="monospace">&lt;/&gt;</text>
-        <rect x="215" y="30" width="34" height="30" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-      </svg>
-    ),
-  },
-  {
-    id: '4',
-    name: '실시간 뉴스 요약기',
-    updatedAt: '2026. 09. 21 09:30',
-    themeColor: 'border-primary/40 hover:border-primary',
-    dotColor: '#4d8eff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 140 60 L 180 60" stroke="#acedff" strokeWidth="2" />
-        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="95" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="118" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">SEARCH</text>
-        <rect x="180" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="203" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">LLM</text>
-      </svg>
-    ),
-  },
-  {
-    id: '5',
-    name: '이미지 크리에이터',
-    updatedAt: '2026. 09. 19 14:15',
-    themeColor: 'border-secondary/40 hover:border-secondary',
-    dotColor: '#c4abff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 140 60 L 180 60" stroke="#d0bcff" strokeWidth="2" strokeDasharray="3 3" />
-        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="95" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#adc6ff" strokeWidth="1.5" />
-        <text x="118" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">PROMPT</text>
-        <rect x="180" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#d0bcff" strokeWidth="1.5" />
-        <text x="203" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">IMAGE</text>
-      </svg>
-    ),
-  },
-  {
-    id: '6',
-    name: '고객 상담 자동 분류기',
-    updatedAt: '2026. 09. 15 17:00',
-    themeColor: 'border-tertiary/40 hover:border-tertiary',
-    dotColor: '#4cd7f6',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 C 80 60, 85 40, 115 40" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 45 60 C 80 60, 85 80, 115 80" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 160 40 L 195 40" stroke="#4cd7f6" strokeWidth="2" />
-        <path d="M 160 80 L 195 80" stroke="#c4abff" strokeWidth="2" />
-        <rect x="15" y="44" width="32" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="115" y="24" width="46" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="138" y="44" fill="#4cd7f6" fontSize="9" textAnchor="middle">CASE A</text>
-        <rect x="115" y="64" width="46" height="32" rx="8" fill="#171f33" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="138" y="84" fill="#c4abff" fontSize="9" textAnchor="middle">CASE B</text>
-      </svg>
-    ),
-  },
-];
+import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
+import { workflowApi } from '../services/workflowApi';
+import type { WorkflowDetail } from '../services/workflowApi';
 
 export const MyPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const { showAlert, showConfirm } = useModal();
+  const [workflows, setWorkflows] = useState<WorkflowDetail[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const loadWorkflows = async () => {
+    if (!user?.id) return;
+    try {
+      setIsLoading(true);
+      const data = await workflowApi.getMyWorkflows(user.id);
+      setWorkflows(data);
+    } catch (e) {
+      console.error('Failed to load my workflows:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkflows();
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handleGlobalClick = () => setOpenMenuId(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
+  const handleDuplicate = async (workflowId: string) => {
+    setOpenMenuId(null);
+    if (!user?.id) return;
+    try {
+      const duplicated = await workflowApi.duplicate(workflowId, user.id);
+      setWorkflows((prev) => [duplicated, ...prev]);
+    } catch (e) {
+      console.error('Failed to duplicate workflow:', e);
+      showAlert('에이전트 복제 중 오류가 발생했습니다.', { type: 'error' });
+    }
+  };
+
+  const handleDelete = async (workflowId: string, title: string) => {
+    setOpenMenuId(null);
+    if (!user?.id) return;
+
+    const confirmed = await showConfirm(`'${title}' 에이전트를 정말 삭제하시겠습니까?`, {
+      title: '에이전트 삭제',
+      type: 'warning',
+      isDanger: true,
+      confirmText: '삭제',
+      cancelText: '취소',
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await workflowApi.delete(workflowId, user.id);
+      setWorkflows((prev) => prev.filter((w) => w.id !== workflowId));
+    } catch (e) {
+      console.error('Failed to delete workflow:', e);
+      showAlert('에이전트 삭제 중 오류가 발생했습니다.', { type: 'error' });
+    }
+  };
 
   return (
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen flex flex-col">
@@ -137,34 +82,51 @@ export const MyPage: React.FC = () => {
       <main className="w-full pt-16 bg-background min-h-screen flex-1 flex flex-col">
         <div className="w-full max-w-6xl mx-auto px-6 lg:px-8 py-space-lg flex flex-col gap-6">
           {/* Top Header */}
-          <div>
+          <div className="flex items-center justify-between">
             <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
               마이페이지
             </h1>
+            <button
+              type="button"
+              onClick={logout}
+              className="px-4 py-2 rounded-xl bg-error-container/20 text-error hover:bg-error-container/40 border border-error/30 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[16px]">logout</span>
+              <span>로그아웃</span>
+            </button>
           </div>
 
           {/* 1. User Profile Card */}
           <div className="rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row items-center gap-5">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary-container to-secondary-container flex items-center justify-center text-white shadow-[0_0_16px_rgba(77,142,255,0.4)] shrink-0">
-                <span className="material-symbols-outlined text-[32px]">person</span>
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary-container to-secondary-container flex items-center justify-center text-white shadow-[0_0_16px_rgba(77,142,255,0.4)] shrink-0 font-bold text-2xl">
+                {user?.name ? user.name.slice(0, 1).toUpperCase() : 'U'}
               </div>
               <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-                <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  학생 개발자
-                </h2>
-                <span className="text-xs text-outline mt-0.5">student@noa-e.edu</span>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
+                    {user?.name || '사용자'}
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold border border-primary/20">
+                    {user?.role || 'USER'}
+                  </span>
+                </div>
+                <span className="text-xs text-outline mt-0.5">{user?.email}</span>
+                {user?.phone_number && (
+                  <span className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">call</span>
+                    <span>{user.phone_number}</span>
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* 정보 수정 버튼 (상하 중앙 정렬) */}
-            <button
-              type="button"
-              className="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/30 text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 hover:border-primary/40 active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[16px]">edit</span>
-              <span>정보 수정</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-on-surface-variant text-right hidden md:block">
+                <div>가입일: {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '-'}</div>
+                <div className="text-outline text-[11px]">인증 방식: {user?.auth_provider || 'LOCAL'}</div>
+              </div>
+            </div>
           </div>
 
           {/* 2. 환경 설정 (테마 모드 설정) */}
@@ -236,52 +198,144 @@ export const MyPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. My Agent Projects Section (3-Column Grid) */}
+          {/* 3. My Agent Projects Section */}
           <div className="rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 p-6 flex flex-col gap-5 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-on-surface text-base flex items-center gap-2">
                 <span>내 에이전트 프로젝트</span>
                 <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-xs text-primary font-mono font-bold">
-                  {AGENT_PROJECTS.length}
+                  {workflows.length}
                 </span>
               </h3>
+              <Link
+                to="/noa-e/studio"
+                className="px-3.5 py-1.5 rounded-xl bg-primary-container hover:bg-primary text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                <span>새 에이전트 만들기</span>
+              </Link>
             </div>
 
-            {/* 3-Column Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {AGENT_PROJECTS.map((agent) => (
+            {/* List or Empty State */}
+            {isLoading ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center gap-2 text-outline">
+                <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mb-2" />
+                <span className="text-xs">에이전트 목록을 불러오는 중...</span>
+              </div>
+            ) : workflows.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center gap-3 border border-dashed border-outline-variant/40 rounded-xl bg-surface-container-lowest/30">
+                <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-outline">
+                  <span className="material-symbols-outlined text-[28px]">smart_toy</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold text-on-surface">아직 제작된 에이전트가 없습니다</p>
+                  <p className="text-xs text-on-surface-variant">스튜디오에서 노드를 연결하여 첫 번째 AI Agent를 만들어보세요!</p>
+                </div>
                 <Link
-                  key={agent.id}
                   to="/noa-e/studio"
-                  className={`rounded-2xl bg-surface-container-lowest/70 border border-outline-variant/30 hover:${agent.themeColor} overflow-hidden flex flex-col group transition-all duration-200 hover:shadow-xl hover:-translate-y-1`}
+                  className="mt-2 px-4 py-2 rounded-xl bg-gradient-to-r from-inverse-primary to-primary-container text-on-surface text-xs font-semibold shadow-md hover:brightness-110 active:scale-95 transition-all"
                 >
-                  {/* 1. 에이전트 그래프 (스크린샷 스냅샷 뷰) */}
-                  <div className="w-full h-40 bg-[#060e20] relative flex items-center justify-center border-b border-outline-variant/20 overflow-hidden">
-                    <div
-                      className="absolute inset-0 opacity-20"
-                      style={{
-                        backgroundImage: `radial-gradient(${agent.dotColor} 1px, transparent 1px)`,
-                        backgroundSize: '14px 14px',
-                      }}
-                    />
-                    {agent.graphSvg}
-                  </div>
-
-                  {/* 2. 에이전트 이름 & 3. 최종 수정 날짜 */}
-                  <div className="p-4 flex flex-col justify-between flex-1">
-                    <h4 className="font-bold text-base text-on-surface group-hover:text-primary transition-colors truncate">
-                      {agent.name}
-                    </h4>
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-outline-variant/15 text-xs text-outline">
-                      <span>최종 수정 날짜</span>
-                      <span className="font-mono text-on-surface-variant font-medium">
-                        {agent.updatedAt}
-                      </span>
-                    </div>
-                  </div>
+                  에이전트 스튜디오로 이동
                 </Link>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {workflows.map((agent) => (
+                  <div
+                    key={agent.id}
+                    className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/70 hover:border-primary/50 overflow-hidden flex flex-col group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm relative"
+                  >
+                    {/* More Menu (...) Button & Dropdown */}
+                    <div className="absolute top-3 right-3 z-30">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setOpenMenuId((prev) => (prev === agent.id ? null : agent.id));
+                        }}
+                        title="더보기"
+                        className="w-8 h-8 rounded-lg bg-surface-container/80 hover:bg-surface-bright text-outline hover:text-on-surface border border-outline-variant/30 transition-all flex items-center justify-center opacity-80 group-hover:opacity-100 backdrop-blur-md active:scale-95 shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {openMenuId === agent.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 mt-1.5 w-32 rounded-xl bg-surface-container-high/95 border border-outline-variant/40 shadow-xl backdrop-blur-xl p-1.5 z-40 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(agent.id)}
+                            className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-on-surface hover:bg-surface-bright flex items-center gap-2 transition-colors text-left"
+                          >
+                            <span className="material-symbols-outlined text-[15px] text-primary">content_copy</span>
+                            <span>복제하기</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(agent.id, agent.title)}
+                            className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-error hover:bg-error-container/30 flex items-center gap-2 transition-colors text-left"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">delete</span>
+                            <span>삭제하기</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <Link
+                      to={`/noa-e/studio?id=${agent.id}`}
+                      className="flex flex-col flex-1"
+                    >
+                      {/* 1. 에이전트 구조 시각화 비주얼 (홈페이지와 동일 스타일) */}
+                      <div className="w-full h-36 bg-[#060e20] relative flex items-center justify-center border-b border-outline-variant/20 overflow-hidden">
+                        <div
+                          className="absolute inset-0 opacity-20"
+                          style={{
+                            backgroundImage: `radial-gradient(#4d8eff 1px, transparent 1px)`,
+                            backgroundSize: '14px 14px',
+                          }}
+                        />
+                        <div className="flex items-center gap-3 relative z-10">
+                          <span className="px-2.5 py-1 rounded-md bg-[#171f33] border border-primary/40 text-[10px] text-primary font-mono font-bold">
+                            {agent.graph_data?.nodes?.length || 0} NODES
+                          </span>
+                          <span className="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+                          <span className="px-2.5 py-1 rounded-md bg-[#222a3d] border border-secondary/40 text-[10px] text-secondary font-mono font-bold">
+                            {agent.graph_data?.edges?.length || 0} EDGES
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 2. 에이전트 정보 */}
+                      <div className="p-4 flex flex-col justify-between flex-1">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_6px_rgba(77,142,255,0.8)]" />
+                            <span className="text-[11px] text-outline">
+                              최종 수정: {new Date(agent.updated_at).toLocaleDateString('ko-KR')}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-sm sm:text-base text-on-surface group-hover:text-primary transition-colors pr-6 truncate">
+                            {agent.title}
+                          </h4>
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-outline-variant/15 flex items-center justify-between text-xs text-primary font-semibold">
+                          <span>스튜디오에서 편집</span>
+                          <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">
+                            arrow_forward
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

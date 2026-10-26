@@ -12,9 +12,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
   const [description, setDescription] = useState('NOA-E 시각적 빌더로 생성된 AI 에이전트');
   const [downloadedNotice, setDownloadedNotice] = useState(false);
 
-  const nodes = useWorkflowStore((state) => state.nodes);
-  const edges = useWorkflowStore((state) => state.edges);
-
   if (!isOpen) return null;
 
   // JSON 워크플로우 생성 (항상 useWorkflowStore의 최신 캔버스 그래프 상태를 직접 참조)

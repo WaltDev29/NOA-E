@@ -10,6 +10,7 @@ import '@xyflow/react/dist/style.css';
 
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 import { useTheme } from '../../context/ThemeContext';
+import { useModal } from '../../context/ModalContext';
 import {
   InputNode,
   LLMNode,
@@ -53,6 +54,7 @@ const EditorInner: React.FC = () => {
   const { theme } = useTheme();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const { showAlert } = useModal();
 
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useWorkflowStore();
 
@@ -71,12 +73,12 @@ const EditorInner: React.FC = () => {
       const currentNodes = useWorkflowStore.getState().nodes;
 
       if (type === 'inputNode' && currentNodes.some((n) => n.type === 'inputNode')) {
-        alert('경고: Input 노드는 하나만 생성할 수 있습니다.');
+        showAlert('경고: Input 노드는 하나만 생성할 수 있습니다.', { type: 'warning' });
         return;
       }
 
       if (type === 'outputNode' && currentNodes.some((n) => n.type === 'outputNode')) {
-        alert('경고: Output 노드는 하나만 생성할 수 있습니다.');
+        showAlert('경고: Output 노드는 하나만 생성할 수 있습니다.', { type: 'warning' });
         return;
       }
 

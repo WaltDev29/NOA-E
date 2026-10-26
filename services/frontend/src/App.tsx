@@ -6,7 +6,12 @@ import { NodeInstructionPage } from './pages/NodeInstructionPage';
 import { LearnPage } from './pages/LearnPage';
 import { TemplatesPage } from './pages/TemplatesPage';
 import { MyPage } from './pages/MyPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
+import { ModalProvider } from './context/ModalContext';
 import logoImg from './assets/logo.png';
 
 const NotFoundPage: React.FC = () => {
@@ -34,8 +39,21 @@ const NotFoundPage: React.FC = () => {
 const AppRoutes: React.FC = () => {
   const { pathname } = useLocation();
 
+  if (pathname.startsWith('/noa-e/login')) {
+    return <LoginPage />;
+  }
+
+  if (pathname.startsWith('/noa-e/register')) {
+    return <RegisterPage />;
+  }
+
+  // 에이전트 제작 페이지 (로그인 필수)
   if (pathname.startsWith('/noa-e/studio')) {
-    return <StudioPage />;
+    return (
+      <ProtectedRoute>
+        <StudioPage />
+      </ProtectedRoute>
+    );
   }
 
   if (pathname.startsWith('/noa-e/learn')) {
@@ -50,8 +68,13 @@ const AppRoutes: React.FC = () => {
     return <NodeInstructionPage />;
   }
 
+  // 마이페이지 (로그인 필수)
   if (pathname.startsWith('/noa-e/mypage')) {
-    return <MyPage />;
+    return (
+      <ProtectedRoute>
+        <MyPage />
+      </ProtectedRoute>
+    );
   }
 
   // Only render MainPage for '/noa-e' or '/noa-e/'
@@ -66,9 +89,13 @@ const AppRoutes: React.FC = () => {
 export default function App() {
   return (
     <ThemeProvider>
-      <RouterProvider>
-        <AppRoutes />
-      </RouterProvider>
+      <AuthProvider>
+        <ModalProvider>
+          <RouterProvider>
+            <AppRoutes />
+          </RouterProvider>
+        </ModalProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

@@ -26,6 +26,16 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             detail="이미 등록된 이메일 주소입니다."
         )
 
+    # 1-1. 전화번호 중복 검사 (입력된 경우)
+    if user_in.phone_number:
+        phone_stmt = select(User).where(User.phone_number == user_in.phone_number)
+        existing_phone = db.execute(phone_stmt).scalar_one_or_none()
+        if existing_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="이미 등록된 전화번호입니다."
+            )
+
     # 2. 비밀번호 단방향 해싱
     hashed_pwd = get_password_hash(user_in.password)
 

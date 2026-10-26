@@ -9,18 +9,29 @@ import { NodeInfoModal } from '../components/editor/NodeInfoModal';
 import { OutputResultModal } from '../components/editor/OutputResultModal';
 import { ExportModal } from '../components/panel/ExportModal';
 import { useWorkflowStore } from '../store/useWorkflowStore';
+import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
+import { workflowApi } from '../services/workflowApi';
 
 export const StudioPage: React.FC = () => {
-  const [agentName, setAgentName] = useState('새로운 에이전트 만들기');
+  const { user } = useAuth();
+  const { showAlert } = useModal();
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(undefined);
+  const [agentName, setAgentName] = useState('새로운 에이전트');
   const [isEditingName, setIsEditingName] = useState(false);
   const [showPalette, setShowPalette] = useState(true);
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'results'>('properties');
   const [savedNotice, setSavedNotice] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
 
+  const nodes = useWorkflowStore((state) => state.nodes);
+  const edges = useWorkflowStore((state) => state.edges);
+  const setNodes = useWorkflowStore((state) => state.setNodes);
+  const setEdges = useWorkflowStore((state) => state.setEdges);
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
   const isExecuting = useWorkflowStore((state) => state.isExecuting);
   const nodeResults = useWorkflowStore((state) => state.nodeResults);
@@ -29,16 +40,54 @@ export const StudioPage: React.FC = () => {
   const clearNodeResults = useWorkflowStore((state) => state.clearNodeResults);
   const addLog = useWorkflowStore((state) => state.addLog);
   const saveToLocalStorage = useWorkflowStore((state) => state.saveToLocalStorage);
-  const loadFromLocalStorage = useWorkflowStore((state) => state.loadFromLocalStorage);
   const [resetNotice, setResetNotice] = useState(false);
 
-  // 컴포넌트 마운트 시 이전에 저장된 로컬스토리지 워크플로우 복원
+  // 컴포넌트 마운트 시: URL 쿼리 파라미터(?id=...)가 있으면 DB에서 로드, 없으면 신규 에이전트 기본 이름 생성
   useEffect(() => {
-    const savedName = loadFromLocalStorage();
-    if (savedName) {
-      setAgentName(savedName);
+    const searchParams = new URLSearchParams(window.location.search);
+    const workflowId = searchParams.get('id');
+
+    if (workflowId) {
+      setCurrentWorkflowId(workflowId);
+      workflowApi
+        .getById(workflowId)
+        .then((data) => {
+          setAgentName(data.title);
+          if (data.graph_data?.nodes) {
+            setNodes(data.graph_data.nodes);
+          }
+          if (data.graph_data?.edges) {
+            setEdges(data.graph_data.edges);
+          }
+          addLog(`에이전트 [${data.title}]을(를) 성공적으로 불러왔습니다.`);
+        })
+        .catch((err) => {
+          console.error('Failed to load workflow by id:', err);
+          addLog('[오류] 에이전트를 불러오지 못했습니다.');
+        });
+    } else {
+      // 신규 생성 모드: 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
+      if (user?.id) {
+        workflowApi.getMyWorkflows(user.id).then((myList) => {
+          const titles = new Set(myList.map((w) => w.title));
+          const baseName = '새로운 에이전트';
+          if (!titles.has(baseName)) {
+            setAgentName(baseName);
+          } else {
+            let num = 1;
+            while (titles.has(`${baseName} ${num}`)) {
+              num++;
+            }
+            setAgentName(`${baseName} ${num}`);
+          }
+        }).catch(() => {
+          setAgentName('새로운 에이전트');
+        });
+      } else {
+        setAgentName('새로운 에이전트');
+      }
     }
-  }, [loadFromLocalStorage]);
+  }, [user?.id, setNodes, setEdges, addLog]);
 
   const canShowResultsTab =
     selectedNode && selectedNode.type !== 'inputNode' && selectedNode.type !== 'outputNode';
@@ -82,12 +131,36 @@ export const StudioPage: React.FC = () => {
     };
   }, [isResizing]);
 
-  // 1. 현재 상태 저장 (로컬스토리지에 저장)
-  const handleSave = () => {
+  // 1. 현재 상태 저장 (DB 영속화 및 로컬 백업)
+  const handleSave = async () => {
     saveToLocalStorage(agentName);
-    setSavedNotice(true);
-    addLog(`현재 에이전트 [${agentName}]의 캔버스 상태가 브라우저에 저장되었습니다.`);
-    setTimeout(() => setSavedNotice(false), 2000);
+
+    if (user?.id) {
+      try {
+        setIsSaving(true);
+        const result = await workflowApi.save({
+          id: currentWorkflowId,
+          user_id: user.id,
+          title: agentName,
+          graph_data: { nodes, edges },
+        });
+        setCurrentWorkflowId(result.id);
+        setSavedNotice(true);
+        addLog(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
+      } catch (err: any) {
+        console.error('Failed to save workflow to DB:', err);
+        const detail = err.response?.data?.detail || 'DB 저장에 실패했습니다.';
+        showAlert(`저장 실패: ${detail}`, { type: 'error', title: '저장 오류' });
+        addLog(`[오류] ${detail}`);
+      } finally {
+        setIsSaving(false);
+        setTimeout(() => setSavedNotice(false), 2500);
+      }
+    } else {
+      setSavedNotice(true);
+      addLog(`현재 에이전트 [${agentName}]의 상태가 로컬 브라우저에 저장되었습니다.`);
+      setTimeout(() => setSavedNotice(false), 2000);
+    }
   };
 
   // 2. 다운로드 모달 열기 (현재 그래프 실시간 다운로드)
@@ -151,16 +224,21 @@ export const StudioPage: React.FC = () => {
               {/* 1. 현재 상태 저장 버튼 */}
               <button
                 onClick={handleSave}
+                disabled={isSaving}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${savedNotice
                   ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_10px_rgba(76,215,246,0.3)]'
-                  : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95'
+                  : 'bg-transparent hover:bg-surface-container-high text-outline hover:text-primary active:scale-95 disabled:opacity-50'
                   }`}
                 title={savedNotice ? '저장됨' : '현재 상태 저장'}
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">
-                  {savedNotice ? 'check' : 'save'}
-                </span>
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-[18px]">
+                    {savedNotice ? 'check' : 'save'}
+                  </span>
+                )}
               </button>
 
               {/* 2. 저장 버튼 우측에 배치된 다운로드 버튼 */}
@@ -324,6 +402,7 @@ export const StudioPage: React.FC = () => {
 
 const HiddenRunTrigger: React.FC = () => {
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const { showAlert } = useModal();
 
   const {
     isExecuting,
@@ -356,13 +435,19 @@ const HiddenRunTrigger: React.FC = () => {
 
     if (inputNodes.length === 0 || outputNodes.length === 0) {
       addLog('Validation Error: Missing Input or Output node.');
-      alert('경고: 워크플로우에는 반드시 최소 1개의 Input 노드와 Output 노드가 있어야 합니다.');
+      showAlert('경고: 워크플로우에는 반드시 최소 1개의 Input 노드와 Output 노드가 있어야 합니다.', {
+        type: 'warning',
+        title: '워크플로우 검증',
+      });
       return;
     }
 
     if (outputNodes.length > 1) {
       addLog('Validation Error: Multiple Output nodes detected.');
-      alert('경고: Output 노드는 반드시 하나만 있어야 합니다.');
+      showAlert('경고: Output 노드는 반드시 하나만 있어야 합니다.', {
+        type: 'warning',
+        title: '워크플로우 검증',
+      });
       return;
     }
 
@@ -370,7 +455,10 @@ const HiddenRunTrigger: React.FC = () => {
       const hasOutgoing = edges.some((e) => e.source === input.id);
       if (!hasOutgoing) {
         addLog(`Validation Error: Input Node (${input.id}) is disconnected.`);
-        alert('경고: 목적지가 연결되지 않은 Input 노드가 있습니다. 밖으로 나가는 선을 연결해주세요.');
+        showAlert('경고: 목적지가 연결되지 않은 Input 노드가 있습니다. 밖으로 나가는 선을 연결해주세요.', {
+          type: 'warning',
+          title: '워크플로우 검증',
+        });
         return;
       }
     }
@@ -379,7 +467,10 @@ const HiddenRunTrigger: React.FC = () => {
       const hasIncoming = edges.some((e) => e.target === output.id);
       if (!hasIncoming) {
         addLog(`Validation Error: Output Node (${output.id}) is disconnected.`);
-        alert('경고: 아무것도 연결되지 않은 Output 노드가 있습니다. 결과를 받을 수 있게 선을 연결해주세요.');
+        showAlert('경고: 아무것도 연결되지 않은 Output 노드가 있습니다. 결과를 받을 수 있게 선을 연결해주세요.', {
+          type: 'warning',
+          title: '워크플로우 검증',
+        });
         return;
       }
     }
@@ -390,7 +481,10 @@ const HiddenRunTrigger: React.FC = () => {
       const hasOutgoing = edges.some((e) => e.source === llm.id);
       if (!hasIncoming || !hasOutgoing) {
         addLog(`Validation Error: LLM Node (${llm.id}) must have both incoming and outgoing connections.`);
-        alert('경고: LLM 노드는 질문을 받을 입력선과 결과를 내보낼 출력선이 모두 연결되어 있어야 합니다.');
+        showAlert('경고: LLM 노드는 질문을 받을 입력선과 결과를 내보낼 출력선이 모두 연결되어 있어야 합니다.', {
+          type: 'warning',
+          title: '워크플로우 검증',
+        });
         return;
       }
     }
@@ -403,7 +497,7 @@ const HiddenRunTrigger: React.FC = () => {
     setActiveNodeId(inputNodes[0].id);
     addLog('파이프라인 실행 시작...');
 
-    let previousOutput = inputNodes[0]?.data?.config?.input_text || '';
+    let previousOutput = (inputNodes[0]?.data as any)?.config?.input_text || '';
 
     try {
       const response = await fetch('/api/workflow/run', {
@@ -454,7 +548,7 @@ const HiddenRunTrigger: React.FC = () => {
                 const targetNode = nodes.find((n) => n.id === nodeName);
                 const nodeInput =
                   targetNode?.type === 'inputNode'
-                    ? targetNode.data?.config?.input_text || stateUpdates.input_text || ''
+                    ? (targetNode.data as any)?.config?.input_text || stateUpdates.input_text || ''
                     : previousOutput;
                 const nodeOutput = stateUpdates.current_output || '';
 
@@ -467,7 +561,7 @@ const HiddenRunTrigger: React.FC = () => {
                   },
                   {
                     nodeType: targetNode?.type,
-                    nodeLabel: targetNode?.data?.label,
+                    nodeLabel: (targetNode?.data as any)?.label || '',
                     status: 'completed',
                   }
                 );
