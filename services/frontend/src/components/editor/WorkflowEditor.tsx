@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -11,6 +11,7 @@ import '@xyflow/react/dist/style.css';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 import { useTheme } from '../../context/ThemeContext';
 import { useModal } from '../../context/ModalContext';
+import { useOnboarding } from '../../context/OnboardingContext';
 import {
   InputNode,
   LLMNode,
@@ -52,11 +53,19 @@ const getUniqueId = (type: string, currentNodes: any[]) => {
 
 const EditorInner: React.FC = () => {
   const { theme } = useTheme();
+  const { activeGuide } = useOnboarding();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const { showAlert } = useModal();
 
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useWorkflowStore();
+
+  // 에이전트 가이드 시 캔버스가 노드 1개 크기로 과도하게 줌인되지 않도록 넉넉한 뷰포트(zoom 0.8) 유지
+  useEffect(() => {
+    if (activeGuide === 'studio_quest' && reactFlowInstance) {
+      reactFlowInstance.setViewport({ x: 60, y: 80, zoom: 0.8 }, { duration: 250 });
+    }
+  }, [activeGuide, reactFlowInstance]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -216,7 +225,9 @@ const EditorInner: React.FC = () => {
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        fitView
+        fitView={activeGuide !== 'studio_quest'}
+        fitViewOptions={{ maxZoom: 0.85, padding: 0.3 }}
+        defaultViewport={{ x: 60, y: 80, zoom: 0.8 }}
         colorMode={theme}
         className="bg-background"
         panOnDrag={true}

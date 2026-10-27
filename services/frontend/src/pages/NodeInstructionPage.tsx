@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link, useNavigate, useParams } from '../router/Router';
+import { useOnboarding } from '../context/OnboardingContext';
+import { SpotlightTour } from '../components/onboarding/SpotlightTour';
 
 interface NodeDetail {
   id: string;
@@ -450,11 +452,17 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
 export const NodeInstructionPage: React.FC = () => {
   const navigate = useNavigate();
   const { nodeId } = useParams();
+  const { setTourPage, checkAndTriggerPageTour } = useOnboarding();
 
   const activeKey = nodeId && NODE_CATALOG[nodeId] ? nodeId : 'llm';
   const current = NODE_CATALOG[activeKey];
 
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
+
+  useEffect(() => {
+    setTourPage('nodes');
+    checkAndTriggerPageTour('nodes');
+  }, [setTourPage, checkAndTriggerPageTour]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -469,7 +477,7 @@ export const NodeInstructionPage: React.FC = () => {
           <div className="w-full px-6 py-space-lg">
             <div className="flex flex-col lg:flex-row items-start gap-8">
               {/* Left Sidebar Panel - Aligned to left */}
-              <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md">
+              <aside data-tour="nodes-categories" className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md">
                 {/* Back Navigation */}
                 <Link
                   to="/noa-e"
@@ -482,7 +490,7 @@ export const NodeInstructionPage: React.FC = () => {
                 </Link>
 
                 {/* Node Catalog Container */}
-                <div className="flex flex-col gap-space-xs bg-surface-container-low/70 backdrop-blur-md p-space-md rounded-xl">
+                <div data-tour="nodes-list" className="flex flex-col gap-space-xs bg-surface-container-low/70 backdrop-blur-md p-space-md rounded-xl">
                   <div className="px-space-sm py-space-xs mb-space-xs flex items-center justify-between">
                     <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
                       노드 탐색
@@ -552,7 +560,7 @@ export const NodeInstructionPage: React.FC = () => {
               </aside>
 
               {/* Right Main Content Panel - Centered in remaining space */}
-              <div className="flex-1 w-full min-w-0 flex justify-center">
+              <div data-tour="nodes-detail" className="flex-1 w-full min-w-0 flex justify-center">
                 <div className="w-full max-w-4xl xl:max-w-5xl flex flex-col gap-space-lg">
                   {/* Hero Banner: Visual Node Feature Showcase */}
                   <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high p-space-lg lg:p-space-xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-space-xl">
@@ -768,6 +776,7 @@ export const NodeInstructionPage: React.FC = () => {
       </main>
 
       <Footer />
+      <SpotlightTour />
     </div>
   );
 };

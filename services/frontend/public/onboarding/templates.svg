@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgTemplates" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a121d"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="cardGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="600" height="320" fill="url(#bgTemplates)"/>
+
+  <!-- Background Card Left (Angled) -->
+  <g transform="translate(70, 70) rotate(-6)">
+    <rect width="180" height="190" rx="16" fill="#1E293B" opacity="0.6" stroke="#475569" stroke-width="1.5"/>
+    <rect x="20" y="24" width="40" height="40" rx="10" fill="#3B82F6" opacity="0.2"/>
+    <text x="40" y="49" fill="#60A5FA" font-size="20" text-anchor="middle">📊</text>
+    <text x="20" y="90" fill="#94A3B8" font-size="14" font-weight="bold" font-family="sans-serif">데이터 분석가</text>
+  </g>
+
+  <!-- Background Card Right (Angled) -->
+  <g transform="translate(350, 70) rotate(6)">
+    <rect width="180" height="190" rx="16" fill="#1E293B" opacity="0.6" stroke="#475569" stroke-width="1.5"/>
+    <rect x="20" y="24" width="40" height="40" rx="10" fill="#10B981" opacity="0.2"/>
+    <text x="40" y="49" fill="#34D399" font-size="20" text-anchor="middle">🌐</text>
+    <text x="20" y="90" fill="#94A3B8" font-size="14" font-weight="bold" font-family="sans-serif">다국어 번역 비서</text>
+  </g>
+
+  <!-- Foreground Main Featured Card (Centered) -->
+  <g transform="translate(195, 40)">
+    <rect width="210" height="230" rx="18" fill="url(#cardGrad1)" stroke="#10B981" stroke-width="2"/>
+    <!-- Badge -->
+    <rect x="20" y="20" width="76" height="22" rx="11" fill="#065F46"/>
+    <text x="58" y="35" fill="#6EE7B7" font-size="10" font-weight="bold" font-family="sans-serif" text-anchor="middle">인기 템플릿</text>
+    
+    <!-- Icon -->
+    <circle cx="50" cy="80" r="24" fill="#047857" opacity="0.3"/>
+    <text x="50" y="87" fill="#34D399" font-size="24" text-anchor="middle">💬</text>
+
+    <!-- Title & Desc -->
+    <text x="22" y="130" fill="#F8FAFC" font-size="16" font-weight="bold" font-family="sans-serif">고객 응대 AI 봇</text>
+    <text x="22" y="152" fill="#94A3B8" font-size="11" font-family="sans-serif">자주 묻는 질문을 실시간 자동</text>
+    <text x="22" y="168" fill="#94A3B8" font-size="11" font-family="sans-serif">답변하는 완성형 에이전트</text>
+
+    <!-- One-click Button -->
+    <rect x="22" y="185" width="166" height="30" rx="8" fill="#10B981"/>
+    <text x="105" y="204" fill="#FFFFFF" font-size="11" font-weight="bold" font-family="sans-serif" text-anchor="middle">스튜디오에서 사용하기 →</text>
+  </g>
+</svg>

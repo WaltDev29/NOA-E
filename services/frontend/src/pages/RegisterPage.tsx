@@ -54,6 +54,7 @@ export const RegisterPage: React.FC = () => {
         name: name.trim(),
         phone_number: phoneNumber.trim() || undefined,
       });
+      localStorage.setItem('noa_e_trigger_onboarding', 'true');
       navigate(redirectUrl);
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data?.detail) {

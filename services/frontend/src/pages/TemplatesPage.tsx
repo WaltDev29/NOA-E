@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link, useNavigate, useParams } from '../router/Router';
+import { useOnboarding } from '../context/OnboardingContext';
+import { SpotlightTour } from '../components/onboarding/SpotlightTour';
 
 export interface AgentTemplate {
   id: string;
@@ -392,9 +394,15 @@ export const TEMPLATES_DATA: AgentTemplate[] = [
 export const TemplatesPage: React.FC = () => {
   const navigate = useNavigate();
   const { categoryId } = useParams();
+  const { setTourPage, checkAndTriggerPageTour } = useOnboarding();
 
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryId || 'all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    setTourPage('templates');
+    checkAndTriggerPageTour('templates');
+  }, [setTourPage, checkAndTriggerPageTour]);
 
   useEffect(() => {
     if (categoryId) {
@@ -455,7 +463,7 @@ export const TemplatesPage: React.FC = () => {
           <div className="w-full px-4 sm:px-6 py-space-lg">
             <div className="flex flex-col lg:flex-row items-start gap-8">
               {/* 1. Left Sidebar Navigation Bar */}
-              <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md lg:sticky lg:top-20">
+              <aside data-tour="templates-categories" className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md lg:sticky lg:top-20">
                 {/* Back to Home Link */}
                 <Link
                   to="/noa-e"
@@ -546,7 +554,7 @@ export const TemplatesPage: React.FC = () => {
               </aside>
 
               {/* 2. Main Content Area (Centered in remaining space) */}
-              <div className="flex-1 w-full min-w-0 flex justify-center">
+              <div data-tour="templates-grid" className="flex-1 w-full min-w-0 flex justify-center">
                 <div className="w-full max-w-4xl xl:max-w-5xl flex flex-col gap-6">
                   {/* Top Header & Search Box Card */}
                   <div className="p-6 sm:p-7 rounded-2xl bg-surface-container-low/80 backdrop-blur-md border border-outline-variant/30 relative overflow-hidden shadow-sm">
@@ -602,7 +610,7 @@ export const TemplatesPage: React.FC = () => {
 
                   {/* 3. Templates Cards Grid */}
                   {filteredTemplates.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    <div data-tour="templates-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                       {filteredTemplates.map((template) => (
                         <div
                           key={template.id}
@@ -703,6 +711,7 @@ export const TemplatesPage: React.FC = () => {
       </main>
 
       <Footer />
+      <SpotlightTour />
     </div>
   );
 };

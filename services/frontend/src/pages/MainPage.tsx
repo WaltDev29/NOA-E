@@ -5,15 +5,27 @@ import { Link } from '../router/Router';
 import { TEMPLATES_DATA } from './TemplatesPage';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { useOnboarding } from '../context/OnboardingContext';
+import { ServiceOverviewModal } from '../components/onboarding/ServiceOverviewModal';
+import { SpotlightTour } from '../components/onboarding/SpotlightTour';
+import { DUMMY_ONBOARDING_WORKFLOWS } from '../components/onboarding/dummyOnboardingData';
 import { workflowApi } from '../services/workflowApi';
 import type { WorkflowDetail } from '../services/workflowApi';
 
 export const MainPage: React.FC = () => {
   const { user } = useAuth();
   const { showAlert, showConfirm } = useModal();
+  const { isMockMode, setTourPage, activeGuide, checkAndTriggerPageTour } = useOnboarding();
   const [myWorkflows, setMyWorkflows] = useState<WorkflowDetail[]>([]);
   const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTourPage('main');
+    checkAndTriggerPageTour('main');
+  }, [setTourPage, checkAndTriggerPageTour]);
+
+  const displayedWorkflows = (isMockMode && myWorkflows.length === 0) ? DUMMY_ONBOARDING_WORKFLOWS : myWorkflows;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMouseDown = useRef(false);
@@ -116,7 +128,14 @@ export const MainPage: React.FC = () => {
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if (hasDragged.current) {
+    if (hasDragged.current || activeGuide === 'page_tour') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleTemplateClick = (e: React.MouseEvent) => {
+    if (activeGuide === 'page_tour') {
       e.preventDefault();
       e.stopPropagation();
     }
@@ -359,7 +378,7 @@ export const MainPage: React.FC = () => {
             </section>
 
             {/* 3. My Agent Projects Section */}
-            <section className="mt-20 w-full">
+            <section data-tour="main-my-agents" className="mt-20 w-full">
               {/* Section Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
@@ -367,13 +386,14 @@ export const MainPage: React.FC = () => {
                     <span>내 에이전트 프로젝트</span>
                   </h2>
                   <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-xs text-primary font-mono font-bold">
-                    {myWorkflows.length}
+                    {displayedWorkflows.length}
                   </span>
                 </div>
 
                 {/* 전체 목록 보기 버튼 (마이페이지 이동) */}
                 <Link
                   to="/noa-e/mypage"
+                  onClick={handleTemplateClick}
                   className="px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/30 hover:border-primary/40 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
                 >
                   <span>전체 목록 보기</span>
@@ -389,7 +409,7 @@ export const MainPage: React.FC = () => {
                   <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mb-2" />
                   <span className="text-xs">에이전트 목록을 불러오는 중...</span>
                 </div>
-              ) : myWorkflows.length === 0 ? (
+              ) : displayedWorkflows.length === 0 ? (
                 <div className="py-12 px-6 flex flex-col items-center justify-center text-center gap-3 border border-dashed border-outline-variant/40 rounded-2xl bg-surface-container-low/40 backdrop-blur-sm">
                   <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                     <span className="material-symbols-outlined text-[28px]">smart_toy</span>
@@ -417,7 +437,7 @@ export const MainPage: React.FC = () => {
                   }`}
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  {myWorkflows.slice(0, 10).map((agent) => (
+                  {displayedWorkflows.slice(0, 10).map((agent, index) => (
                     <div
                       key={agent.id}
                       className="w-[290px] sm:w-[320px] shrink-0 rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 hover:border-primary/50 overflow-hidden flex flex-col group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm select-none relative"
@@ -426,6 +446,7 @@ export const MainPage: React.FC = () => {
                       <div className="absolute top-3 right-3 z-30">
                         <button
                           type="button"
+                          data-tour={index === 0 ? "main-agent-menu" : undefined}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -509,7 +530,7 @@ export const MainPage: React.FC = () => {
             </section>
 
             {/* 4. Templates (템플릿) Section (Displaying 4 actual templates) */}
-            <section className="mt-20 mb-space-xl w-full">
+            <section data-tour="main-templates" className="mt-20 mb-space-xl w-full">
               {/* Section Header */}
               <div className="flex items-center justify-between mb-space-md">
                 <div>
@@ -520,6 +541,7 @@ export const MainPage: React.FC = () => {
                 </div>
                 <Link
                   to="/noa-e/templates"
+                  onClick={handleTemplateClick}
                   className="px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/30 hover:border-primary/40 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
                 >
                   <span>템플릿 더보기</span>
@@ -535,6 +557,7 @@ export const MainPage: React.FC = () => {
                   <Link
                     key={template.id}
                     to={`/noa-e/studio?template=${template.id}`}
+                    onClick={handleTemplateClick}
                     className={`rounded-2xl bg-surface-container-low/70 border border-outline-variant/30 hover:${template.themeColor} overflow-hidden flex flex-col justify-between group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm select-none cursor-pointer`}
                   >
                     <div>
@@ -593,6 +616,10 @@ export const MainPage: React.FC = () => {
       </main>
 
       <Footer />
+
+      {/* Onboarding Modals */}
+      <ServiceOverviewModal />
+      <SpotlightTour />
     </div>
   );
 };

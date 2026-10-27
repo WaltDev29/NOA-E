@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link, useNavigate, useParams } from '../router/Router';
+import { useOnboarding } from '../context/OnboardingContext';
+import { SpotlightTour } from '../components/onboarding/SpotlightTour';
 
 interface SubSection {
   id: string;
@@ -1087,9 +1089,15 @@ const TOPICS_DATA: Record<string, Topic> = {
 export const LearnPage: React.FC = () => {
   const navigate = useNavigate();
   const { topicId } = useParams();
+  const { setTourPage, checkAndTriggerPageTour } = useOnboarding();
 
   const activeTopicKey = topicId && TOPICS_DATA[topicId] ? topicId : 'llm';
   const currentTopic = TOPICS_DATA[activeTopicKey];
+
+  useEffect(() => {
+    setTourPage('learn');
+    checkAndTriggerPageTour('learn');
+  }, [setTourPage, checkAndTriggerPageTour]);
 
   // 현재 선택된 주제의 토글만 열리도록 관리
   const [openAccordion, setOpenAccordion] = useState<Record<string, boolean>>({
@@ -1159,7 +1167,7 @@ export const LearnPage: React.FC = () => {
           <div className="w-full px-4 sm:px-6 py-space-lg">
             <div className="flex flex-col lg:flex-row items-start gap-8">
               {/* 1. Left Sidebar Navigation Bar */}
-              <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md lg:sticky lg:top-20">
+              <aside data-tour="learn-topics" className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-space-md lg:sticky lg:top-20">
                 {/* Back to Home Link */}
                 <Link
                   to="/noa-e"
@@ -1271,7 +1279,7 @@ export const LearnPage: React.FC = () => {
 
               {/* 2. Main Content Area (Centered in remaining space) */}
               <div className="flex-1 w-full flex justify-center">
-                <section className="w-full max-w-4xl flex flex-col gap-8">
+                <section data-tour="learn-content" className="w-full max-w-4xl flex flex-col gap-8">
                   {/* Topic Header Card */}
                   <div className="p-6 sm:p-8 rounded-2xl bg-surface-container-low/80 backdrop-blur-md border border-outline-variant/30 relative overflow-hidden shadow-sm">
                     <div
@@ -1336,6 +1344,7 @@ export const LearnPage: React.FC = () => {
       </main>
 
       <Footer />
+      <SpotlightTour />
     </div>
   );
 };

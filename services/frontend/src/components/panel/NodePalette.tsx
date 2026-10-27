@@ -85,7 +85,7 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
   });
 
   return (
-    <aside className="w-72 lg:w-80 shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-r border-outline-variant/30 flex flex-col z-10 shadow-xl overflow-hidden">
+    <aside data-tour="studio-palette" className="w-72 lg:w-80 shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-r border-outline-variant/30 flex flex-col z-10 shadow-xl overflow-hidden">
       {/* Palette Header */}
       <div className="p-space-md flex items-center justify-between pb-space-sm">
         <div className="flex items-center gap-space-xs">
@@ -142,9 +142,19 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
       {/* Node List */}
       <div className="flex-1 overflow-y-auto px-space-md py-space-xs space-y-2">
         {filteredItems.map((item) => {
+          const tourKey =
+            item.type === 'inputNode'
+              ? 'palette-input-node'
+              : item.type === 'llmNode'
+              ? 'palette-llm-node'
+              : item.type === 'outputNode'
+              ? 'palette-output-node'
+              : undefined;
+
           return (
             <div
               key={item.type}
+              data-tour={tourKey}
               onDragStart={(e) => onDragStart(e, item.type)}
               draggable
               className="group flex items-center gap-space-sm p-2.5 rounded-xl bg-surface-container-low/70 hover:bg-surface-container hover:translate-x-1 cursor-grab active:cursor-grabbing transition-all border border-outline-variant/20 hover:border-outline-variant/50 shadow-sm"

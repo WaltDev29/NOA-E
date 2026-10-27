@@ -91,7 +91,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-surface-container-high border border-outline-variant/50 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col">
+      <div
+        data-tour="export-modal"
+        className="bg-surface-container-high border border-outline-variant/50 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest/50">
           <div className="flex items-center gap-2.5">

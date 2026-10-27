@@ -5,6 +5,9 @@ import { Link } from '../router/Router';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { useOnboarding } from '../context/OnboardingContext';
+import { GuideSelectModal } from '../components/onboarding/GuideSelectModal';
+import { DUMMY_ONBOARDING_WORKFLOWS } from '../components/onboarding/dummyOnboardingData';
 import { workflowApi } from '../services/workflowApi';
 import type { WorkflowDetail } from '../services/workflowApi';
 
@@ -12,9 +15,13 @@ export const MyPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const { showAlert, showConfirm } = useModal();
+  const { isMockMode } = useOnboarding();
   const [workflows, setWorkflows] = useState<WorkflowDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isGuideSelectOpen, setIsGuideSelectOpen] = useState(false);
+
+  const displayedWorkflows = (isMockMode && workflows.length === 0) ? DUMMY_ONBOARDING_WORKFLOWS : workflows;
 
   const loadWorkflows = async () => {
     if (!user?.id) return;
@@ -86,14 +93,24 @@ export const MyPage: React.FC = () => {
             <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
               마이페이지
             </h1>
-            <button
-              type="button"
-              onClick={logout}
-              className="px-4 py-2 rounded-xl bg-error-container/20 text-error hover:bg-error-container/40 border border-error/30 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[16px]">logout</span>
-              <span>로그아웃</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsGuideSelectOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-bright text-primary border border-primary/30 hover:border-primary/60 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">explore</span>
+                <span>가이드 다시보기</span>
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                className="px-4 py-2 rounded-xl bg-error-container/20 text-error hover:bg-error-container/40 border border-error/30 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">logout</span>
+                <span>로그아웃</span>
+              </button>
+            </div>
           </div>
 
           {/* 1. User Profile Card */}
@@ -204,7 +221,7 @@ export const MyPage: React.FC = () => {
               <h3 className="font-bold text-on-surface text-base flex items-center gap-2">
                 <span>내 에이전트 프로젝트</span>
                 <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-xs text-primary font-mono font-bold">
-                  {workflows.length}
+                  {displayedWorkflows.length}
                 </span>
               </h3>
               <Link
@@ -222,7 +239,7 @@ export const MyPage: React.FC = () => {
                 <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mb-2" />
                 <span className="text-xs">에이전트 목록을 불러오는 중...</span>
               </div>
-            ) : workflows.length === 0 ? (
+            ) : displayedWorkflows.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-center gap-3 border border-dashed border-outline-variant/40 rounded-xl bg-surface-container-lowest/30">
                 <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-outline">
                   <span className="material-symbols-outlined text-[28px]">smart_toy</span>
@@ -240,7 +257,7 @@ export const MyPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {workflows.map((agent) => (
+                {displayedWorkflows.map((agent) => (
                   <div
                     key={agent.id}
                     className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/70 hover:border-primary/50 overflow-hidden flex flex-col group transition-all duration-200 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm relative"
@@ -341,6 +358,7 @@ export const MyPage: React.FC = () => {
       </main>
 
       <Footer />
+      <GuideSelectModal isOpen={isGuideSelectOpen} onClose={() => setIsGuideSelectOpen(false)} />
     </div>
   );
 };

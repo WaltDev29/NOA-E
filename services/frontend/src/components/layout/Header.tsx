@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from '../../router/Router';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.png';
 
@@ -38,7 +37,6 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 
 export const Header: React.FC = () => {
   const { pathname } = useLocation();
-  const { theme, toggleTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
@@ -72,7 +70,7 @@ export const Header: React.FC = () => {
   }, [isNotificationOpen]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+    <header data-tour="gnb-header" className="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
       <div className="h-16 w-full px-6 flex items-center justify-between gap-space-lg">
         {/* Logo & Brand - Left aligned */}
         <div className="flex items-center gap-space-xl">
@@ -85,10 +83,11 @@ export const Header: React.FC = () => {
           </Link>
 
           {/* Navigation Items */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav data-tour="gnb-nav" className="hidden lg:flex items-center gap-1">
             <Link
               to="/noa-e/studio"
               data-path="agent-builder"
+              data-tour="gnb-studio"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 isStudio
                   ? 'bg-surface-container-high text-primary'
@@ -100,6 +99,7 @@ export const Header: React.FC = () => {
             <Link
               to="/noa-e/nodes"
               data-path="node-explorer"
+              data-tour="gnb-nodes"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 isNodes
                   ? 'bg-surface-container-high text-primary'
@@ -111,6 +111,7 @@ export const Header: React.FC = () => {
             <Link
               to="/noa-e/templates"
               data-path="templates"
+              data-tour="gnb-templates"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 isTemplates
                   ? 'bg-surface-container-high text-primary'
@@ -122,6 +123,7 @@ export const Header: React.FC = () => {
             <Link
               to="/noa-e/learn"
               data-path="learn"
+              data-tour="gnb-learn"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 isLearn
                   ? 'bg-surface-container-high text-primary'
@@ -135,19 +137,6 @@ export const Header: React.FC = () => {
 
           {/* Right Status Actions */}
         <div className="flex items-center gap-3">
-          {/* Theme Toggle Button */}
-          <button
-            aria-label={theme === 'dark' ? '라이트 테마로 전환' : '다크 테마로 전환'}
-            title={theme === 'dark' ? '라이트 테마로 전환' : '다크 테마로 전환'}
-            onClick={toggleTheme}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-surface-container text-on-surface-variant hover:text-primary hover:bg-surface-container-high active:scale-95 shadow-sm"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[20px] transition-transform duration-300">
-              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-            </span>
-          </button>
-
           {/* Notification Button & Dropdown (로그인 시에만 알림 활성화) */}
           {isAuthenticated && (
             <div className="relative" ref={notiRef}>

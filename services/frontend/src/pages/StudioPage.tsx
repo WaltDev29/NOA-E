@@ -8,6 +8,7 @@ import { ExecutionPanel } from '../components/execution/ExecutionPanel';
 import { NodeInfoModal } from '../components/editor/NodeInfoModal';
 import { OutputResultModal } from '../components/editor/OutputResultModal';
 import { ExportModal } from '../components/panel/ExportModal';
+import { StudioQuestGuide } from '../components/onboarding/StudioQuestGuide';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
@@ -193,7 +194,7 @@ export const StudioPage: React.FC = () => {
       <main className="w-full pt-16 bg-background flex-1 flex flex-col overflow-hidden">
         <div className="w-full flex flex-col h-[calc(100vh-4rem)] max-w-full overflow-hidden bg-background">
           {/* Top Action Toolbar */}
-          <section className="w-full px-margin py-space-sm bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-between shadow-sm z-20 shrink-0 border-b border-outline-variant/30">
+          <section data-tour="studio-toolbar" className="w-full px-margin py-space-sm bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-between shadow-sm z-20 shrink-0 border-b border-outline-variant/30">
             <div className="flex items-center gap-space-sm">
               <div className="flex items-center gap-space-xs group cursor-pointer">
                 {isEditingName ? (
@@ -243,8 +244,9 @@ export const StudioPage: React.FC = () => {
 
               {/* 2. 저장 버튼 우측에 배치된 다운로드 버튼 */}
               <button
+                data-tour="studio-export-btn"
                 onClick={handleOpenDownloadModal}
-                className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent hover:bg-surface-container-high text-outline hover:text-secondary active:scale-95 transition-all"
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent hover:bg-surface-container-high text-outline hover:text-secondary active:scale-95 transition-all cursor-pointer"
                 title="에이전트 JSON 다운로드"
                 type="button"
               >
@@ -274,6 +276,7 @@ export const StudioPage: React.FC = () => {
 
               {/* 실행 / 정지 버튼 */}
               <button
+                data-tour="studio-run-btn"
                 onClick={triggerRun}
                 className={`px-space-lg py-space-xs h-9 rounded-lg font-body-sm text-body-sm font-semibold flex items-center gap-space-xs transition-all transform active:scale-95 cursor-pointer ${isExecuting
                   ? 'bg-[#ba1a1a] hover:bg-[#cf2222] text-white border border-[#ff5449] shadow-[0_0_16px_rgba(255,84,73,0.5)]'
@@ -312,17 +315,23 @@ export const StudioPage: React.FC = () => {
                 </button>
               )}
 
-              <WorkflowEditor />
+              {/* Pure Canvas Area for Guide Tour */}
+              <div data-tour="studio-canvas" className="flex-1 w-full h-full relative overflow-hidden">
+                <WorkflowEditor />
+              </div>
 
               {/* Bottom Execution Shelf */}
-              <ExecutionPanel
-                isCollapsed={isLogCollapsed}
-                onToggleCollapse={() => setIsLogCollapsed(!isLogCollapsed)}
-              />
+              <div data-tour="studio-console">
+                <ExecutionPanel
+                  isCollapsed={isLogCollapsed}
+                  onToggleCollapse={() => setIsLogCollapsed(!isLogCollapsed)}
+                />
+              </div>
             </div>
 
             {/* Right Aside: Property Panel or Execution Results */}
             <aside
+              data-tour="studio-properties"
               style={{ width: `${rightSidebarWidth}px` }}
               className="shrink-0 bg-surface-container-lowest/95 backdrop-blur-xl border-l border-outline-variant/30 flex flex-col z-20 shadow-xl overflow-hidden relative"
             >
@@ -396,6 +405,7 @@ export const StudioPage: React.FC = () => {
         onClose={() => setIsExportModalOpen(false)}
         agentName={agentName}
       />
+      <StudioQuestGuide />
     </div>
   );
 };
@@ -456,6 +466,16 @@ const HiddenRunTrigger: React.FC = () => {
       if (!hasOutgoing) {
         addLog(`Validation Error: Input Node (${input.id}) is disconnected.`);
         showAlert('경고: 목적지가 연결되지 않은 Input 노드가 있습니다. 밖으로 나가는 선을 연결해주세요.', {
+          type: 'warning',
+          title: '워크플로우 검증',
+        });
+        return;
+      }
+
+      const inputText = (input.data as any)?.config?.input_text;
+      if (!inputText || !inputText.trim()) {
+        addLog(`Validation Error: Input Node (${input.id}) has no input text.`);
+        showAlert('경고: Input 노드에 입력된 메시지가 없습니다. 에이전트에게 전달할 질문 또는 요청 메시지를 입력해주세요.', {
           type: 'warning',
           title: '워크플로우 검증',
         });

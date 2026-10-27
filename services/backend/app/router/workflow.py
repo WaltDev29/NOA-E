@@ -248,6 +248,12 @@ async def run_workflow(request: WorkflowRequest):
         if n.type == "inputNode":
             initial_text = n.data.get("config", {}).get("input_text", "")
             break
+
+    if not initial_text or not str(initial_text).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Input 노드에 입력된 메시지가 없습니다. 에이전트에게 전달할 메시지를 입력해주세요."
+        )
             
     initial_state = {
         "input_text": initial_text,

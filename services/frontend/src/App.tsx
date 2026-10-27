@@ -12,6 +12,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
+import { OnboardingProvider } from './context/OnboardingContext';
 import logoImg from './assets/logo.png';
 
 const NotFoundPage: React.FC = () => {
@@ -91,9 +92,11 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <ModalProvider>
-          <RouterProvider>
-            <AppRoutes />
-          </RouterProvider>
+          <OnboardingProvider>
+            <RouterProvider>
+              <AppRoutes />
+            </RouterProvider>
+          </OnboardingProvider>
         </ModalProvider>
       </AuthProvider>
     </ThemeProvider>

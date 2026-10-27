@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgStudio" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.2" fill="rgba(255,255,255,0.1)"/>
+    </pattern>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="600" height="320" fill="url(#bgStudio)"/>
+  <rect width="600" height="320" fill="url(#dotGrid)"/>
+
+  <!-- Connecting Bezier Curves (Glowing) -->
+  <path d="M 180 160 C 220 160, 240 160, 280 160" fill="none" stroke="#3B82F6" stroke-width="6" opacity="0.25" filter="url(#softGlow)"/>
+  <path d="M 180 160 C 220 160, 240 160, 280 160" fill="none" stroke="#60A5FA" stroke-width="2.5"/>
+
+  <path d="M 380 160 C 420 160, 440 160, 480 160" fill="none" stroke="#8B5CF6" stroke-width="6" opacity="0.25" filter="url(#softGlow)"/>
+  <path d="M 380 160 C 420 160, 440 160, 480 160" fill="none" stroke="#A78BFA" stroke-width="2.5"/>
+
+  <!-- Node 1: Input Node -->
+  <g transform="translate(80, 110)">
+    <rect width="100" height="100" rx="14" fill="#1E293B" stroke="#3B82F6" stroke-width="2"/>
+    <rect width="100" height="26" rx="14" fill="#2563EB" opacity="0.25"/>
+    <text x="50" y="18" fill="#93C5FD" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Input Node</text>
+    <!-- Icon -->
+    <circle cx="50" cy="62" r="18" fill="#0F172A"/>
+    <path d="M 42 62 L 54 62 M 50 56 L 56 62 L 50 68" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Ports -->
+    <circle cx="100" cy="50" r="5" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+
+  <!-- Node 2: LLM Agent Node (Highlighted) -->
+  <g transform="translate(260, 95)">
+    <rect width="120" height="130" rx="16" fill="#1E293B" stroke="#8B5CF6" stroke-width="2.5" filter="url(#softGlow)"/>
+    <rect width="120" height="30" rx="16" fill="#7C3AED" opacity="0.3"/>
+    <text x="60" y="20" fill="#DDD6FE" font-size="12" font-family="sans-serif" font-weight="bold" text-anchor="middle">LLM Agent</text>
+    <!-- Model badge -->
+    <rect x="25" y="38" width="70" height="18" rx="6" fill="#0F172A"/>
+    <text x="60" y="51" fill="#A78BFA" font-size="9" font-family="monospace" text-anchor="middle">GPT-4o</text>
+    <!-- Core Icon -->
+    <circle cx="60" cy="88" r="22" fill="#0F172A" stroke="#8B5CF6" stroke-width="1.5"/>
+    <path d="M 60 76 L 68 88 L 52 88 Z" fill="#C084FC"/>
+    <circle cx="60" cy="94" r="3" fill="#FFFFFF"/>
+    <!-- Ports -->
+    <circle cx="0" cy="65" r="5" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+    <circle cx="120" cy="65" r="5" fill="#8B5CF6" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+
+  <!-- Node 3: Output Node -->
+  <g transform="translate(460, 110)">
+    <rect width="100" height="100" rx="14" fill="#1E293B" stroke="#10B981" stroke-width="2"/>
+    <rect width="100" height="26" rx="14" fill="#059669" opacity="0.25"/>
+    <text x="50" y="18" fill="#6EE7B7" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Output Node</text>
+    <!-- Icon -->
+    <circle cx="50" cy="62" r="18" fill="#0F172A"/>
+    <rect x="42" y="54" width="16" height="16" rx="3" fill="none" stroke="#34D399" stroke-width="2"/>
+    <line x1="46" y1="60" x2="54" y2="60" stroke="#34D399" stroke-width="2"/>
+    <line x1="46" y1="64" x2="52" y2="64" stroke="#34D399" stroke-width="2"/>
+    <!-- Ports -->
+    <circle cx="0" cy="50" r="5" fill="#8B5CF6" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+
+  <!-- Animated Play Pointer -->
+  <g transform="translate(290, 45)">
+    <rect width="80" height="26" rx="8" fill="#2563EB" filter="url(#softGlow)"/>
+    <text x="40" y="17" fill="#FFFFFF" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">▶ 실행 중</text>
+  </g>
+</svg>
