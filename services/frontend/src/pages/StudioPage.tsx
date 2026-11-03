@@ -90,6 +90,22 @@ export const StudioPage: React.FC = () => {
     }
   }, [user?.id, setNodes, setEdges, addLog]);
 
+  // 컴포넌트 마운트 시: Nodes 페이지 등 외부에서 넘어온 노드 추가 요청(?addNode=...) 처리
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const addNodeType = searchParams.get('addNode');
+    if (addNodeType) {
+      const res = useWorkflowStore.getState().addNode(addNodeType);
+      if (res.message) {
+        showAlert(res.message, { type: res.success ? 'success' : 'info' });
+      }
+      // URL 쿼리 파라미터 정리 (뒤로가기/새로고침 시 중복 추가 방지)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('addNode');
+      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+    }
+  }, [showAlert]);
+
   const canShowResultsTab =
     selectedNode && selectedNode.type !== 'inputNode' && selectedNode.type !== 'outputNode';
 

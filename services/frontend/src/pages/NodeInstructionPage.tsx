@@ -23,71 +23,69 @@ interface NodeDetail {
 const NODE_CATALOG: Record<string, NodeDetail> = {
   input: {
     id: 'input',
-    name: '사용자 입력',
-    subtitle: '에이전트 시작 질문 및 데이터 입력',
+    name: '사용자 입력 (Input)',
+    subtitle: '에이전트 시작 질문 및 사용자 데이터 입력',
     category: '기본',
     badgeType: 'Trigger',
     icon: 'login',
     accentColor: 'tertiary',
-    tagList: ['시작 노드', '필수', '프롬프트 입력', '사용자 질의'],
+    tagList: ['시작 노드', '필수', '사용자 질의', '파이프라인 시작점'],
     description:
-      '사용자 입력 노드는 워크플로우의 시작점으로, 사용자가 에이전트에게 전달할 최초의 질문이나 프롬프트 데이터를 설정합니다.',
+      '사용자 입력 노드는 워크플로우의 출발점입니다. 에이전트에게 전달할 최초의 질문이나 프롬프트 데이터를 설정하여 다음 지능 노드로 전달합니다.',
     features: [
       {
-        title: '사용자 질문 입력',
-        desc: '에이전트가 처리할 기본 질문 또는 프롬프트 텍스트 지정',
+        title: '사용자 질문 및 프롬프트 입력',
+        desc: '에이전트 파이프라인이 처리할 기본 질문 또는 시작 텍스트를 실시간으로 입력',
       },
       {
-        title: '파이프라인 시작점 역할',
-        desc: '모든 에이전트 실행의 출발점으로서 다음 LLM 또는 에이전트 노드로 데이터 전달',
+        title: '단일 시작점 보장',
+        desc: '정확하고 안전한 실행 순서 제어를 위해 캔버스당 1개의 Input 노드만 배치 가능',
       },
       {
-        title: '동적 입력값 바인딩',
-        desc: '실행 시마다 사용자 입력을 실시간으로 주입 가능',
+        title: '동적 데이터 바인딩',
+        desc: '사용자 입력을 연결된 LLM 지능 노드 또는 자율 에이전트 노드로 직관적으로 전달',
       },
     ],
     modelsOrConfigs: [
       { name: 'input_text', org: 'String', badge: '입력 텍스트', context: '시작 질문 내용' },
-      { name: 'mode', org: 'Single / Chat', badge: '동작 모드', context: '단발성 질의 또는 대화형' },
+      { name: 'format', org: 'Text / Prompt', badge: '데이터 포맷', context: '텍스트 질의' },
     ],
     examples: [
       {
         title: '시작 질문 설정 예시',
         prompt: 'input_text: "인공지능 에이전트가 무엇인지 3문장으로 요약해줘."',
-        resultJson: '{\n  "input_text": "인공지능 에이전트가 무엇인지 3문장으로 요약해줘.",\n  "timestamp": "2026-09-26T17:10:00Z"\n}',
+        resultJson: '{\n  "input_text": "인공지능 에이전트가 무엇인지 3문장으로 요약해줘."\n}',
       },
     ],
   },
   llm: {
     id: 'llm',
-    name: 'LLM',
-    subtitle: '대화형 AI 모델',
-    category: '기본 / 지능',
+    name: 'LLM 지능 노드 (LLM)',
+    subtitle: '로컬 경량 파운데이션 모델 기반 대화형 AI',
+    category: 'LLM',
     badgeType: 'Generative',
-    icon: 'smart_toy',
+    icon: 'neurology',
     accentColor: 'secondary',
-    tagList: ['필수 노드', 'AI', '자연어 처리', '다국어 지원'],
+    tagList: ['핵심 지능', 'Ollama 로컬 모델', '도구 결합 지원', '자연어 생성'],
     description:
-      'LLM 노드는 OpenAI, Anthropic, Ollama 등 다양한 대규모 언어 모델을 활용하여 사용자의 입력에 대한 응답을 생성하는 핵심 지능 노드입니다.',
+      'LLM 노드는 로컬 파운데이션 모델(Ollama gemma2:2b 등)을 활용하여 입력받은 질문에 대해 고품질 지능형 답변을 생성합니다. 상단 도구 포트를 통해 웹 검색, 계산기 도구와 결합할 수 있습니다.',
     features: [
       {
-        title: '다양한 LLM 모델 지원',
-        desc: 'GPT-4o, Claude 3.5, Gemini 등 글로벌 파운데이션 모델 선택 탑재',
+        title: '로컬 LLM 지능 추론',
+        desc: 'Ollama 엔진과 연동된 고성능 경량 AI 모델(gemma2:2b)을 통한 안정적인 답변 생성',
       },
       {
-        title: '정교한 프롬프트 제어',
-        desc: '시스템 프롬프트, 역할 부여 및 Temperature 파라미터 미세 조정',
+        title: '시스템 프롬프트 커스텀',
+        desc: '에이전트의 역할(페르소나), 응답 어조, 행동 가이드라인을 자유롭게 지정',
       },
       {
-        title: '유연한 노드 파이프라인',
-        desc: '웹 검색, 문서 요약, DB 노드와 실시간 양방향 데이터 연동',
+        title: '상단 도구(Tools) 포트 결합',
+        desc: '웹 검색, 계산기 등 특화 도구 노드를 상단에 결합하여 모델의 지식 한계 보완',
       },
     ],
     modelsOrConfigs: [
-      { name: 'GPT-4o', org: 'OpenAI', badge: 'Fast', context: '128k Context (추천 모델)' },
-      { name: 'Claude 3.5 Sonnet', org: 'Anthropic', badge: '심층 추론', context: '200k Context' },
-      { name: 'Gemini 1.5 Pro', org: 'Google', badge: '멀티모달', context: '1M Context' },
-      { name: 'Llama 3 70B', org: 'Meta', badge: '오픈소스', context: '로컬 배포 지원' },
+      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '기본 탑재', context: '경량 고효율 로컬 AI' },
+      { name: 'system_prompt', org: 'System Instruction', badge: '역할 지정', context: '페르소나 및 지침' },
     ],
     examples: [
       {
@@ -96,316 +94,118 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
         resultJson: '{\n  "role": "assistant",\n  "content": "인공지능 에이전트는 사용자의 질문이나 목표를 스스로 파악하여 여러 도구(계산, 검색 등)를 사용해 문제를 해결하는 지능형 프로그램이에요!"\n}',
       },
       {
-        title: '프롬프트 설정 예시',
-        prompt: 'System: 필요한 경우 Search Tool 또는 Calculator Tool을 실행해 답을 구하세요.\nUser: 2026년 AI 최신 트렌드를 조사하고 계산해줘.',
-        resultJson: '{\n  "tool_calls": [\n    {"name": "search_web", "query": "2026 AI Agent framework trends"},\n    {"name": "calculator", "expression": "2026 - 2022"}\n  ]\n}',
-      },
-    ],
-  },
-  'web-search': {
-    id: 'web-search',
-    name: '웹 검색',
-    subtitle: '웹에서 정보 검색',
-    category: '도구',
-    badgeType: 'SERP API',
-    icon: 'travel_explore',
-    accentColor: 'primary',
-    tagList: ['도구 노드', 'SERP API', '실시간 정보', '최신 뉴스'],
-    description:
-      '웹 검색 노드는 LLM의 지식 한계를 보완하기 위해 인터넷에서 최신 정보나 뉴스, 학술 자료를 실시간으로 검색하여 컨텍스트를 제공합니다.',
-    features: [
-      {
-        title: '실시간 SERP 쿼리',
-        desc: 'DuckDuckGo, Google 검색 등을 통한 신뢰성 높은 최신 데이터 스크래핑',
-      },
-      {
-        title: 'LLM 도구 호출 연동',
-        desc: 'LLM 노드가 필요 시 자율적으로 검색 키워드를 추출하여 호출',
-      },
-      {
-        title: '자동 링크 및 출처 인용',
-        desc: '검색된 사이트 제목과 URL 요약본을 자동으로 포맷팅하여 전달',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'max_results', org: 'Integer (기본: 3)', badge: '파라미터', context: '검색 상위 결과 수량' },
-      { name: 'search_engine', org: 'DuckDuckGo / Google', badge: '엔진', context: '검색 프로바이더 설정' },
-      { name: 'timeout_seconds', org: '5초', badge: '안정성', context: '응답 지연 방지 타임아웃' },
-      { name: 'format', org: 'JSON / Markdown', badge: '포맷', context: '결과 전달 형식' },
-    ],
-    examples: [
-      {
-        title: '최신 트렌드 검색',
-        prompt: 'Query: "2026 AI Agent framework trends"',
-        resultJson: '{\n  "query": "2026 AI Agent framework trends",\n  "results": [\n    {"title": "Autonomous AI Agent State 2026", "url": "https://example.com/ai-2026"},\n    {"title": "Visual Graph Orchestration Guide", "url": "https://example.com/graph"}\n  ]\n}',
-      },
-    ],
-  },
-  document: {
-    id: 'document',
-    name: '문서 처리',
-    subtitle: '문서 요약/분석',
-    category: '데이터',
-    badgeType: 'RAG Parser',
-    icon: 'description',
-    accentColor: 'tertiary',
-    tagList: ['RAG', '문서 요약', 'PDF/TXT 파싱', '지식 베이스'],
-    description:
-      '문서 처리 노드는 PDF, 텍스트 파일 등 방대한 문서를 청크(Chunk) 단위로 분할하고 분석하여 필요한 지식을 정확히 검색·요약합니다.',
-    features: [
-      {
-        title: '자동 청킹 및 임베딩',
-        desc: '긴 텍스트를 최적 길이로 분할하고 의미적 유사도 검색 지원',
-      },
-      {
-        title: '다양한 포맷 지원',
-        desc: 'Markdown, TXT, PDF, Word 문서를 텍스트로 고속 파싱',
-      },
-      {
-        title: '문맥 주입 (Context Injection)',
-        desc: '검색된 관련 문단을 LLM 프롬프트에 자동으로 주입하여 환각 최소화',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'chunk_size', org: '500 tokens', badge: '분할 크기', context: '한 번에 읽는 문단 길이' },
-      { name: 'overlap', org: '50 tokens', badge: '중첩', context: '문맥 연속성 유지를 위한 오버랩' },
-      { name: 'parser_type', org: 'PDF / Text / Markdown', badge: '지원 포맷', context: '자동 감지' },
-      { name: 'embedding', org: 'text-embedding-3-small', badge: '벡터', context: '1536차원 벡터 변환' },
-    ],
-    examples: [
-      {
-        title: '보고서 핵심 요약',
-        prompt: 'Input Doc: "AI 교육 플랫폼 2026 계획서 (15페이지)"',
-        resultJson: '{\n  "summary": "본 보고서는 중·고등학생을 대상으로 노드 기반 시각적 AI Agent를 제작할 수 있는 교육 환경 구축 방안을 제시함.",\n  "key_points": ["직관적 UI", "LangGraph 연동", "실시간 스트리밍"]\n}',
-      },
-    ],
-  },
-  image: {
-    id: 'image',
-    name: '이미지 생성',
-    subtitle: '이미지 생성/분석',
-    category: '도구',
-    badgeType: 'Diffusion',
-    icon: 'image',
-    accentColor: 'secondary',
-    tagList: ['DALL-E 3', 'Stable Diffusion', '이미지 생성', '멀티모달'],
-    description:
-      '이미지 생성 노드는 사용자의 텍스트 프롬프트를 바탕으로 고품질의 비주얼 이미지를 생성하고 변환합니다.',
-    features: [
-      {
-        title: '고화질 텍스트 투 이미지',
-        desc: '프롬프트의 디테일을 정밀하게 살린 일러스트 및 포토 생성',
-      },
-      {
-        title: '스타일 프리셋 제공',
-        desc: '애니메이션, 3D 렌더, 사이버네틱, 픽셀아트 등 다양한 화풍 지원',
-      },
-      {
-        title: '파이프라인 연계',
-        desc: 'LLM이 작성한 시나리오에 맞는 이미지를 자동으로 연이어 제작',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'DALL-E 3', org: 'OpenAI', badge: 'HD', context: '1024x1024 고해상도 생성' },
-      { name: 'FLUX.1', org: 'Black Forest Labs', badge: 'Fast', context: '초고속 정밀 렌더' },
-      { name: 'aspect_ratio', org: '1:1, 16:9, 9:16', badge: '비율', context: '가로세로 비율 선택' },
-      { name: 'style', org: 'Cyberpunk, Flat, 3D', badge: '스타일', context: '화풍 프리셋' },
-    ],
-    examples: [
-      {
-        title: '로봇 일러스트 생성',
-        prompt: 'Prompt: "A cute friendly neon robot assisting a student with AI coding, 3D render style"',
-        resultJson: '{\n  "image_url": "https://example.com/assets/robot.png",\n  "width": 1024,\n  "height": 1024,\n  "status": "generated"\n}',
-      },
-    ],
-  },
-  database: {
-    id: 'database',
-    name: '데이터베이스',
-    subtitle: '데이터 조회/저장',
-    category: '데이터',
-    badgeType: 'Storage',
-    icon: 'database',
-    accentColor: 'primary',
-    tagList: ['PostgreSQL', '데이터 저장', '실행 로그', '세션 기록'],
-    description:
-      '데이터베이스 노드는 에이전트의 대화 내역, 실행 결과, 사용자 정의 상태를 영구 저장소에 안전하게 기록하고 필요 시 조회합니다.',
-    features: [
-      {
-        title: 'PostgreSQL 15 연동',
-        desc: '구조화된 테이블 스키마에 안전한 트랜잭션 단위로 데이터 저장',
-      },
-      {
-        title: '실행 로그 아카이빙',
-        desc: '파이프라인 실행 이력과 토큰 사용량을 자동으로 기록하여 분석 가능',
-      },
-      {
-        title: '고속 인덱싱 쿼리',
-        desc: '세션 ID 기반으로 이전 대화 컨텍스트를 밀리초 단위로 조회',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'table_name', org: 'String', badge: '테이블', context: '기록할 대상 DB 테이블명' },
-      { name: 'operation', org: 'SELECT / INSERT', badge: '작업', context: '수행할 쿼리 동작' },
-      { name: 'host', org: 'postgres:5432', badge: '호스트', context: 'Docker 내부 연결망' },
-      { name: 'pool_size', org: '10 connections', badge: '커넥션', context: '동시성 제어' },
-    ],
-    examples: [
-      {
-        title: '결과 저장 쿼리',
-        prompt: 'Insert into execution_logs (workflow_id, status, result)',
-        resultJson: '{\n  "status": "success",\n  "inserted_id": 1042,\n  "created_at": "2026-09-26T14:00:00Z"\n}',
-      },
-    ],
-  },
-  code: {
-    id: 'code',
-    name: '코드 실행',
-    subtitle: '코드 실행 및 결과 변환',
-    category: '도구',
-    badgeType: 'Interpreter',
-    icon: 'code',
-    accentColor: 'tertiary',
-    tagList: ['Python', '수학 연산', '데이터 가공', '커스텀 로직'],
-    description:
-      '코드 실행 노드는 복잡한 수학 연산, 데이터 포맷 변환, 정규표현식 파싱 등의 작업을 정확한 프로그래밍 코드로 처리합니다.',
-    features: [
-      {
-        title: '안전한 샌드박스 실행',
-        desc: '격리된 환경에서 안전하게 연산 및 스크립트 실행',
-      },
-      {
-        title: '정밀한 계산 결과 보장',
-        desc: 'LLM의 계산 취약점을 보완하여 정확한 수식 계산 결과 도출',
-      },
-      {
-        title: 'JSON 구조화 변환',
-        desc: '비정형 텍스트 출력을 구조화된 JSON 데이터로 깔끔하게 파싱',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'runtime', org: 'Python 3.11', badge: '런타임', context: '실행 인터프리터' },
-      { name: 'timeout', org: '3초', badge: '제한', context: '무한 루프 방지' },
-      { name: 'libraries', org: 'math, json, re, datetime', badge: '모듈', context: '기본 탑재 모듈' },
-      { name: 'memory_limit', org: '128MB', badge: '자원', context: '메모리 한도 제어' },
-    ],
-    examples: [
-      {
-        title: '계산기 수식 계산',
-        prompt: 'Expression: "(4500 * 1.15) - 250"',
-        resultJson: '{\n  "expression": "(4500 * 1.15) - 250",\n  "result": 4925.0,\n  "status": "computed"\n}',
-      },
-    ],
-  },
-  condition: {
-    id: 'condition',
-    name: '조건 분기',
-    subtitle: '조건에 따른 분기 처리',
-    category: '기본',
-    badgeType: 'Router',
-    icon: 'alt_route',
-    accentColor: 'error',
-    tagList: ['IF / ELSE', '조건 분기', '라우팅', '흐름 제어'],
-    description:
-      '조건 분기 노드는 입력값이나 이전 노드의 처리 결과에 따라 실행 경로를 서로 다른 노드로 분기시키는 흐름 제어 노드입니다.',
-    features: [
-      {
-        title: '조건식 기반 라우팅',
-        desc: '정규표현식, 키워드 포함 여부, 점수 임계값에 따라 경로 분기',
-      },
-      {
-        title: '멀티 브랜치 지원',
-        desc: '2개 이상의 다중 조건 분기(Case)를 구성하여 유연한 대응',
-      },
-      {
-        title: '폴백(Default) 경로',
-        desc: '어떤 조건도 만족하지 않을 때의 기본 안전 경로 지정',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'condition_type', org: 'Regex / Contains / Value', badge: '조건 유형', context: '판단 기준' },
-      { name: 'branches', org: 'True / False (2-way)', badge: '분기 수', context: '경로 개수' },
-      { name: 'fallback', org: 'Default Route', badge: '예외', context: '기본 경로 지정' },
-      { name: 'eval_mode', org: 'Strict / Fuzzy', badge: '정밀도', context: '일치 검사 강도' },
-    ],
-    examples: [
-      {
-        title: '키워드 기반 분기',
-        prompt: 'If input contains "날씨" -> WebSearch\nElse -> LLM Chat',
-        resultJson: '{\n  "selected_branch": "WebSearch",\n  "matched_condition": "contains(\'날씨\')",\n  "routed_to": "node_web_search"\n}',
+        title: '도구 연계 예시',
+        prompt: 'System: 필요한 경우 웹 검색 또는 계산기 도구를 결합하여 답변하세요.\nUser: 2026년 최신 기술 동향을 조사해줘.',
+        resultJson: '{\n  "tool_used": "web_search",\n  "result": "최신 자율 에이전트 동향 검색 결과를 바탕으로 답변을 완성했습니다."\n}',
       },
     ],
   },
   agent: {
     id: 'agent',
-    name: '자율 에이전트',
-    subtitle: '목표 지향적 자율 추론/도구 실행',
-    category: '기본 / 지능',
+    name: '자율 에이전트 (Autonomous Agent)',
+    subtitle: '스스로 판단하고 도구를 자율 실행하는 독립 에이전트',
+    category: 'LLM',
     badgeType: 'Agentic',
     icon: 'smart_toy',
     accentColor: 'secondary',
-    tagList: ['ReAct', '도구 연동', '자율 추론', '자기 교정'],
+    tagList: ['자율 추론', 'ReAct 아키텍처', '목표 지향', '자동 도구 호출'],
     description:
-      '자율 에이전트 노드는 주어진 목표(Goal)를 달성하기 위해 필요한 도구를 스스로 판단하여 순차적으로 실행하고, 결과를 종합하여 최적의 응답을 도출합니다.',
+      '자율 에이전트 노드는 주어진 목표(Goal)를 달성하기 위해 필요한 도구(웹 검색, 계산 등)를 스스로 판단하여 단계별로 실행하고, 최종 답변을 종합해내는 고도화된 에이전트 노드입니다.',
     features: [
       {
-        title: 'ReAct (Reason + Act) 루프',
-        desc: '생각(Thought) -> 행동(Action) -> 관찰(Observation) 사이클을 자율 수행',
+        title: 'ReAct (Reason + Act) 자율 사이클',
+        desc: '생각(Thought) -> 행동(Action) -> 관찰(Observation) 사이클을 스스로 반복 수행',
       },
       {
-        title: '다중 도구 오케스트레이션',
-        desc: '검색, 계산기, 파이썬 코드 실행 등을 목적에 맞게 복합 조합',
+        title: '자율 도구 오케스트레이션',
+        desc: '질문 해결에 필요한 도구를 에이전트가 직접 선택하고 파라미터를 구성해 호출',
       },
       {
-        title: '자기 오류 수정 (Self-Correction)',
-        desc: '도구 실행 실패 시 다른 파라미터로 재시도하거나 대체 도구 호출',
+        title: '원스톱 파이프라인 구성',
+        desc: '복잡한 다중 분기 연결 없이 단일 노드로 자율 추론과 작업 완결 지원',
       },
     ],
     modelsOrConfigs: [
-      { name: 'max_iterations', org: '5회 (기본)', badge: '루프 한도', context: '최대 자율 실행 횟수' },
-      { name: 'reasoning_engine', org: 'ReAct Agent', badge: '아키텍처', context: '추론 알고리즘' },
-      { name: 'system_prompt', org: 'System Prompt', badge: '지침', context: '에이전트 행동 규칙' },
+      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '추론 모델', context: '로컬 ReAct 에이전트' },
+      { name: 'system_prompt', org: 'System Instruction', badge: '에이전트 지침', context: '자율 행동 규칙 설정' },
     ],
     examples: [
       {
-        title: '복합 질문 자율 해결',
-        prompt: 'Goal: "2026년 파이썬 최신 버전을 검색하고, 그 버전 번호의 제곱근을 계산해줘."',
-        resultJson: '{\n  "thought": "먼저 2026년 파이썬 버전을 검색하고, 결과를 바탕으로 계산기 도구를 호출해야 합니다.",\n  "actions": ["search_web(\'Python latest version 2026\')", "calculator(\'sqrt(3.14)\')"],\n  "final_answer": "2026년 최신 파이썬 3.14의 제곱근 계산 결과는 약 1.77입니다."\n}',
+        title: '복합 목표 자율 해결 예시',
+        prompt: 'Goal: "2026년 최신 파이썬 버전을 검색하고, 그 버전 번호의 제곱근을 계산해줘."',
+        resultJson: '{\n  "thought": "최신 파이썬 버전 정보를 검색한 후 수학 계산 도구를 실행해야 합니다.",\n  "actions": ["search_web", "calculator"],\n  "final_answer": "최신 파이썬 버전 정보를 바탕으로 연산된 결과입니다."\n}',
+      },
+    ],
+  },
+  'web-search': {
+    id: 'web-search',
+    name: '웹 검색 도구 (Web Search)',
+    subtitle: '실시간 인터넷 정보 검색 및 요약 수집',
+    category: '도구',
+    badgeType: 'Tool',
+    icon: 'travel_explore',
+    accentColor: 'primary',
+    tagList: ['도구 노드', '실시간 검색', '최신 정보', '도구 연동'],
+    description:
+      '웹 검색 노드는 LLM의 사전 학습 지식 한계를 보완하기 위해 인터넷에서 실시간 최신 정보나 뉴스 자료를 검색하여 지능 노드에 전달하는 도구 노드입니다.',
+    features: [
+      {
+        title: '실시간 웹 정보 수집',
+        desc: '신뢰성 높은 최신 웹 문서 검색을 통한 실시간 정보 조회',
+      },
+      {
+        title: 'LLM 상단 도구 포트 연동',
+        desc: 'LLM 노드의 상단 포트에 연결되어 모델이 검색 필요 시 자동으로 활용',
+      },
+      {
+        title: '핵심 본문 요약 전달',
+        desc: '검색된 사이트의 제목과 요약 정보를 정제하여 LLM 컨텍스트로 반환',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'search_engine', org: 'DuckDuckGo', badge: '검색 엔진', context: '실시간 웹 쿼리' },
+      { name: 'max_results', org: '3개 (기본)', badge: '결과 수량', context: '상위 검색 결과 제한' },
+    ],
+    examples: [
+      {
+        title: '최신 트렌드 검색 예시',
+        prompt: 'Query: "2026 AI Agent framework trends"',
+        resultJson: '{\n  "query": "2026 AI Agent framework trends",\n  "results": [\n    {"title": "Latest Autonomous AI Trends", "snippet": "자율 에이전트 프레임워크 최신 동향..."}\n  ]\n}',
       },
     ],
   },
   calculator: {
     id: 'calculator',
-    name: '계산기',
-    subtitle: '수학 수식 및 정밀 연산',
+    name: '계산기 도구 (Calculator)',
+    subtitle: '수학 수식 및 정밀 산술 연산 도구',
     category: '도구',
-    badgeType: 'Math Tool',
+    badgeType: 'Tool',
     icon: 'calculate',
     accentColor: 'tertiary',
-    tagList: ['수학 연산', '정밀 계산', '사칙연산', '수식 파서'],
+    tagList: ['도구 노드', '정밀 계산', '사칙연산', '오차 방지'],
     description:
-      '계산기 노드는 LLM의 수학적 한계를 보완하여 복잡한 산술 수식과 과학 계산을 오차 없이 정밀하게 연산합니다.',
+      '계산기 노드는 언어 모델이 계산 실수나 환각을 일으키기 쉬운 복잡한 수학 연산과 수식을 정확하고 안전하게 계산해주는 도구 노드입니다.',
     features: [
       {
-        title: '정밀 산술 연산',
-        desc: '부동소수점 오차 없는 정밀 사칙연산 및 지수/로그/삼각함수 지원',
+        title: '정밀 산술 연산 지원',
+        desc: '사칙연산(+, -, *, /) 및 괄호 수식을 오차 없이 안전하고 정확하게 계산',
       },
       {
-        title: 'LLM 도구 호출 연계',
-        desc: 'LLM 노드의 도구 핸들과 연결되어 수식 발견 시 자동 호출',
+        title: 'LLM 도구 포트 연동',
+        desc: 'LLM 노드의 상단 도구 포트에 결합되어 수식 계산 필요 시 즉시 호출',
       },
       {
-        title: '실시간 결과 반환',
-        desc: '수식 검증 및 안전한 파싱을 거쳐 즉시 연산 결과 반환',
+        title: '안전한 샌드박스 연산',
+        desc: '안전한 수식 파서를 적용하여 유효한 수학식만 정밀 계산 후 결과 반환',
       },
     ],
     modelsOrConfigs: [
-      { name: 'expression', org: 'String', badge: '수식', context: '계산할 수식 표현식' },
-      { name: 'precision', org: 'Decimal 10자리', badge: '정밀도', context: '소수점 정밀도' },
+      { name: 'engine', org: 'Math Evaluator', badge: '연산 엔진', context: '정밀 수식 연산기' },
+      { name: 'operators', org: '+, -, *, /, ()', badge: '지원 연산', context: '표준 사칙연산 수식' },
     ],
     examples: [
       {
-        title: '복합 수식 계산',
+        title: '복합 수식 계산 예시',
         prompt: 'Expression: "(15000 * 0.85) + 3000 / 2"',
         resultJson: '{\n  "expression": "(15000 * 0.85) + 3000 / 2",\n  "result": 14250.0,\n  "status": "success"\n}',
       },
@@ -413,37 +213,38 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
   },
   output: {
     id: 'output',
-    name: '결과 출력',
-    subtitle: '최종 결과 표출 및 포맷팅',
+    name: '결과 출력 (Output)',
+    subtitle: '에이전트 최종 결과 렌더링 및 완료',
     category: '기본',
     badgeType: 'Sink',
     icon: 'output',
     accentColor: 'error',
-    tagList: ['최종 출력', '결과 표출', '포맷팅', '파이프라인 종료'],
+    tagList: ['종착 노드', '필수', '결과 표출', '파이프라인 종료'],
     description:
-      '결과 출력 노드는 워크플로우의 최종 종착점으로, 이전 노드들에서 생성된 최종 답변이나 실행 데이터를 사용자 화면에 깔끔하게 표출합니다.',
+      '결과 출력 노드는 워크플로우의 최종 종착점입니다. LLM 또는 자율 에이전트가 처리한 최종 응답 결과를 화면에 렌더링하고 전체 실행을 완료합니다.',
     features: [
       {
-        title: '최종 결과 렌더링',
-        desc: '마크다운, 텍스트, 구조화된 JSON 결과를 사용자가 보기 편하게 시각화',
+        title: '최종 결과 텍스트 렌더링',
+        desc: '생성된 최종 답변을 사용자 화면에 일목요연하게 표출',
       },
       {
-        title: '실행 완료 트리거',
-        desc: '전체 파이프라인의 성공적 종료를 알리고 최종 소요 시간 및 상태 기록',
+        title: '단일 종료점 보장',
+        desc: '파이프라인의 명확한 종료를 위해 캔버스당 1개의 Output 노드만 배치 가능',
       },
       {
-        title: '클립보드 복사 및 다운로드',
-        desc: '생성된 결과를 원클릭으로 복사하거나 파일로 내보내기 지원',
+        title: '실행 히스토리 및 결과 모달 연동',
+        desc: '실행 로그 패널 및 노드별 단계별 실행 결과 확인 창과 직접 연계',
       },
     ],
     modelsOrConfigs: [
-      { name: 'render_mode', org: 'Markdown / Raw', badge: '렌더링', context: '출력 서식 형태' },
+      { name: 'output_text', org: 'String', badge: '출력 텍스트', context: '최종 반환 내용' },
+      { name: 'status', org: 'completed / idle', badge: '실행 상태', context: '작업 완료 여부' },
     ],
     examples: [
       {
-        title: '최종 출력 포맷팅 예시',
+        title: '최종 결과 출력 예시',
         prompt: 'Input: "AI 에이전트 요약 완료"',
-        resultJson: '{\n  "final_output": "AI 에이전트는 목표를 스스로 파악하여 도구를 활용해 문제를 해결하는 지능형 프로그램입니다.",\n  "execution_status": "completed"\n}',
+        resultJson: '{\n  "final_output": "AI 에이전트는 목표를 스스로 파악하여 도구를 활용해 문제를 해결하는 지능형 프로그램입니다.",\n  "status": "completed"\n}',
       },
     ],
   },
@@ -454,7 +255,7 @@ export const NodeInstructionPage: React.FC = () => {
   const { nodeId } = useParams();
   const { setTourPage, checkAndTriggerPageTour } = useOnboarding();
 
-  const activeKey = nodeId && NODE_CATALOG[nodeId] ? nodeId : 'llm';
+  const activeKey = nodeId && NODE_CATALOG[nodeId] ? nodeId : 'input';
   const current = NODE_CATALOG[activeKey];
 
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
@@ -600,13 +401,25 @@ export const NodeInstructionPage: React.FC = () => {
                     </div>
 
                     <div className="pt-space-xs">
-                      <Link
-                        to="/noa-e/studio"
-                        className="inline-flex items-center gap-2 px-space-lg py-2 rounded-xl bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-headline-sm text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                      <button
+                        onClick={() => {
+                          const nodeTypeMap: Record<string, string> = {
+                            input: 'inputNode',
+                            llm: 'llmNode',
+                            agent: 'agentNode',
+                            'web-search': 'searchNode',
+                            calculator: 'calculatorNode',
+                            output: 'outputNode',
+                          };
+                          const targetType = nodeTypeMap[current.id] || 'llmNode';
+                          navigate(`/noa-e/studio?addNode=${targetType}`);
+                        }}
+                        type="button"
+                        className="inline-flex items-center gap-2 px-space-lg py-2 rounded-xl bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-headline-sm text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[16px]">play_arrow</span>
                         <span>스튜디오에서 바로 사용해보기</span>
-                      </Link>
+                      </button>
                     </div>
                   </div>
 

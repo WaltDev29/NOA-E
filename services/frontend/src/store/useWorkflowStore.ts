@@ -66,6 +66,7 @@ interface WorkflowState {
   clearNodeResults: () => void;
   clearLogs: () => void;
   clearMessages: () => void;
+  addNode: (type: string, position?: { x: number; y: number }) => { success: boolean; node?: Node; message?: string };
   nodeInfoModal: { isOpen: boolean; nodeType: string | null };
   openNodeModal: (nodeType: string) => void;
   closeNodeModal: () => void;
@@ -255,4 +256,100 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   closeOutputModal: () => set({ outputResultModal: { isOpen: false } }),
   activeNodeId: null,
   setActiveNodeId: (nodeId) => set({ activeNodeId: nodeId }),
+  addNode: (type, position) => {
+    const currentNodes = get().nodes;
+
+    // Input 노드는 단일 시작점이므로 캔버스에 이미 존재하면 포커스만 이동하고 중복 생성 방지
+    if (type === 'inputNode') {
+      const existingInput = currentNodes.find((n) => n.type === 'inputNode');
+      if (existingInput) {
+        set({
+          nodes: currentNodes.map((n) => ({ ...n, selected: n.id === existingInput.id })),
+          selectedNode: existingInput,
+          selectedResultNodeId: existingInput.id,
+        });
+        return { success: false, node: existingInput, message: 'Input 노드는 이미 캔버스에 존재합니다. 해당 노드로 이동했습니다.' };
+      }
+    }
+
+    // Output 노드 역시 단일 종착점이므로 중복 생성 방지
+    if (type === 'outputNode') {
+      const existingOutput = currentNodes.find((n) => n.type === 'outputNode');
+      if (existingOutput) {
+        set({
+          nodes: currentNodes.map((n) => ({ ...n, selected: n.id === existingOutput.id })),
+          selectedNode: existingOutput,
+          selectedResultNodeId: existingOutput.id,
+        });
+        return { success: false, node: existingOutput, message: 'Output 노드는 이미 캔버스에 존재합니다. 해당 노드로 이동했습니다.' };
+      }
+    }
+
+    const prefix = type.replace('Node', '');
+    let maxSuffix = 0;
+    currentNodes.forEach((node) => {
+      if (node.id.startsWith(`${prefix}-`)) {
+        const num = parseInt(node.id.replace(`${prefix}-`, ''), 10);
+        if (!isNaN(num) && num > maxSuffix) {
+          maxSuffix = num;
+        }
+      }
+    });
+    const newId = `${prefix}-${maxSuffix + 1}`;
+
+    const labels: Record<string, string> = {
+      inputNode: 'Input',
+      llmNode: 'LLM',
+      agentNode: 'Autonomous Agent',
+      searchNode: '웹 검색',
+      calculatorNode: '계산기 도구',
+      outputNode: 'Output',
+    };
+
+    const defaultConfigs: Record<string, any> = {
+      llmNode: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' },
+      agentNode: { model: 'gemma2:2b', system_prompt: 'You are an autonomous agent.' },
+      inputNode: { input_text: '' },
+      searchNode: {},
+      calculatorNode: {},
+      outputNode: {},
+    };
+
+    let calculatedPos = position;
+    if (!calculatedPos) {
+      if (type === 'searchNode' || type === 'calculatorNode') {
+        const toolCount = currentNodes.filter((n) => n.type === 'searchNode' || n.type === 'calculatorNode').length;
+        calculatedPos = { x: 380 + (toolCount * 170), y: -40 };
+      } else if (type === 'agentNode') {
+        const agentCount = currentNodes.filter((n) => n.type === 'agentNode').length;
+        calculatedPos = { x: 400 + (agentCount * 40), y: 260 + (agentCount * 40) };
+      } else {
+        const lastNode = currentNodes[currentNodes.length - 1];
+        calculatedPos = lastNode
+          ? { x: lastNode.position.x + 40, y: lastNode.position.y + 120 }
+          : { x: 250, y: 150 };
+      }
+    }
+
+    const newNode: Node = {
+      id: newId,
+      type,
+      position: calculatedPos,
+      data: {
+        label: labels[type] || 'Node',
+        config: defaultConfigs[type] || {},
+      },
+      selected: true,
+    };
+
+    // 기존 노드 선택 해제 및 신규 노드 추가
+    const updatedNodes: Node[] = [...currentNodes.map((n) => ({ ...n, selected: false })), newNode];
+    set({
+      nodes: updatedNodes,
+      selectedNode: newNode,
+      selectedResultNodeId: newNode.id,
+    });
+
+    return { success: true, node: newNode, message: `${labels[type] || type} 노드가 캔버스에 추가되었습니다.` };
+  },
 }));
