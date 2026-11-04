@@ -24,6 +24,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       llmNode: 'llm',
       outputNode: 'output',
       searchNode: 'search',
+      weatherNode: 'weather',
+      youtubeNode: 'youtube',
       agentNode: 'agent',
     };
 
@@ -36,7 +38,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       if (backendType === 'llm' || backendType === 'agent') {
         sanitizedConfig = {
           model: rawConfig.model || 'gemma2:2b',
-          system_prompt: rawConfig.system_prompt || 'You are a helpful assistant.',
+          system_prompt: rawConfig.system_prompt || '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
           temperature: rawConfig.temperature !== undefined ? Number(rawConfig.temperature) : 0.7,
         };
       }

@@ -22,7 +22,7 @@ class WorkflowValidator:
             raise ValueError("워크플로우에 적어도 하나의 'Output' 노드가 포함되어야 합니다.")
             
         adjacency: Dict[str, List[str]] = {nid: [] for nid in node_ids}
-        tool_types = {"search"}
+        tool_types = {"search", "weather", "youtube"}
 
         for edge in edges:
             source_id = edge["source"]

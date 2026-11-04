@@ -16,6 +16,8 @@ import {
   InputNode,
   LLMNode,
   SearchNode,
+  WeatherNode,
+  YoutubeNode,
   OutputNode,
   PlannerNode,
   RouterNode,
@@ -32,6 +34,8 @@ const nodeTypes = {
   routerNode: RouterNode,
   aggregatorNode: AggregatorNode,
   searchNode: SearchNode,
+  weatherNode: WeatherNode,
+  youtubeNode: YoutubeNode,
   outputNode: OutputNode,
 };
 
@@ -62,16 +66,32 @@ const EditorInner: React.FC = () => {
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const { showAlert } = useModal();
 
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, modelCapabilities } = useWorkflowStore();
 
   const isValidConnection = useCallback((connection: Edge | Connection) => {
     if (connection.source === connection.target) return false;
 
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
+    const toolNodeTypes = ['searchNode', 'weatherNode', 'youtubeNode'];
 
     // Output 노드로부터 나가는 연결 금지
     if (sourceNode?.type === 'outputNode') return false;
+
+    const isSourceTool = toolNodeTypes.includes(sourceNode?.type || '');
+    const isTargetTool = toolNodeTypes.includes(targetNode?.type || '');
+
+    // Tool 노드는 오직 Tool 기능을 지원하는 LLM 노드의 상단 'tools' 포트로만 연결 가능
+    if (isSourceTool || isTargetTool || connection.targetHandle === 'tools' || connection.sourceHandle === 'tools') {
+      if (!isSourceTool || targetNode?.type !== 'llmNode' || connection.targetHandle !== 'tools') {
+        return false;
+      }
+      const llmModel = (targetNode.data as any)?.config?.model || 'gemma2:2b';
+      if (!modelCapabilities[llmModel]?.tool) {
+        return false;
+      }
+      return true;
+    }
 
     // Router의 루프 포트(loop-return) 연결 검증:
     // 드래그 방향에 상관없이(targetHandle 또는 sourceHandle이 loop-return인 경우)
@@ -88,7 +108,7 @@ const EditorInner: React.FC = () => {
     }
 
     return true;
-  }, [nodes, showAlert]);
+  }, [nodes, modelCapabilities, showAlert]);
 
   // 에이전트 가이드 시 캔버스가 노드 1개 크기로 과도하게 줌인되지 않도록 넉넉한 뷰포트(zoom 0.8) 유지
   useEffect(() => {
@@ -135,33 +155,41 @@ const EditorInner: React.FC = () => {
         llmNode: 'LLM',
         aggregatorNode: 'Aggregator',
         searchNode: '검색 Tool',
-          outputNode: 'Output',
+        weatherNode: '날씨 Tool',
+        youtubeNode: 'YouTube Tool',
+        outputNode: 'Output',
       };
 
       const defaultConfigs: Record<string, any> = {
         inputNode: { input_text: '' },
         plannerNode: {
           model: 'gemma2:2b',
+          temperature: 0.7,
           system_prompt: '사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.',
         },
         routerNode: {
           model: 'gemma2:2b',
+          temperature: 0.7,
           max_loops: 5,
           system_prompt: '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
         },
         llmNode: {
           model: 'gemma2:2b',
-          system_prompt: 'You are a helpful assistant.',
+          temperature: 0.7,
+          system_prompt: '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
           react_loop: true,
           max_tool_iterations: 3,
           tool_instruction: '',
         },
         aggregatorNode: {
           model: 'gemma2:2b',
+          temperature: 0.7,
           system_prompt: '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
         },
         searchNode: {},
-          outputNode: {},
+        weatherNode: {},
+        youtubeNode: {},
+        outputNode: {},
       };
 
       const newId = getUniqueId(type, currentNodes);

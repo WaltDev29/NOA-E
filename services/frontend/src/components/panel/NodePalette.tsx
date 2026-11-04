@@ -64,6 +64,22 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     color: 'primary',
   },
   {
+    type: 'weatherNode',
+    name: '날씨 Tool',
+    subtitle: '현재 날씨 및 일별 예보 조회',
+    icon: 'partly_cloudy_day',
+    category: '도구',
+    color: 'tertiary',
+  },
+  {
+    type: 'youtubeNode',
+    name: 'YouTube Tool',
+    subtitle: 'YouTube 영상 검색',
+    icon: 'smart_display',
+    category: '도구',
+    color: 'secondary',
+  },
+  {
     type: 'outputNode',
     name: 'Output',
     subtitle: '최종 결과 렌더링',

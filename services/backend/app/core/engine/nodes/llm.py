@@ -64,7 +64,10 @@ class LLMNode(BaseNode):
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         llm = get_llm(self.config)
         
-        system_prompt = self.config.get("system_prompt", "You are a helpful assistant.")
+        default_ko_prompt = "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다."
+        system_prompt = self.config.get("system_prompt") or default_ko_prompt
+        if system_prompt.strip() == "You are a helpful assistant.":
+            system_prompt = default_ko_prompt
         tool_instruction = self.config.get("tool_instruction", "").strip()
         react_loop = self.config.get("react_loop", True)
         max_tool_iterations = int(self.config.get("max_tool_iterations", 3))

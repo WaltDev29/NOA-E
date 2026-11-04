@@ -4,6 +4,7 @@ import { useWorkflowStore } from '../../store/useWorkflowStore';
 
 import { workflowApi } from '../../services/workflowApi';
 import ReactMarkdown from 'react-markdown';
+import { linkifyBareUrls, markdownComponents } from '../../utils/markdown';
 
 export const PropertyPanel: React.FC = () => {
 
@@ -22,6 +23,8 @@ export const PropertyPanel: React.FC = () => {
   const activeNodeId = useWorkflowStore((state) => state.activeNodeId);
 
   const nodeResults = useWorkflowStore((state) => state.nodeResults);
+
+  const modelCapabilities = useWorkflowStore((state) => state.modelCapabilities);
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [tempLabel, setTempLabel] = useState('');
@@ -113,6 +116,10 @@ export const PropertyPanel: React.FC = () => {
 
       searchNode: '검색 Tool',
 
+      weatherNode: '날씨 Tool',
+
+      youtubeNode: 'YouTube Tool',
+
 
       outputNode: 'Output',
 
@@ -149,6 +156,14 @@ export const PropertyPanel: React.FC = () => {
       case 'searchNode':
 
         return 'travel_explore';
+
+      case 'weatherNode':
+
+        return 'partly_cloudy_day';
+
+      case 'youtubeNode':
+
+        return 'smart_display';
 
 
       case 'outputNode':
@@ -517,6 +532,58 @@ export const PropertyPanel: React.FC = () => {
 
             </div>
 
+            {/* 3.5. Temperature (창의성/무작위성 조절) */}
+
+            <div className="flex flex-col gap-2">
+
+              <div className="flex justify-between items-center">
+
+                <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+
+                  Temperature
+
+                </label>
+
+                <span className="text-xs font-mono font-bold text-secondary">
+
+                  {Number(config.temperature ?? 0.7).toFixed(1)}
+
+                </span>
+
+              </div>
+
+              <input
+
+                type="range"
+
+                min="0"
+
+                max="2"
+
+                step="0.1"
+
+                value={config.temperature ?? 0.7}
+
+                onChange={(e) => handleChange('temperature', parseFloat(e.target.value))}
+
+                className="w-full accent-secondary cursor-pointer"
+
+              />
+
+              <div className="flex justify-between text-[10px] text-outline">
+
+                <span>0.0 (일관성·정확성)</span>
+
+                <span>1.0 (균형)</span>
+
+                <span>2.0 (창의성)</span>
+
+              </div>
+
+            </div>
+
             {/* Router 전용: 최대 루프 반복 횟수 */}
 
             {type === 'routerNode' && (
@@ -567,9 +634,9 @@ export const PropertyPanel: React.FC = () => {
 
             )}
 
-            {/* LLM 전용: 도구 ReAct 루프 및 자율 재시도 설정 */}
+            {/* LLM 전용: 도구 ReAct 루프 및 자율 재시도 설정 (Tool 지원 모델일 때만 노출) */}
 
-            {type === 'llmNode' && (
+            {type === 'llmNode' && Boolean(modelCapabilities[config.model || 'gemma2:2b']?.tool) && (
 
               <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-surface-container/60 border border-outline-variant/40">
 
@@ -714,7 +781,9 @@ export const PropertyPanel: React.FC = () => {
             <div className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-3 text-xs text-on-surface min-h-[180px] max-h-[400px] overflow-y-auto leading-relaxed select-text">
               {executionResult ? (
                 <div className="prose prose-invert prose-xs max-w-none [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_code]:bg-surface-container [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-surface-container-high [&_pre]:p-2 [&_pre]:rounded-lg [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-2 [&_strong]:text-primary">
-                  <ReactMarkdown>{typeof executionResult === 'string' ? executionResult : JSON.stringify(executionResult, null, 2)}</ReactMarkdown>
+                  <ReactMarkdown components={markdownComponents}>
+                    {linkifyBareUrls(typeof executionResult === 'string' ? executionResult : JSON.stringify(executionResult, null, 2))}
+                  </ReactMarkdown>
                 </div>
               ) : (
                 <span className="text-outline italic">실행 결과가 아직 없습니다.</span>

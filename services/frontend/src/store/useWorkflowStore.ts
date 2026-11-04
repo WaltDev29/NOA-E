@@ -73,6 +73,7 @@ interface WorkflowState {
   outputResultModal: { isOpen: boolean };
   openOutputModal: () => void;
   closeOutputModal: () => void;
+  resetWorkflow: () => void;
   activeNodeId: string | null;
   setActiveNodeId: (nodeId: string | null) => void;
   modelCapabilities: Record<string, { image: boolean; tool: boolean; mcp: boolean; skill: boolean }>;
@@ -81,9 +82,34 @@ interface WorkflowState {
 
 }
 
+const DEFAULT_LLM_SYSTEM_PROMPT = '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.';
+const TOOL_NODE_TYPES = ['searchNode', 'weatherNode', 'youtubeNode'];
+
+const pruneUnsupportedToolEdges = (
+  nodes: Node[],
+  edges: Edge[],
+  caps: Record<string, { image: boolean; tool: boolean; mcp: boolean; skill: boolean }>
+): Edge[] => {
+  if (!caps || Object.keys(caps).length === 0) return edges;
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  return edges.filter((edge) => {
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+    const isToolEdge =
+      edge.targetHandle === 'tools' ||
+      edge.sourceHandle === 'tools' ||
+      TOOL_NODE_TYPES.includes(sourceNode?.type || '') ||
+      TOOL_NODE_TYPES.includes(targetNode?.type || '');
+    if (!isToolEdge) return true;
+    if (targetNode?.type !== 'llmNode') return false;
+    const modelName = (targetNode.data as any)?.config?.model || 'gemma2:2b';
+    return Boolean(caps[modelName]?.tool);
+  });
+};
+
 const initialNodes: Node[] = [
   { id: 'input-1', type: 'inputNode', position: { x: 100, y: 100 }, data: { label: 'Input', config: {} } },
-  { id: 'llm-1', type: 'llmNode', position: { x: 400, y: 100 }, data: { label: 'LLM', config: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' } } },
+  { id: 'llm-1', type: 'llmNode', position: { x: 400, y: 100 }, data: { label: 'LLM', config: { model: 'gemma2:2b', temperature: 0.7, system_prompt: DEFAULT_LLM_SYSTEM_PROMPT } } },
   { id: 'output-1', type: 'outputNode', position: { x: 700, y: 100 }, data: { label: 'Output', config: {} } },
 ];
 
@@ -103,12 +129,16 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   nodeResults: {},
   selectedResultNodeId: null,
   modelCapabilities: {},
-  setModelCapabilities: (caps) => set({ modelCapabilities: caps }),
+  setModelCapabilities: (caps) =>
+    set((state) => ({
+      modelCapabilities: caps,
+      edges: pruneUnsupportedToolEdges(state.nodes, state.edges, caps),
+    })),
   fetchModelCapabilities: async () => {
     try {
       const res = await (await import('../services/workflowApi')).workflowApi.getAvailableModels();
       if (res.model_capabilities) {
-        set({ modelCapabilities: res.model_capabilities });
+        get().setModelCapabilities(res.model_capabilities);
       }
     } catch (e) {
       console.error('Failed to fetch model capabilities:', e);
@@ -215,8 +245,32 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       ),
     });
   },
-  setNodes: (nodes) => set({ nodes }),
-  setEdges: (edges) => set({ edges }),
+  setNodes: (nodes) =>
+    set((state) => {
+      const normalizedNodes = nodes.map((node) => {
+        if (node.type === 'llmNode' && (node.data as any)?.config?.system_prompt === 'You are a helpful assistant.') {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              config: {
+                ...(node.data as any).config,
+                system_prompt: DEFAULT_LLM_SYSTEM_PROMPT,
+              },
+            },
+          };
+        }
+        return node;
+      });
+      return {
+        nodes: normalizedNodes,
+        edges: pruneUnsupportedToolEdges(normalizedNodes, state.edges, state.modelCapabilities),
+      };
+    }),
+  setEdges: (edges) =>
+    set((state) => ({
+      edges: pruneUnsupportedToolEdges(state.nodes, edges, state.modelCapabilities),
+    })),
   deleteNode: (nodeId) => set((state) => ({
     nodes: state.nodes.filter(n => n.id !== nodeId),
     edges: state.edges.filter(e => e.source !== nodeId && e.target !== nodeId),
@@ -228,18 +282,18 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     selectedResultNodeId: node ? node.id : get().selectedResultNodeId,
   }),
   updateNodeConfig: (nodeId, config) => {
+    const updatedNodes = get().nodes.map((node) => {
+      if (node.id === nodeId) {
+        return { ...node, data: { ...node.data, config: { ...(node.data as any)?.config, ...config } } };
+      }
+      return node;
+    });
+    const updatedTarget = updatedNodes.find((n) => n.id === nodeId) || null;
+    const prunedEdges = pruneUnsupportedToolEdges(updatedNodes, get().edges, get().modelCapabilities);
     set({
-      nodes: get().nodes.map((node) => {
-        if (node.id === nodeId) {
-          const updatedNode = { ...node, data: { ...node.data, config: { ...(node.data as any)?.config, ...config } } };
-          // If the updated node is also the selected node, update selectedNode state
-          if (get().selectedNode?.id === nodeId) {
-            set({ selectedNode: updatedNode });
-          }
-          return updatedNode;
-        }
-        return node;
-      }),
+      nodes: updatedNodes,
+      edges: prunedEdges,
+      selectedNode: get().selectedNode?.id === nodeId ? updatedTarget : get().selectedNode,
     });
   },
   updateNodeLabel: (nodeId, label) => {
@@ -276,40 +330,33 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (parsed.nodes && parsed.edges) {
-        // 기존 브라우저 로컬 스토리지에 남아있던 레거시 라벨 자동 마이그레이션
+        // 기존 브라우저 로컬 스토리지에 남아있던 레거시 라벨 및 영문 기본 프롬프트 자동 마이그레이션
         const migratedNodes = parsed.nodes.map((node: any) => {
           let label = node.data?.label;
           if (label === 'LLM Agent') label = 'LLM';
           if (label === '사용자 입력') label = 'Input';
           if (label === '결과 출력') label = 'Output';
+          const rawConfig = node.data?.config || {};
+          const migratedConfig =
+            node.type === 'llmNode' && rawConfig.system_prompt === 'You are a helpful assistant.'
+              ? { ...rawConfig, system_prompt: DEFAULT_LLM_SYSTEM_PROMPT }
+              : rawConfig;
           return {
             ...node,
             data: {
               ...node.data,
+              config: migratedConfig,
               label: label || (node.type === 'inputNode' ? 'Input' : node.type === 'outputNode' ? 'Output' : node.type === 'llmNode' ? 'LLM' : node.id),
             },
           };
         });
 
-        set({
+        set((state) => ({
           nodes: migratedNodes,
-          edges: parsed.edges,
+          edges: pruneUnsupportedToolEdges(migratedNodes, parsed.edges, state.modelCapabilities),
           selectedNode: null,
           selectedResultNodeId: null,
-  modelCapabilities: {},
-  setModelCapabilities: (caps) => set({ modelCapabilities: caps }),
-  fetchModelCapabilities: async () => {
-    try {
-      const res = await (await import('../services/workflowApi')).workflowApi.getAvailableModels();
-      if (res.model_capabilities) {
-        set({ modelCapabilities: res.model_capabilities });
-      }
-    } catch (e) {
-      console.error('Failed to fetch model capabilities:', e);
-    }
-  },
-
-        });
+        }));
         return parsed.agentName || null;
       }
     } catch (e) {
@@ -362,6 +409,23 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   outputResultModal: { isOpen: false },
   openOutputModal: () => set({ outputResultModal: { isOpen: true } }),
   closeOutputModal: () => set({ outputResultModal: { isOpen: false } }),
+  resetWorkflow: () => {
+    // 깊은 복사로 초기 노드 및 엣지 복원 (참조 공유 방지)
+    const clonedInitialNodes: Node[] = JSON.parse(JSON.stringify(initialNodes));
+    const clonedInitialEdges: Edge[] = JSON.parse(JSON.stringify(initialEdges));
+    set({
+      nodes: clonedInitialNodes,
+      edges: clonedInitialEdges,
+      selectedNode: null,
+      logs: [],
+      messages: [],
+      executionResult: '',
+      isExecuting: false,
+      nodeResults: {},
+      selectedResultNodeId: null,
+      activeNodeId: null,
+    });
+  },
   activeNodeId: null,
   setActiveNodeId: (nodeId) => set({ activeNodeId: nodeId }),
   addNode: (type, position) => {
@@ -412,6 +476,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       llmNode: 'LLM',
       aggregatorNode: 'Aggregator',
       searchNode: '검색 Tool',
+      weatherNode: '날씨 Tool',
+      youtubeNode: 'YouTube Tool',
       outputNode: 'Output',
     };
 
@@ -419,32 +485,39 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       inputNode: { input_text: '' },
       plannerNode: {
         model: 'gemma2:2b',
+        temperature: 0.7,
         system_prompt: '사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.',
       },
       routerNode: {
         model: 'gemma2:2b',
+        temperature: 0.7,
         max_loops: 5,
         system_prompt: '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
       },
       llmNode: {
         model: 'gemma2:2b',
-        system_prompt: 'You are a helpful assistant.',
+        temperature: 0.7,
+        system_prompt: DEFAULT_LLM_SYSTEM_PROMPT,
         react_loop: true,
         max_tool_iterations: 3,
         tool_instruction: '',
       },
       aggregatorNode: {
         model: 'gemma2:2b',
+        temperature: 0.7,
         system_prompt: '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
       },
       searchNode: {},
+      weatherNode: {},
+      youtubeNode: {},
       outputNode: {},
     };
 
+    const toolNodeTypes = ['searchNode', 'weatherNode', 'youtubeNode'];
     let calculatedPos = position;
     if (!calculatedPos) {
-      if (type === 'searchNode') {
-        const toolCount = currentNodes.filter((n) => n.type === 'searchNode').length;
+      if (toolNodeTypes.includes(type)) {
+        const toolCount = currentNodes.filter((n) => toolNodeTypes.includes(n.type || '')).length;
         calculatedPos = { x: 380 + (toolCount * 170), y: -40 };
       } else if (type === 'plannerNode') {
         calculatedPos = { x: 260, y: 150 };

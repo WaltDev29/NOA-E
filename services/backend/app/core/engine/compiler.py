@@ -20,7 +20,7 @@ class WorkflowCompiler:
         aggregator_node_id = None
         
         node_instances = {}
-        tool_node_types = {"search"}
+        tool_node_types = {"search", "weather", "youtube"}
         
         # 1. 모든 노드 인스턴스화
         for node_data in nodes:

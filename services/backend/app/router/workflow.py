@@ -482,7 +482,7 @@ async def run_workflow(request: WorkflowRequest):
 
         "outputNode": "output",
 
-        "searchNode": "search",
+        "searchNode": "search", "weatherNode": "weather", "youtubeNode": "youtube",
 
 
         "plannerNode": "planner",

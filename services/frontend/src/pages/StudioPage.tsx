@@ -12,11 +12,13 @@ import { StudioQuestGuide } from '../components/onboarding/StudioQuestGuide';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { useLocation } from '../router/Router';
 import { workflowApi } from '../services/workflowApi';
 
 export const StudioPage: React.FC = () => {
   const { user } = useAuth();
   const { showAlert } = useModal();
+  const { search } = useLocation();
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(undefined);
   const [agentName, setAgentName] = useState('새로운 에이전트');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -61,11 +63,12 @@ export const StudioPage: React.FC = () => {
   const clearNodeResults = useWorkflowStore((state) => state.clearNodeResults);
   const addLog = useWorkflowStore((state) => state.addLog);
   const saveToLocalStorage = useWorkflowStore((state) => state.saveToLocalStorage);
+  const resetWorkflow = useWorkflowStore((state) => state.resetWorkflow);
   const [resetNotice, setResetNotice] = useState(false);
 
-  // 컴포넌트 마운트 시: URL 쿼리 파라미터(?id=...)가 있으면 DB에서 로드, 없으면 신규 에이전트 기본 이름 생성
+  // 컴포넌트 마운트 및 쿼리 파라미터 변경 시: URL 쿼리 파라미터(?id=...)가 있으면 DB에서 로드, 없으면 신규 에이전트 초기화
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(search || window.location.search);
     const workflowId = searchParams.get('id');
 
     if (workflowId) {
@@ -93,7 +96,11 @@ export const StudioPage: React.FC = () => {
           });
         });
     } else {
-      // 신규 생성 모드: 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
+      // 신규 에이전트 모드: 이전 작업 중이던 캔버스 상태(노드/엣지/로그)를 기본값으로 초기화
+      setCurrentWorkflowId(undefined);
+      resetWorkflow();
+
+      // 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
       if (user?.id) {
         workflowApi.getMyWorkflows(user.id).then((myList) => {
           const titles = new Set(myList.map((w) => w.title));
@@ -114,7 +121,7 @@ export const StudioPage: React.FC = () => {
         setAgentName('새로운 에이전트');
       }
     }
-  }, [user?.id, setNodes, setEdges, addLog]);
+  }, [search, user?.id, setNodes, setEdges, addLog, resetWorkflow]);
 
   // 컴포넌트 마운트 시: 백엔드 환경 변수 기반 모델 기능(capabilities) 로드
   useEffect(() => {

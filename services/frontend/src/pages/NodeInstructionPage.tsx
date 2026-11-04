@@ -248,6 +248,80 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
       },
     ],
   },
+  weather: {
+    id: 'weather',
+    name: '날씨 Tool',
+    subtitle: 'Open-Meteo 기반 현재 날씨 및 일별 예보 조회',
+    category: '도구',
+    badgeType: 'Tool',
+    icon: 'partly_cloudy_day',
+    accentColor: 'tertiary',
+    tagList: ['도구 노드', 'Open-Meteo', '실시간 기상', '일별 예보'],
+    description:
+      '날씨 Tool 노드는 별도의 API Key 없이 Open-Meteo 기상 데이터를 활용하여 전 세계 도시의 현재 기온, 체감 온도, 습도, 풍속 및 최대 7일간의 일별 예보를 조회하는 도구 노드입니다.',
+    features: [
+      {
+        title: '전 세계 도시 자동 좌표 변환',
+        desc: '한국어/영문 도시명을 입력하면 Geocoding API로 위·경도를 자동 탐색',
+      },
+      {
+        title: '현재 기상 및 일별 예보 제공',
+        desc: '현재 기온·습도·풍속과 함께 일별 최저/최고 기온 및 강수 확률 반환',
+      },
+      {
+        title: 'API Key 불필요',
+        desc: 'Open-Meteo 공개 API 기반으로 별도 인증 키 설정 없이 즉시 사용 가능',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'provider', org: 'Open-Meteo', badge: '기상 API', context: '무료 실시간 기상 조회' },
+      { name: 'forecast_days', org: '기본 3일 (최대 7일)', badge: '예보 범위', context: '일별 기상 예보' },
+    ],
+    examples: [
+      {
+        title: '도시 날씨 조회 예시',
+        prompt: 'location: "서울", days: 3',
+        resultJson: '{\n  "location": "서울, 대한민국",\n  "current": "맑음, 18.2°C (습도 45%)",\n  "daily": ["내일: 구름 조금 11~20°C (강수확률 10%)"]\n}',
+      },
+    ],
+  },
+  youtube: {
+    id: 'youtube',
+    name: 'YouTube Tool',
+    subtitle: 'YouTube Data API v3 기반 영상 검색',
+    category: '도구',
+    badgeType: 'Tool',
+    icon: 'smart_display',
+    accentColor: 'secondary',
+    tagList: ['도구 노드', 'YouTube API', '영상 검색', '채널/링크 수집'],
+    description:
+      'YouTube Tool 노드는 YouTube Data API v3를 사용하여 검색어와 관련된 최신·인기 YouTube 영상의 제목, 채널명, 게시일, 시청 링크를 조회하여 LLM에 전달하는 도구 노드입니다.',
+    features: [
+      {
+        title: '정확한 공식 API 검색',
+        desc: 'YouTube Data API v3를 통해 영상 제목, 채널명, 게시일, 설명 및 직링크 추출',
+      },
+      {
+        title: 'LLM 상단 도구 포트 연동',
+        desc: 'LLM 노드의 상단 포트에 연결되어 영상 자료나 레퍼런스 요청 시 자동 호출',
+      },
+      {
+        title: '환경변수 기반 안전한 키 관리',
+        desc: '.env.backend의 YOUTUBE_API_KEY를 통해 API 키를 안전하게 주입 및 마스킹',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'YOUTUBE_API_KEY', org: 'Google Cloud Console', badge: '필수 환경변수', context: '.env.backend에 설정' },
+      { name: 'max_results', org: '기본 5개 (1~10개)', badge: '결과 수량', context: '반환 영상 개수' },
+    ],
+    examples: [
+      {
+        title: 'YouTube 영상 검색 예시',
+        prompt: 'query: "파이썬 LangGraph 강의", max_results: 3',
+        resultJson: '{\n  "query": "파이썬 LangGraph 강의",\n  "videos": [\n    {"title": "LangGraph 완벽 입문", "url": "https://www.youtube.com/watch?v=..."}\n  ]\n}',
+      },
+    ],
+  },
   output: {
     id: 'output',
     name: '결과 출력 (Output)',
@@ -447,6 +521,8 @@ export const NodeInstructionPage: React.FC = () => {
                             llm: 'llmNode',
                             aggregator: 'aggregatorNode',
                             'web-search': 'searchNode',
+                            weather: 'weatherNode',
+                            youtube: 'youtubeNode',
                             output: 'outputNode',
                           };
                           const targetType = nodeTypeMap[current.id] || 'llmNode';

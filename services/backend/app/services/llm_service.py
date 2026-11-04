@@ -128,20 +128,35 @@ def get_llm(custom_config: Optional[Dict[str, Any]] = None):
 
     default_headers = custom_config.get("default_headers") or {"User-Agent": "Mozilla/5.0"}
 
+    # Temperature 파라미터 추출 (기본값 0.7, 0.0 ~ 2.0 범위 클램핑)
+    raw_temp = custom_config.get("temperature")
+    try:
+        temperature = max(0.0, min(2.0, float(raw_temp))) if raw_temp is not None else 0.7
+    except (ValueError, TypeError):
+        temperature = 0.7
+
+    is_reasoning_model = target_model.startswith("o1") or target_model.startswith("o3")
+
     # ChatOpenAI 객체 생성
     if is_openai_model and (not final_base_url or final_base_url == "https://api.openai.com/v1"):
-        llm = ChatOpenAI(
-            model=target_model,
-            api_key=final_api_key,
-        )
+        llm_kwargs: Dict[str, Any] = {
+            "model": target_model,
+            "api_key": final_api_key,
+        }
+        if not is_reasoning_model:
+            llm_kwargs["temperature"] = temperature
+        llm = ChatOpenAI(**llm_kwargs)
     else:
-        llm = ChatOpenAI(
-            model=target_model,
-            base_url=final_base_url,
-            api_key=final_api_key or "x",
-            default_headers=default_headers,
-            reasoning_effort="none" if not (target_model.startswith("o1") or target_model.startswith("o3")) else None
-        )
+        llm_kwargs = {
+            "model": target_model,
+            "base_url": final_base_url,
+            "api_key": final_api_key or "x",
+            "default_headers": default_headers,
+            "reasoning_effort": "none" if not is_reasoning_model else None,
+        }
+        if not is_reasoning_model:
+            llm_kwargs["temperature"] = temperature
+        llm = ChatOpenAI(**llm_kwargs)
     return llm
 
 

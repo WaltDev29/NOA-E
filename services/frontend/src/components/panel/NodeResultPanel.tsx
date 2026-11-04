@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWorkflowStore, type ExecutionStep } from '../../store/useWorkflowStore';
 import ReactMarkdown from 'react-markdown';
+import { linkifyBareUrls, markdownComponents, renderTextWithLinks } from '../../utils/markdown';
 
 
 const toSafeString = (val: any): string => {
@@ -95,7 +96,9 @@ export const NodeResultPanel: React.FC = () => {
       aggregatorNode: 'Aggregator',
       agentNode: 'Autonomous Agent',
       searchNode: '검색 Tool',
-        outputNode: 'Output',
+      weatherNode: '날씨 Tool',
+      youtubeNode: 'YouTube Tool',
+      outputNode: 'Output',
     };
     return node.data?.label || labels[node.type] || node.id;
   };
@@ -116,6 +119,10 @@ export const NodeResultPanel: React.FC = () => {
         return 'smart_toy';
       case 'searchNode':
         return 'travel_explore';
+      case 'weatherNode':
+        return 'partly_cloudy_day';
+      case 'youtubeNode':
+        return 'smart_display';
       case 'outputNode':
         return 'output';
       default:
@@ -317,11 +324,13 @@ export const NodeResultPanel: React.FC = () => {
                           <div className="min-h-[90px] max-h-[300px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
                             {safeOutput ? (
                               format === 'markdown' ? (
-                                <div className="prose prose-invert prose-xs max-w-none space-y-1.5">
-                                  <ReactMarkdown>{safeOutput}</ReactMarkdown>
+                                <div className="prose prose-invert prose-xs max-w-none space-y-1.5 [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_code]:bg-surface-container [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-surface-container-high [&_pre]:p-2 [&_pre]:rounded-lg [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-2 [&_strong]:text-primary">
+                                  <ReactMarkdown components={markdownComponents}>
+                                    {linkifyBareUrls(safeOutput)}
+                                  </ReactMarkdown>
                                 </div>
                               ) : (
-                                <pre className="font-mono whitespace-pre-wrap">{safeOutput}</pre>
+                                <pre className="font-mono whitespace-pre-wrap">{renderTextWithLinks(safeOutput)}</pre>
                               )
                             ) : (
                               <div className="text-outline italic py-3 text-center">

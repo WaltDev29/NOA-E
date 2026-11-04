@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import React, { memo, useEffect } from 'react';
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 
 interface NodeWrapperProps {
@@ -166,16 +166,28 @@ export const InputNode = memo(({ id, data, selected }: any) => {
 export const LLMNode = memo(({ id, data, selected }: any) => {
   const reactLoop = data.config?.react_loop ?? true;
   const maxToolIterations = data.config?.max_tool_iterations || 3;
+  const modelName = data.config?.model || 'gemma2:2b';
+  const modelCapabilities = useWorkflowStore((state) => state.modelCapabilities);
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  // .env.backend의 MODELS_CONFIG에서 tool: true인 모델만 상단 Tool 연결 포트 활성화
+  const supportsTool = Boolean(modelCapabilities[modelName]?.tool);
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, supportsTool, updateNodeInternals]);
 
   return (
     <>
-      <Handle
-        type="target"
-        id="tools"
-        position={Position.Top}
-        className="!bg-secondary !w-3 !h-3"
-        title="도구(Tool) 연결 포트"
-      />
+      {supportsTool && (
+        <Handle
+          type="target"
+          id="tools"
+          position={Position.Top}
+          className="!bg-secondary !w-3 !h-3"
+          title="도구(Tool) 연결 포트"
+        />
+      )}
       <Handle
         type="target"
         id="left"
@@ -195,16 +207,20 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
           <div className="flex justify-between items-center">
             <span className="text-outline">모델:</span>
             <span className="font-mono font-medium text-secondary-fixed-dim">
-              {data.config?.model || 'gemma2:2b'}
+              {modelName}
             </span>
           </div>
-          {reactLoop ? (
-            <div className="flex items-center gap-1 mt-1 text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">
-              <span className="material-symbols-outlined text-[12px]">sync</span>
-              <span>ReAct 루프 활성 (최대 {maxToolIterations}회)</span>
-            </div>
+          {supportsTool ? (
+            reactLoop ? (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">
+                <span className="material-symbols-outlined text-[12px]">sync</span>
+                <span>ReAct 루프 활성 (최대 {maxToolIterations}회)</span>
+              </div>
+            ) : (
+              <span className="text-[10px] text-outline mt-0.5">Tool 연결 시 1회만 사용 (반복 없음)</span>
+            )
           ) : (
-            <span className="text-[10px] text-outline mt-0.5">Tool 연결 시 1회만 사용 (반복 없음)</span>
+            <span className="text-[10px] text-outline/70 mt-0.5">도구(Tool) 미지원 모델</span>
           )}
         </div>
       </NodeWrapper>
@@ -356,6 +372,52 @@ export const SearchNode = memo(({ id, data, selected }: any) => {
         type="source"
         position={Position.Bottom}
         className="!bg-primary"
+      />
+    </>
+  );
+});
+
+export const WeatherNode = memo(({ id, data, selected }: any) => {
+  return (
+    <>
+      <NodeWrapper
+        id={id}
+        selected={selected}
+        title={data?.label || "날씨 Tool"}
+        badge="Weather"
+        icon="partly_cloudy_day"
+        colorType="tertiary"
+        nodeType="weatherNode"
+      >
+        <span className="text-[11px] text-outline">현재 날씨 및 일별 예보 조회</span>
+      </NodeWrapper>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!bg-tertiary"
+      />
+    </>
+  );
+});
+
+export const YoutubeNode = memo(({ id, data, selected }: any) => {
+  return (
+    <>
+      <NodeWrapper
+        id={id}
+        selected={selected}
+        title={data?.label || "YouTube Tool"}
+        badge="YouTube"
+        icon="smart_display"
+        colorType="secondary"
+        nodeType="youtubeNode"
+      >
+        <span className="text-[11px] text-outline">YouTube 영상 및 채널 검색</span>
+      </NodeWrapper>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!bg-secondary"
       />
     </>
   );

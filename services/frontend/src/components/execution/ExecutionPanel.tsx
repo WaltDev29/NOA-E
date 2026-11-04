@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
+import { renderTextWithLinks } from '../../utils/markdown';
 
 interface ExecutionPanelProps {
   isCollapsed?: boolean;
@@ -115,7 +116,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
           return (
             <div key={i} className="flex items-start gap-2 text-slate-300">
               {!isPipelineBoundary && <span className="text-tertiary shrink-0">➜</span>}
-              <span className={`font-mono ${isPipelineBoundary ? 'text-primary font-bold' : 'text-white'}`}>{log}</span>
+              <span className={`font-mono ${isPipelineBoundary ? 'text-primary font-bold' : 'text-white'}`}>{renderTextWithLinks(log)}</span>
             </div>
           );
         })}
