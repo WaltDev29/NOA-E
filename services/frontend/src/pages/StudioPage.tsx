@@ -621,7 +621,21 @@ const HiddenRunTrigger: React.FC = () => {
                   targetNode?.type === 'inputNode'
                     ? (targetNode.data as any)?.config?.input_text || stateUpdates.input_text || ''
                     : previousOutput;
-                const nodeOutput = stateUpdates.current_output || '';
+                let nodeOutput = stateUpdates.current_output || '';
+                if (targetNode?.type === 'routerNode') {
+                  if (stateUpdates.routing_result) {
+                    nodeOutput = stateUpdates.routing_result;
+                  } else if (stateUpdates.next_worker) {
+                    const nextNode = nodes.find((n) => n.id === stateUpdates.next_worker);
+                    const nextLabel = (nextNode?.data as any)?.label || stateUpdates.next_worker;
+                    nodeOutput = `'${nextLabel}' 노드로 분기합니다.`;
+                  } else if (Array.isArray(stateUpdates.logs)) {
+                    const branchLog = stateUpdates.logs.find((l: string) => l.includes('노드로 분기합니다'));
+                    if (branchLog) {
+                      nodeOutput = branchLog.replace(/^\[.*?\]\s*/, '');
+                    }
+                  }
+                }
 
                 appendNodeStep(
                   nodeName,
@@ -637,7 +651,10 @@ const HiddenRunTrigger: React.FC = () => {
                   }
                 );
 
-                previousOutput = nodeOutput || previousOutput;
+                // Router 노드의 경우 다음 Worker 노드로 전달할 실제 작업 내용(current_output)을 유지
+                previousOutput =
+                  (targetNode?.type === 'routerNode' ? stateUpdates.current_output : nodeOutput) ||
+                  previousOutput;
 
                 const nodeLabel = (targetNode?.data as any)?.label || nodeName;
 

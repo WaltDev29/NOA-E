@@ -16,3 +16,4 @@ class AgentState(TypedDict):
     intermediate_steps: Annotated[List[Dict[str, Any]], operator.add] # Worker들의 단계별 수행 결과 누적
     loop_count: Annotated[int, take_last] # Router를 통과한 루프 횟수 (무한 루프 방지용)
     next_worker: Annotated[Optional[str], take_last] # Router가 동적으로 결정한 다음 목적지 노드 ID
+    routing_result: Annotated[Optional[str], take_last] # Router의 분기 결정 안내 메시지

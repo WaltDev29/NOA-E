@@ -390,7 +390,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       inputNode: { input_text: '' },
       plannerNode: {
         model: 'gemma2:2b',
-        system_prompt: '사용자 요청을 달성하기 위한 구체적인 단계별 실행 계획을 수립하세요.',
+        system_prompt: '사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.',
       },
       routerNode: {
         model: 'gemma2:2b',

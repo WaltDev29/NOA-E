@@ -63,7 +63,10 @@ export const NodeResultPanel: React.FC = () => {
     if (!node) return '노드';
     const labels: Record<string, string> = {
       inputNode: 'Input',
+      plannerNode: 'Planner',
+      routerNode: 'Router',
       llmNode: 'LLM',
+      aggregatorNode: 'Aggregator',
       agentNode: 'Autonomous Agent',
       searchNode: '웹 검색',
       calculatorNode: '계산기',
@@ -76,8 +79,14 @@ export const NodeResultPanel: React.FC = () => {
     switch (nodeType) {
       case 'inputNode':
         return 'login';
+      case 'plannerNode':
+        return 'assignment';
+      case 'routerNode':
+        return 'alt_route';
       case 'llmNode':
         return 'neurology';
+      case 'aggregatorNode':
+        return 'auto_awesome';
       case 'agentNode':
         return 'smart_toy';
       case 'searchNode':
@@ -148,7 +157,7 @@ export const NodeResultPanel: React.FC = () => {
             return (
               <div
                 key={step.stepIndex}
-                className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 overflow-hidden shadow-sm flex flex-col transition-all"
+                className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 overflow-hidden shadow-sm flex flex-col shrink-0 transition-all"
               >
                 {/* Step Set Toggle Header */}
                 <button
@@ -213,38 +222,40 @@ export const NodeResultPanel: React.FC = () => {
                         <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-primary" />
                           <span className="material-symbols-outlined text-[16px] text-primary">
-                            output
+                            {type === 'routerNode' ? 'alt_route' : 'output'}
                           </span>
-                          Output 내용
+                          {type === 'routerNode' ? '분기 결정 (Routing Decision)' : 'Output 내용'}
                         </label>
 
                         <div className="flex items-center gap-2">
-                          <div className="relative inline-flex items-center">
-                            <select
-                              value={format}
-                              onChange={(e) =>
-                                setOutputFormats((prev) => ({
-                                  ...prev,
-                                  [step.stepIndex]: e.target.value as any,
-                                }))
-                              }
-                              className="appearance-none bg-surface-container h-6 pl-2 pr-6 rounded-md text-[11px] text-on-surface font-body-sm focus:outline-none cursor-pointer border border-outline-variant/30"
-                            >
-                              <option value="markdown">마크다운</option>
-                              <option value="text">텍스트</option>
-                              <option value="json">JSON</option>
-                            </select>
-                            <span className="material-symbols-outlined absolute right-1 text-outline text-[14px] pointer-events-none">
-                              expand_more
-                            </span>
-                          </div>
+                          {type !== 'routerNode' && (
+                            <div className="relative inline-flex items-center">
+                              <select
+                                value={format}
+                                onChange={(e) =>
+                                  setOutputFormats((prev) => ({
+                                    ...prev,
+                                    [step.stepIndex]: e.target.value as any,
+                                  }))
+                                }
+                                className="appearance-none bg-surface-container h-6 pl-2 pr-6 rounded-md text-[11px] text-on-surface font-body-sm focus:outline-none cursor-pointer border border-outline-variant/30"
+                              >
+                                <option value="markdown">마크다운</option>
+                                <option value="text">텍스트</option>
+                                <option value="json">JSON</option>
+                              </select>
+                              <span className="material-symbols-outlined absolute right-1 text-outline text-[14px] pointer-events-none">
+                                expand_more
+                              </span>
+                            </div>
+                          )}
 
                           {step.output && (
                             <button
                               onClick={() => handleCopyOutput(step.stepIndex, step.output)}
                               className="text-[11px] text-outline hover:text-primary flex items-center gap-1 transition-colors"
                               type="button"
-                              title="Output 내용 복사"
+                              title="복사"
                             >
                               <span className="material-symbols-outlined text-[14px]">
                                 {isOutputCopied ? 'check' : 'content_copy'}
@@ -255,21 +266,42 @@ export const NodeResultPanel: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="min-h-[100px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
-                        {step.output ? (
-                          format === 'markdown' ? (
-                            <div className="prose prose-invert prose-xs max-w-none space-y-1.5">
-                              <ReactMarkdown>{step.output}</ReactMarkdown>
-                            </div>
-                          ) : (
-                            <pre className="font-mono whitespace-pre-wrap">{step.output}</pre>
-                          )
-                        ) : (
-                          <div className="text-outline italic py-3 text-center">
-                            출력 결과가 비어있습니다.
+                      {type === 'routerNode' ? (
+                        <div className="py-2.5 px-3 rounded-xl bg-surface-container-high/90 border border-secondary/30 text-xs text-on-surface flex flex-col gap-1.5 select-text shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-secondary text-[18px] shrink-0">
+                              alt_route
+                            </span>
+                            <span className="font-bold text-secondary">
+                              {(step.output || '분기 대기 중').split('\n')[0]}
+                            </span>
                           </div>
-                        )}
-                      </div>
+                          {step.output && step.output.includes('\n') && (
+                            <div className="ml-6.5 text-[11px] text-on-surface font-mono bg-surface-container/70 px-2.5 py-1.5 rounded-lg border border-outline-variant/30 flex items-center gap-1.5 whitespace-pre-wrap">
+                              <span className="material-symbols-outlined text-tertiary text-[14px] shrink-0">
+                                task_alt
+                              </span>
+                              <span>{step.output.split('\n').slice(1).join('\n')}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="min-h-[90px] max-h-[300px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
+                          {step.output ? (
+                            format === 'markdown' ? (
+                              <div className="prose prose-invert prose-xs max-w-none space-y-1.5">
+                                <ReactMarkdown>{step.output}</ReactMarkdown>
+                              </div>
+                            ) : (
+                              <pre className="font-mono whitespace-pre-wrap">{step.output}</pre>
+                            )
+                          ) : (
+                            <div className="text-outline italic py-3 text-center">
+                              출력 결과가 비어있습니다.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -310,8 +342,10 @@ export const NodeResultPanel: React.FC = () => {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="material-symbols-outlined text-[16px] text-primary">output</span>
-                  Output 내용
+                  <span className="material-symbols-outlined text-[16px] text-primary">
+                    {type === 'routerNode' ? 'alt_route' : 'output'}
+                  </span>
+                  {type === 'routerNode' ? '분기 결정 (Routing Decision)' : 'Output 내용'}
                 </label>
                 <div className="min-h-[100px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-outline italic leading-relaxed flex items-center justify-center text-center">
                   {isCurrentRunning ? (

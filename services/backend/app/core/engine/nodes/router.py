@@ -25,24 +25,31 @@ class RouterNode(BaseNode):
 
         # 1. 종료 조건 확인: 최대 반복 초과 시 강제 탈출
         if loop_count > max_loops:
+            routing_msg = f"'{exit_label}' 노드로 분기합니다."
             logs.append(f"[{self.node_id}] '{exit_label}' 노드로 분기합니다.")
             return {
                 "loop_count": loop_count,
                 "next_worker": self.exit_target,
+                "routing_result": routing_msg,
+                "current_output": state.get("current_output", ""),
                 "logs": logs
             }
 
         # 2. 종료 조건 확인: 계획(plan)이 있고 모든 계획 단계가 완료되었을 때
         if plan is not None and current_step >= len(plan):
+            routing_msg = f"'{exit_label}' 노드로 분기합니다. (모든 계획 완료)"
             logs.append(f"[{self.node_id}] '{exit_label}' 노드로 분기합니다.")
             return {
                 "loop_count": loop_count,
                 "next_worker": self.exit_target,
+                "routing_result": routing_msg,
+                "current_output": state.get("current_output", ""),
                 "logs": logs
             }
 
         # 3. 이번 루프에서 처리할 작업(Task) 내용 추출
-        if plan is not None and len(plan) > 0:
+        has_plan = plan is not None and len(plan) > 0
+        if has_plan:
             task_to_do = plan[current_step]
             next_step_index = current_step + 1
         else:
@@ -52,21 +59,29 @@ class RouterNode(BaseNode):
         # 4. 후보 Worker 노드 선택
         if not self.worker_targets:
             # 연결된 작업 노드가 없으면 바로 종료 노드로 이동
+            routing_msg = f"'{exit_label}' 노드로 분기합니다."
             logs.append(f"[{self.node_id}] '{exit_label}' 노드로 분기합니다.")
             return {
                 "loop_count": loop_count,
                 "next_worker": self.exit_target,
+                "routing_result": routing_msg,
                 "current_output": task_to_do,
                 "logs": logs
             }
 
         if len(self.worker_targets) == 1:
             chosen_worker = self.worker_targets[0]
+            routing_msg = (
+                f"'{chosen_worker['label']}' 노드로 분기합니다.\n할당 작업: {task_to_do}"
+                if has_plan
+                else f"'{chosen_worker['label']}' 노드로 분기합니다."
+            )
             logs.append(f"[{self.node_id}] '{chosen_worker['label']}' 노드로 분기합니다.")
             return {
                 "loop_count": loop_count,
                 "current_step": next_step_index,
                 "next_worker": chosen_worker["id"],
+                "routing_result": routing_msg,
                 "current_output": task_to_do,
                 "logs": logs
             }
@@ -131,12 +146,18 @@ class RouterNode(BaseNode):
                 selected_id = self.worker_targets[0]["id"]
 
             chosen_label = next((w["label"] for w in self.worker_targets if w["id"] == selected_id), selected_id)
+            routing_msg = (
+                f"'{chosen_label}' 노드로 분기합니다.\n할당 작업: {task_to_do}"
+                if has_plan
+                else f"'{chosen_label}' 노드로 분기합니다."
+            )
             logs.append(f"[{self.node_id}] '{chosen_label}' 노드로 분기합니다.")
 
             return {
                 "loop_count": loop_count,
                 "current_step": next_step_index,
                 "next_worker": selected_id,
+                "routing_result": routing_msg,
                 "current_output": task_to_do,
                 "logs": logs
             }
@@ -145,11 +166,17 @@ class RouterNode(BaseNode):
             fallback_worker = self.worker_targets[0]
             fallback_id = fallback_worker["id"]
             fallback_label = fallback_worker.get("label", fallback_id)
+            routing_msg = (
+                f"'{fallback_label}' 노드로 분기합니다.\n할당 작업: {task_to_do}"
+                if has_plan
+                else f"'{fallback_label}' 노드로 분기합니다."
+            )
             logs.append(f"[{self.node_id}] '{fallback_label}' 노드로 분기합니다.")
             return {
                 "loop_count": loop_count,
                 "current_step": next_step_index,
                 "next_worker": fallback_id,
+                "routing_result": routing_msg,
                 "current_output": task_to_do,
                 "logs": logs
             }
