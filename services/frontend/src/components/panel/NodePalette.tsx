@@ -52,7 +52,7 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     name: 'Aggregator',
     subtitle: '결과 종합 및 최종 합성',
     icon: 'auto_awesome',
-    category: '기본',
+    category: 'LLM',
     color: 'tertiary',
   },
   {

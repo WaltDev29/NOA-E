@@ -61,4 +61,9 @@ export const workflowApi = {
       params: { user_id: userId },
     });
   },
+
+  async getAvailableModels(): Promise<{ default: string; models: string[] }> {
+    const res = await apiClient.get<{ default: string; models: string[] }>('/models');
+    return res.data;
+  },
 };

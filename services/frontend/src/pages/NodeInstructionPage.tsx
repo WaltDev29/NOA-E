@@ -178,7 +178,7 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
     id: 'aggregator',
     name: '어그리게이터 (Aggregator)',
     subtitle: '중간 산출물 종합 및 최종 합성',
-    category: '기본',
+    category: 'LLM',
     badgeType: 'Synthesis',
     icon: 'auto_awesome',
     accentColor: 'tertiary',

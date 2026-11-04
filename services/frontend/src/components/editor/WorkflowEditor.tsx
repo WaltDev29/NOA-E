@@ -22,6 +22,7 @@ import {
   RouterNode,
   AggregatorNode,
 } from './CustomNodes';
+import { ConnectionMode } from '@xyflow/react';
 import type { Connection, Edge } from '@xyflow/react';
 import CustomEdge from './CustomEdge';
 
@@ -69,15 +70,20 @@ const EditorInner: React.FC = () => {
     if (connection.source === connection.target) return false;
 
     const sourceNode = nodes.find((n) => n.id === connection.source);
+    const targetNode = nodes.find((n) => n.id === connection.target);
 
     // Output 노드로부터 나가는 연결 금지
     if (sourceNode?.type === 'outputNode') return false;
 
-    // Router의 루프 회수 포트(loop-return)로의 역방향 연결 제약:
-    // 시작 노드(Input, Planner)는 루프 회수 포트로 연결될 수 없음
-    if (connection.targetHandle === 'loop-return') {
-      if (sourceNode?.type === 'inputNode' || sourceNode?.type === 'plannerNode') {
-        showAlert('루프 회수 포트는 Worker 노드(LLM, 도구 등)의 작업 완료 후 복귀선만 연결할 수 있습니다.', { type: 'warning' });
+    // Router의 루프 포트(loop-return) 연결 검증:
+    // 드래그 방향에 상관없이(targetHandle 또는 sourceHandle이 loop-return인 경우)
+    const isLoopTarget = connection.targetHandle === 'loop-return';
+    const isLoopSource = connection.sourceHandle === 'loop-return';
+
+    if (isLoopTarget || isLoopSource) {
+      const otherNode = isLoopTarget ? sourceNode : targetNode;
+      if (otherNode?.type === 'inputNode' || otherNode?.type === 'plannerNode') {
+        showAlert('루프 포트는 Worker 노드(LLM, 도구 등)와의 작업 순환 연결 전용입니다.', { type: 'warning' });
         return false;
       }
       return true;
@@ -267,6 +273,7 @@ const EditorInner: React.FC = () => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
+        connectionMode={ConnectionMode.Loose}
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}

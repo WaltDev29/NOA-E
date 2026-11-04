@@ -263,12 +263,20 @@ export const RouterNode = memo(({ id, data, selected }: any) => {
         className="!bg-primary"
         title="기본 입력"
       />
+      {/* 하단 루프 연결 포트: Worker 노드와 양방향 드래그 연결 지원 */}
       <Handle
         type="target"
         id="loop-return"
         position={Position.Bottom}
-        className="!bg-secondary !w-3.5 !h-3.5 shadow-[0_0_8px_rgba(208,188,255,0.8)]"
-        title="🔄 Worker 작업 완료 루프 회수 포트"
+        className="!bg-secondary !w-3.5 !h-3.5 shadow-[0_0_8px_rgba(208,188,255,0.8)] cursor-pointer hover:scale-125 transition-transform"
+        title="🔄 Worker 작업 루프 연결 포트 (Worker 노드로 드래그하여 루프 연결)"
+      />
+      <Handle
+        type="source"
+        id="loop-return"
+        position={Position.Bottom}
+        className="!bg-transparent !w-3.5 !h-3.5 pointer-events-auto cursor-pointer"
+        title="🔄 Worker 작업 루프 연결 포트 (Worker 노드로 드래그하여 루프 연결)"
       />
       <NodeWrapper
         id={id}

@@ -23,24 +23,39 @@ class LLMNode(BaseNode):
         if tool_instruction:
             system_prompt = f"{system_prompt}\n\n[도구 사용 및 결과 검증 지침]\n{tool_instruction}"
 
-        input_text = state.get("current_output", "")
-        if not input_text:
-            input_text = state.get("input_text", "")
+        raw_task = state.get("current_output", "") or state.get("input_text", "")
+        original_query = state.get("input_text", "")
+        intermediate_steps = state.get("intermediate_steps", [])
+        plan = state.get("plan")
+
+        # 다단계 계획(Plan)이 있거나 이전 작업 결과(intermediate_steps)가 있는 경우 선행 맥락 병합
+        if intermediate_steps and (plan or raw_task != original_query):
+            context_blocks = []
+            if original_query:
+                context_blocks.append(f"[사용자 원본 요청]\n{original_query}")
+            
+            steps_summary = "\n".join([
+                f"- [{step.get('label', step.get('node_id', 'Worker'))}]: {step.get('result', '')}"
+                for step in intermediate_steps
+            ])
+            context_blocks.append(f"[이전 단계 작업 결과]\n{steps_summary}")
+            context_blocks.append(f"[현재 당신이 수행할 작업 지침]\n{raw_task}")
+            
+            final_prompt_text = "\n\n".join(context_blocks)
+        else:
+            final_prompt_text = raw_task
 
         input_images = state.get("input_images", [])
         
         # 멀티모달(이미지) 처리
         if input_images:
-            content = [{"type": "text", "text": input_text}]
+            content = [{"type": "text", "text": final_prompt_text}]
             for img in input_images:
                 content.append({"type": "image_url", "image_url": {"url": img}})
             human_msg = HumanMessage(content=content)
         else:
-            human_msg = HumanMessage(content=input_text)
+            human_msg = HumanMessage(content=final_prompt_text)
             
-        # [컨텍스트 오염 방지 핵심 개선]
-        # 각 파이프라인 노드는 이전 노드들의 잡담/역할 히스토리에 오염되지 않고,
-        # 자신에게 주어진 직전 노드의 입력(input_text)과 자신의 시스템 지침에만 100% 집중하여 실행합니다.
         node_messages = [
             SystemMessage(content=system_prompt),
             human_msg
@@ -78,7 +93,7 @@ class LLMNode(BaseNode):
         step_record = {
             "node_id": self.node_id,
             "label": node_label,
-            "task": input_text,
+            "task": raw_task,
             "result": content
         }
 

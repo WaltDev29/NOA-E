@@ -83,6 +83,12 @@ class RouterNode(BaseNode):
             for w in self.worker_targets
         ])
 
+        intermediate_steps = state.get("intermediate_steps", [])
+        steps_context = ""
+        if intermediate_steps:
+            steps_desc = "\n".join([f"- [{s.get('label', s.get('node_id'))}]: {s.get('result', '')}" for s in intermediate_steps])
+            steps_context = f"\n\n이전 단계까지의 수행 결과:\n{steps_desc}"
+
         routing_prompt = f"""시스템 지침:
 {system_instruction}
 
@@ -90,7 +96,7 @@ class RouterNode(BaseNode):
 {candidates_desc}
 
 현재 처리할 작업:
-"{task_to_do}"
+"{task_to_do}"{steps_context}
 
 위 작업을 처리하기에 가장 적합한 노드의 ID를 JSON 형식으로 반환하세요.
 예시:

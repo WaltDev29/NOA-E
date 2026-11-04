@@ -134,6 +134,13 @@ class WorkflowCompiler:
                     path_map
                 )
 
+        # Router로 복귀하는 루프 엣지를 가진 Worker 노드 집합 식별
+        loop_returning_workers = set()
+        for edge in edges:
+            t_info = node_instances.get(edge["target"])
+            if t_info and t_info["type"] == "router":
+                loop_returning_workers.add(edge["source"])
+
         # 일반 엣지 연결 (Router에서 나가는 엣지는 위에서 조건부 엣지로 처리했으므로 제외)
         for edge in edges:
             source_id = edge["source"]
@@ -145,8 +152,12 @@ class WorkflowCompiler:
             if source_info and target_info:
                 if source_info["type"] not in tool_node_types and target_info["type"] not in tool_node_types:
                     # Router의 출력 엣지는 조건부 엣지로 이미 연결되었으므로 일반 엣지 추가 스킵
-                    if source_info["type"] != "router":
-                        graph.add_edge(source_id, target_id)
+                    if source_info["type"] == "router":
+                        continue
+                    # 루프 복귀 Worker에서 Output으로 직접 나가는 엣지는 조기 종료 및 병렬 쓰기 충돌 방지를 위해 제외
+                    if source_id in loop_returning_workers and target_info["type"] == "output":
+                        continue
+                    graph.add_edge(source_id, target_id)
             
         # 6. START / END 연결
         if input_node_id:

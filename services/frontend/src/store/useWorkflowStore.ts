@@ -116,8 +116,86 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     });
   },
   onConnect: (connection: Connection) => {
+    const existingEdges = get().edges;
+
+    // 케이스 1: Router 하단 루프 포트(loop-return)에서 Worker 노드로 드래그한 경우
+    if (connection.sourceHandle === 'loop-return') {
+      const routerId = connection.source;
+      const workerId = connection.target;
+
+      const hasReturnEdge = existingEdges.some(
+        (e) => e.source === workerId && e.target === routerId
+      );
+      const hasForwardEdge = existingEdges.some(
+        (e) => e.source === routerId && e.target === workerId
+      );
+
+      const newEdges = [...existingEdges];
+
+      // Router -> Worker 분기선이 없으면 추가
+      if (!hasForwardEdge) {
+        newEdges.push({
+          id: `e-${routerId}-${workerId}`,
+          source: routerId,
+          sourceHandle: 'right',
+          target: workerId,
+          targetHandle: connection.targetHandle || 'left',
+          type: 'custom',
+          animated: true,
+        });
+      }
+
+      // Worker -> Router (loop-return) 복귀선 추가
+      if (!hasReturnEdge) {
+        newEdges.push({
+          id: `e-${workerId}-${routerId}-loop`,
+          source: workerId,
+          sourceHandle: 'right',
+          target: routerId,
+          targetHandle: 'loop-return',
+          type: 'custom',
+          animated: true,
+        });
+      }
+
+      set({ edges: newEdges });
+      return;
+    }
+
+    // 케이스 2: Worker 노드에서 Router 하단 루프 포트(loop-return)로 드래그한 경우
+    if (connection.targetHandle === 'loop-return') {
+      const workerId = connection.source;
+      const routerId = connection.target;
+
+      const hasReturnEdge = existingEdges.some(
+        (e) => e.source === workerId && e.target === routerId
+      );
+
+      if (!hasReturnEdge) {
+        set({
+          edges: addEdge(
+            {
+              ...connection,
+              type: 'custom',
+              animated: true,
+            },
+            existingEdges
+          ),
+        });
+      }
+      return;
+    }
+
+    // 일반 에지 연결
     set({
-      edges: addEdge(connection, get().edges),
+      edges: addEdge(
+        {
+          ...connection,
+          type: 'custom',
+          animated: true,
+        },
+        existingEdges
+      ),
     });
   },
   setNodes: (nodes) => set({ nodes }),

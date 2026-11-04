@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from '../components/layout/Header';
 import { WorkflowEditor } from '../components/editor/WorkflowEditor';
 import { NodePalette } from '../components/panel/NodePalette';
@@ -25,6 +25,26 @@ export const StudioPage: React.FC = () => {
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'results'>('properties');
   const [savedNotice, setSavedNotice] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState<{ visible: boolean; fading: boolean; message: string }>({
+    visible: false,
+    fading: false,
+    message: '',
+  });
+  const saveToastTimerRef = useRef<{ hold?: any; fade?: any }>({});
+
+  const showSaveToast = (message: string) => {
+    if (saveToastTimerRef.current.hold) clearTimeout(saveToastTimerRef.current.hold);
+    if (saveToastTimerRef.current.fade) clearTimeout(saveToastTimerRef.current.fade);
+
+    setSaveToast({ visible: true, fading: false, message });
+
+    saveToastTimerRef.current.hold = setTimeout(() => {
+      setSaveToast((prev) => ({ ...prev, fading: true }));
+      saveToastTimerRef.current.fade = setTimeout(() => {
+        setSaveToast({ visible: false, fading: false, message: '' });
+      }, 500);
+    }, 1000);
+  };
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
@@ -163,19 +183,18 @@ export const StudioPage: React.FC = () => {
         });
         setCurrentWorkflowId(result.id);
         setSavedNotice(true);
-        addLog(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
+        showSaveToast(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
       } catch (err: any) {
         console.error('Failed to save workflow to DB:', err);
         const detail = err.response?.data?.detail || 'DB 저장에 실패했습니다.';
         showAlert(`저장 실패: ${detail}`, { type: 'error', title: '저장 오류' });
-        addLog(`[오류] ${detail}`);
       } finally {
         setIsSaving(false);
         setTimeout(() => setSavedNotice(false), 2500);
       }
     } else {
       setSavedNotice(true);
-      addLog(`현재 에이전트 [${agentName}]의 상태가 로컬 브라우저에 저장되었습니다.`);
+      showSaveToast(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
       setTimeout(() => setSavedNotice(false), 2000);
     }
   };
@@ -270,6 +289,18 @@ export const StudioPage: React.FC = () => {
                   download
                 </span>
               </button>
+
+              {/* 저장 완료 알림 토스트 (다운로드 버튼 옆에 1초간 표시 후 서서히 페이드아웃) */}
+              {saveToast.visible && (
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-tertiary-container/40 border border-tertiary/50 text-tertiary text-xs font-semibold shadow-sm transition-all duration-500 ease-out select-none ${
+                    saveToast.fading ? 'opacity-0 -translate-x-1 scale-95' : 'opacity-100 translate-x-0 scale-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                  <span>{saveToast.message}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-space-sm">
