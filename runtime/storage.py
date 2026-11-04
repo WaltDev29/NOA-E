@@ -48,7 +48,7 @@ def ensure_storage_dirs():
     os.makedirs(CHATS_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
-# 전역 환경 설정 관리 (테마 등)
+# 전역 환경 설정 관리 (테마, YouTube API Key 등)
 # -------------------------------------------------------------
 def get_app_settings() -> Dict[str, Any]:
     ensure_storage_dirs()
@@ -79,6 +79,19 @@ def set_app_theme(theme: str):
     settings = get_app_settings()
     settings["theme"] = theme
     save_app_settings(settings)
+
+def get_youtube_api_key() -> str:
+    settings = get_app_settings()
+    return settings.get("youtube_api_key", "")
+
+def set_youtube_api_key(api_key: str):
+    settings = get_app_settings()
+    settings["youtube_api_key"] = api_key
+    save_app_settings(settings)
+    if api_key:
+        os.environ["YOUTUBE_API_KEY"] = api_key
+    elif "YOUTUBE_API_KEY" in os.environ:
+        del os.environ["YOUTUBE_API_KEY"]
 
 # -------------------------------------------------------------
 # 에이전트 개별 파일(.storage/agents/{agent_id}.json) 관리
@@ -124,10 +137,14 @@ def load_agents_registry() -> List[Dict[str, Any]]:
         except Exception as e:
             print(f"Failed to load agent file {file_path}: {e}")
 
+    # last_used_at 최신순으로 내림차순 정렬
     agents.sort(key=lambda x: x.get("last_used_at", ""), reverse=True)
     return agents
 
 def get_last_agent_path() -> Optional[str]:
+    """
+    .storage/agents/에 보관된 에이전트 중 가장 최근에 사용된(last_used_at 최신) 에이전트의 경로를 반환합니다.
+    """
     agents = load_agents_registry()
     if not agents:
         return None
@@ -139,6 +156,9 @@ def get_last_agent_path() -> Optional[str]:
     return valid_agents[0].get("path")
 
 def set_last_agent_path(file_path: str):
+    """
+    해당 에이전트 JSON 파일의 metadata.last_used_at을 현재 시각으로 갱신합니다.
+    """
     if not file_path or not os.path.exists(file_path):
         return
 
@@ -158,6 +178,10 @@ def set_last_agent_path(file_path: str):
         print(f"Failed to update last_used_at for {file_path}: {e}")
 
 def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = None, description: str = "", workflow_dict: Optional[dict] = None) -> Dict[str, Any]:
+    """
+    불러온 에이전트 JSON 파일을 .storage/agents/{agent_id}.json 에 복사/저장하며,
+    metadata에 registered_at, last_used_at 필드를 추가/갱신합니다.
+    """
     ensure_storage_dirs()
     now_iso = datetime.now().isoformat()
 
@@ -187,8 +211,10 @@ def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = No
     if description:
         meta["description"] = description
 
+    # registered_at은 기존 값이 있으면 유지, 없으면 현재 시각
     if not meta.get("registered_at"):
         meta["registered_at"] = now_iso
+    # last_used_at은 현재 시각으로 갱신
     meta["last_used_at"] = now_iso
 
     target_filename = _safe_agent_filename(agent_id)
@@ -214,6 +240,7 @@ def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = No
 # -------------------------------------------------------------
 def _get_agent_chat_file(agent_id: str) -> str:
     ensure_storage_dirs()
+    # 파일명으로 안전하게 정제
     safe_id = "".join([c for c in agent_id if c.isalnum() or c in ("-", "_")]) or "default_agent"
     return os.path.join(CHATS_DIR, f"{safe_id}.json")
 
@@ -243,6 +270,7 @@ def save_agent_chat_data(agent_id: str, chat_data: Dict[str, Any]):
     ensure_storage_dirs()
     file_path = _get_agent_chat_file(agent_id)
     
+    # 최상단 필드에 agent_id가 반드시 위치하도록 구성
     payload = {
         "agent_id": agent_id,
         "agent_name": chat_data.get("agent_name", ""),
@@ -306,85 +334,61 @@ def update_session_messages(agent_id: str, session_id: str, messages: list, logs
     save_sessions(sessions, agent_id=agent_id)
 
 # -------------------------------------------------------------
-# Workflow & Configurable Nodes 관리 (Workflow & Node Configs)
+# Workflow & LLM Nodes 관리 (Workflow & Node Configs)
 # -------------------------------------------------------------
-DEFAULT_NODE_PROMPTS = {
-    "llm": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
-    "planner": "사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.",
-    "router": "당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.",
-    "aggregator": "각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.",
-    "agent": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
-}
+CONFIGURABLE_NODE_TYPES = (
+    "llm", "agent", "planner", "router", "aggregator",
+    "llmNode", "agentNode", "plannerNode", "routerNode", "aggregatorNode"
+)
 
-NODE_TYPE_NORMALIZE_MAP = {
-    "llm": "llm",
-    "llmNode": "llm",
-    "planner": "planner",
-    "plannerNode": "planner",
-    "router": "router",
-    "routerNode": "router",
-    "aggregator": "aggregator",
-    "aggregatorNode": "aggregator",
-    "agent": "agent",
-    "agentNode": "agent",
-}
+def _normalize_node_type(raw_type: str) -> str:
+    t = (raw_type or "").strip()
+    if t.endswith("Node"):
+        t = t[:-4]
+    return t.lower()
 
 def extract_llm_nodes(workflow_json: dict) -> List[Dict[str, Any]]:
     """
-    Workflow JSON에서 설정 가능한 AI 노드(LLM, Planner, Router, Aggregator, Agent)들을 추출합니다.
-    (Input, Output 및 단순 Tool 노드는 설정 항목이 없으므로 제외)
+    Workflow JSON에서 설정 가능한 노드들(LLM, Planner, Router, Aggregator, Agent)을 추출합니다.
+    (Input, Output 등은 제외)
     """
     nodes = workflow_json.get("nodes", [])
-    configurable_nodes = []
+    llm_nodes = []
     
+    default_prompts = {
+        "llm": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
+        "planner": "사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.",
+        "router": "당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.",
+        "aggregator": "각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.",
+        "agent": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
+    }
+
     for n in nodes:
-        raw_type = n.get("type", "")
-        norm_type = NODE_TYPE_NORMALIZE_MAP.get(raw_type)
-        if norm_type:
+        node_type = n.get("type", "")
+        if node_type in CONFIGURABLE_NODE_TYPES:
+            norm_type = _normalize_node_type(node_type)
             config = n.get("config", {}) or n.get("data", {}).get("config", {})
             label = n.get("label") or n.get("data", {}).get("label") or f"{norm_type.upper()} ({n.get('id')})"
-            raw_prompt = config.get("system_prompt", "")
-            if raw_prompt == "You are a helpful assistant.":
-                raw_prompt = DEFAULT_NODE_PROMPTS.get(norm_type, "")
-            system_prompt = raw_prompt or DEFAULT_NODE_PROMPTS.get(norm_type, "")
-
-            try:
-                temp_val = float(config.get("temperature", 0.7))
-            except (TypeError, ValueError):
-                temp_val = 0.7
-
-            node_entry: Dict[str, Any] = {
+            llm_nodes.append({
                 "id": n.get("id"),
                 "type": norm_type,
-                "raw_type": raw_type,
                 "label": label,
-                "model": config.get("model") or "gemma2:2b",
+                "model": config.get("model", "gemma2:2b"),
                 "base_url": config.get("base_url", ""),
                 "api_key": config.get("api_key", ""),
                 "is_custom": config.get("is_custom", False) or bool(config.get("base_url") or config.get("api_key")),
-                "temperature": temp_val,
-                "system_prompt": system_prompt,
-            }
-
-            if norm_type == "router":
-                try:
-                    node_entry["max_loops"] = int(config.get("max_loops", 5))
-                except (TypeError, ValueError):
-                    node_entry["max_loops"] = 5
-            elif norm_type == "llm":
-                node_entry["react_loop"] = bool(config.get("react_loop", True))
-                try:
-                    node_entry["max_tool_iterations"] = int(config.get("max_tool_iterations", 3))
-                except (TypeError, ValueError):
-                    node_entry["max_tool_iterations"] = 3
-                node_entry["tool_instruction"] = config.get("tool_instruction", "")
-
-            configurable_nodes.append(node_entry)
-    return configurable_nodes
+                "temperature": float(config.get("temperature", 0.7)),
+                "system_prompt": config.get("system_prompt") or default_prompts.get(norm_type, ""),
+                "max_loops": int(config.get("max_loops", 5)),
+                "react_loop": bool(config.get("react_loop", True)),
+                "max_tool_iterations": int(config.get("max_tool_iterations", 3)),
+                "tool_instruction": config.get("tool_instruction", ""),
+            })
+    return llm_nodes
 
 def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[str, Dict[str, Any]], file_path: Optional[str] = None) -> dict:
     """
-    사용자가 GUI에서 설정한 노드별 상세 설정을 workflow_json에 반영하고,
+    사용자가 GUI에서 설정한 노드별 설정을 workflow_json에 반영하고,
     file_path가 제공된 경우 해당 파일에도 영구 저장합니다.
     """
     nodes = workflow_json.get("nodes", [])
@@ -392,7 +396,7 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
         node_id = n.get("id")
         if node_id in updated_configs:
             cfg = updated_configs[node_id]
-            updated_dict: Dict[str, Any] = {
+            updated_dict = {
                 "model": cfg.get("model", "gemma2:2b"),
                 "base_url": cfg.get("base_url", ""),
                 "api_key": cfg.get("api_key", ""),

@@ -5,8 +5,16 @@ from .validator import WorkflowValidator
 from . import nodes  # Ensure nodes are registered
 
 class WorkflowCompiler:
-    def __init__(self):
+    def __init__(self, workflow_json: dict = None):
+        # 왜: 인자 없이 생성 후 compile_workflow(wf)를 호출하는 기본 방식과
+        # 생성자에 워크플로우를 전달해 compile()을 호출하는 방식을 모두 호환하기 위함입니다.
         self.validator = WorkflowValidator()
+        self._workflow_json = workflow_json
+
+    def compile(self):
+        if self._workflow_json is None:
+            raise ValueError("컴파일할 워크플로우 데이터가 전달되지 않았습니다.")
+        return self.compile_workflow(self._workflow_json)
 
     def compile_workflow(self, workflow_json: dict):
         self.validator.validate(workflow_json)

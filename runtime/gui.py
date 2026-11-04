@@ -36,7 +36,7 @@ try:
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
         load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
-        get_app_theme, set_app_theme, get_asset_path
+        get_app_theme, set_app_theme, get_youtube_api_key, set_youtube_api_key, get_asset_path
     )
     from runtime.config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 except ModuleNotFoundError:
@@ -45,7 +45,7 @@ except ModuleNotFoundError:
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
         load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
-        get_app_theme, set_app_theme, get_asset_path
+        get_app_theme, set_app_theme, get_youtube_api_key, set_youtube_api_key, get_asset_path
     )
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 
@@ -1144,6 +1144,66 @@ class SettingsDialog(QDialog):
 
         self.tabs.addTab(tab_agents, "에이전트 목록")
         self.tabs.addTab(tab_llm, "노드 상세 설정")
+        # -----------------------------
+        # Tab 4: YouTube API Key 설정
+        # -----------------------------
+        tab_youtube = QWidget()
+        t_yt_layout = QVBoxLayout(tab_youtube)
+        t_yt_layout.setContentsMargins(16, 18, 16, 16)
+        t_yt_layout.setSpacing(14)
+
+        lbl_yt_title = QLabel("YouTube 검색 도구 API Key 설정")
+        lbl_yt_title.setStyleSheet("font-size: 13px; font-weight: bold; color: #4d8eff;")
+        t_yt_layout.addWidget(lbl_yt_title)
+
+        grp_yt = QGroupBox("YouTube Data API v3 Key")
+        grp_yt.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #283548;
+                border-radius: 6px;
+                padding-top: 14px;
+                background-color: transparent;
+            }
+        """)
+        g_yt_layout = QVBoxLayout(grp_yt)
+        g_yt_layout.setContentsMargins(14, 16, 14, 16)
+        g_yt_layout.setSpacing(10)
+
+        lbl_yt_desc = QLabel(
+            "워크플로우에 YouTube 검색 도구(YouTube Search Node)가 포함된 경우,\n"
+            "영상을 검색하기 위해 Google Cloud Console에서 발급받은 YouTube Data API v3 Key가 필요합니다.\n"
+            "(DuckDuckGo 웹 검색, Open-Meteo 날씨 조회, 사칙연산 계산기 도구는 별도 API Key 없이 동작합니다.)"
+        )
+        lbl_yt_desc.setWordWrap(True)
+        lbl_yt_desc.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.4;")
+        g_yt_layout.addWidget(lbl_yt_desc)
+
+        h_yt_input = QHBoxLayout()
+        lbl_yt_key = QLabel("API Key:")
+        lbl_yt_key.setFixedWidth(70)
+        lbl_yt_key.setStyleSheet("color: #4cd7f6; font-weight: bold;")
+        h_yt_input.addWidget(lbl_yt_key)
+
+        self.txt_youtube_api_key = QLineEdit()
+        self.txt_youtube_api_key.setEchoMode(QLineEdit.Password)
+        self.txt_youtube_api_key.setPlaceholderText("AIzaSy...")
+        self.txt_youtube_api_key.setText(get_youtube_api_key())
+        h_yt_input.addWidget(self.txt_youtube_api_key, 1)
+        g_yt_layout.addLayout(h_yt_input)
+
+        chk_show_yt_key = QCheckBox("API Key 값 표시")
+        chk_show_yt_key.toggled.connect(
+            lambda checked: self.txt_youtube_api_key.setEchoMode(
+                QLineEdit.Normal if checked else QLineEdit.Password
+            )
+        )
+        g_yt_layout.addWidget(chk_show_yt_key)
+
+        t_yt_layout.addWidget(grp_yt)
+        t_yt_layout.addStretch()
+
+        self.tabs.addTab(tab_youtube, "YouTube API 설정")
         self.tabs.addTab(tab_theme, "화면 테마 설정")
         self.tabs.setCurrentIndex(0)
 
@@ -1552,6 +1612,8 @@ class SettingsDialog(QDialog):
         selected_theme = "light" if self.radio_light.isChecked() else "dark"
         self.selected_theme = selected_theme
         set_app_theme(selected_theme)
+        if hasattr(self, "txt_youtube_api_key"):
+            set_youtube_api_key(self.txt_youtube_api_key.text().strip())
 
         if not self.workflow_dict:
             self.accept()
@@ -1614,6 +1676,7 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         self.current_theme = get_app_theme()
         self.apply_theme(self.current_theme)
+        get_youtube_api_key()
 
         self.current_agent_id: Optional[str] = None
         self.current_agent_name: str = "Local Agent"
@@ -1812,7 +1875,12 @@ class AgentRuntimeMainWindow(QMainWindow):
                     for n in workflow_dict.get("nodes", [])
                 ],
                 "edges": [
-                    {"source": e.get("source"), "target": e.get("target")}
+                    {
+                        "source": e.get("source"),
+                        "target": e.get("target"),
+                        "sourceHandle": e.get("sourceHandle"),
+                        "targetHandle": e.get("targetHandle"),
+                    }
                     for e in workflow_dict.get("edges", [])
                 ]
             }

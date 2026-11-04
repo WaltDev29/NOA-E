@@ -41,6 +41,21 @@ def _get_json(url: str, params: Dict[str, Any]) -> Dict[str, Any]:
 def _load_local_env_var(key: str) -> str:
     if os.getenv(key):
         return os.getenv(key, "").strip()
+    # 왜: 로컬 런타임 설정창(.storage/settings.json)에 저장된 YouTube API Key를 우선 참조합니다.
+    if key == "YOUTUBE_API_KEY":
+        try:
+            from storage import get_youtube_api_key
+            saved_key = get_youtube_api_key()
+            if saved_key:
+                return saved_key
+        except Exception:
+            try:
+                from runtime.storage import get_youtube_api_key
+                saved_key = get_youtube_api_key()
+                if saved_key:
+                    return saved_key
+            except Exception:
+                pass
     candidates = [
         "docker/env/.env.backend",
         "../docker/env/.env.backend",
@@ -191,7 +206,7 @@ def youtube_search(query: str, max_results: int = 5) -> str:
 
     api_key = _load_local_env_var("YOUTUBE_API_KEY")
     if not api_key:
-        return "오류: YouTube API Key가 설정되지 않았습니다. YOUTUBE_API_KEY 환경 변수를 설정하세요."
+        return "오류: YouTube API Key가 설정되지 않았습니다. 런타임 설정 창에서 YouTube 노드의 API Key를 입력하거나 YOUTUBE_API_KEY 환경 변수를 설정하세요."
     try:
         result_count = max(1, min(int(max_results), 10))
     except (TypeError, ValueError):
@@ -280,3 +295,10 @@ class YoutubeNode(BaseToolNode):
     tool_func = youtube_search
     tool_arg_name = "query"
     tool_log_name = "YouTube 검색"
+
+    def __init__(self, node_id: str, config: Dict[str, Any] = None):
+        super().__init__(node_id, config)
+        # 왜: 로컬 런타임 GUI에서 설정한 YouTube 노드의 api_key를 도구 함수가 참조할 수 있도록 환경변수에 주입
+        node_api_key = (self.config.get("api_key") or "").strip()
+        if node_api_key:
+            os.environ["YOUTUBE_API_KEY"] = node_api_key
