@@ -53,6 +53,7 @@ services:
       - "8000:8000"
     volumes:
       - ../../services/backend:/app
+      - ../../runtime/installer_output:/app/installer_output:ro
     env_file:
       - ../env/.env.backend
     depends_on:

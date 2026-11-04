@@ -1,4 +1,5 @@
 import json
+import os
 
 import uuid
 
@@ -6,7 +7,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 
 from sqlalchemy.orm import Session
 
@@ -61,6 +62,47 @@ def get_available_models():
         "models": models or [default_model],
         "model_capabilities": models_capabilities,
     }
+
+
+@router.api_route("/runtime/download", methods=["GET", "HEAD"], summary="로컬 런타임 실행기 설치 파일 다운로드")
+def download_runtime_installer():
+    # 컨테이너 볼륨 및 로컬 실행 환경을 모두 지원하도록 후보 디렉터리를 순차 탐색
+    candidate_dirs = [
+        "/app/installer_output",
+        "/app/downloads",
+        "runtime/installer_output",
+        "../../runtime/installer_output",
+        "services/backend/downloads",
+    ]
+    try:
+        for d in candidate_dirs:
+            if os.path.isdir(d):
+                exe_files = [
+                    os.path.join(d, f)
+                    for f in os.listdir(d)
+                    if f.lower().endswith(".exe") and os.path.isfile(os.path.join(d, f))
+                ]
+                if exe_files:
+                    # 여러 버전이 있을 경우 가장 최신 빌드 파일을 우선 반환
+                    exe_files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+                    target_path = exe_files[0]
+                    filename = os.path.basename(target_path)
+                    return FileResponse(
+                        path=target_path,
+                        media_type="application/octet-stream",
+                        filename=filename,
+                    )
+    except Exception as e:
+        print(f"[RUNTIME_DOWNLOAD_ERROR] Failed to locate runtime installer: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"런타임 실행기 파일 확인 중 오류가 발생했습니다: {str(e)}",
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="빌드된 로컬 실행기 설치 파일을 찾을 수 없습니다.",
+    )
 
 
 

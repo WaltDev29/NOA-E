@@ -540,17 +540,10 @@ export const NodeInstructionPage: React.FC = () => {
                   {/* Hero Right 3D Visual Cube Indicator */}
                   <div className="relative z-10 shrink-0 w-44 h-44 sm:w-52 sm:h-52 rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-space-md flex flex-col items-center justify-center shadow-[0_0_35px_rgba(139,92,246,0.3)]">
                     <div className="absolute inset-3 rounded-xl bg-gradient-to-tr from-secondary-container/30 via-primary/10 to-transparent animate-pulse pointer-events-none" />
-                    <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-br from-[#702ff6] via-[#4d2db7] to-[#1e1548] flex flex-col items-center justify-center shadow-[0_0_25px_rgba(112,47,246,0.6)]">
-                      <span className="material-symbols-outlined text-white text-[38px] drop-shadow-[0_2px_10px_rgba(255,255,255,0.7)]">
+                    <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-br from-[#702ff6] via-[#4d2db7] to-[#1e1548] flex items-center justify-center shadow-[0_0_25px_rgba(112,47,246,0.6)]">
+                      <span className="material-symbols-outlined text-white text-[44px] drop-shadow-[0_2px_10px_rgba(255,255,255,0.7)]">
                         {current.icon}
                       </span>
-                      <span className="font-headline-sm text-headline-sm font-extrabold tracking-widest text-white mt-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
-                        {current.id.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="mt-space-sm flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-high/80 text-tertiary font-label-badge text-label-badge">
-                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping" />
-                      <span>온라인 엔진 활성</span>
                     </div>
                   </div>
                 </section>
@@ -687,7 +680,7 @@ export const NodeInstructionPage: React.FC = () => {
                           <span className="font-label-code text-label-code text-secondary mb-2">
                             OUTPUT STATE (JSON)
                           </span>
-                          <pre className="font-label-code text-label-code text-secondary-fixed-dim whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                          <pre className="font-label-code text-label-code text-secondary whitespace-pre-wrap leading-relaxed overflow-x-auto">
                             {ex.resultJson}
                           </pre>
                         </div>

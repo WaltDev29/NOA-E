@@ -11,6 +11,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
   const [activeTab, setActiveTab] = useState<'json' | 'runner'>('json');
   const [description, setDescription] = useState('NOA-E 시각적 빌더로 생성된 AI 에이전트');
   const [downloadedNotice, setDownloadedNotice] = useState(false);
+  const [runnerDownloadedNotice, setRunnerDownloadedNotice] = useState(false);
 
   if (!isOpen) return null;
 
@@ -22,6 +23,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
     const typeMap: Record<string, string> = {
       inputNode: 'input',
       llmNode: 'llm',
+      plannerNode: 'planner',
+      routerNode: 'router',
+      aggregatorNode: 'aggregator',
       outputNode: 'output',
       searchNode: 'search',
       weatherNode: 'weather',
@@ -29,18 +33,42 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       agentNode: 'agent',
     };
 
+    const defaultPrompts: Record<string, string> = {
+      llm: '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
+      planner:
+        '사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.',
+      router:
+        '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
+      aggregator:
+        '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
+      agent: '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
+    };
+
     const sanitizedNodes = currentNodes.map((node) => {
       const rawConfig = (node.data as any)?.config || {};
       const backendType = typeMap[node.type || ''] || node.type || 'unknown';
 
-      // LLM/Agent 노드의 경우 민감 정보(api_key, base_url)를 제외하고 model 위주로 보존
+      // AI 추론 노드(llm, planner, router, aggregator, agent)의 경우 민감 정보(api_key, base_url)는 제외하고 노드별 고유 설정을 모두 보존
       let sanitizedConfig: Record<string, any> = { ...rawConfig };
-      if (backendType === 'llm' || backendType === 'agent') {
+      delete sanitizedConfig.api_key;
+      delete sanitizedConfig.base_url;
+
+      if (['llm', 'planner', 'router', 'aggregator', 'agent'].includes(backendType)) {
         sanitizedConfig = {
           model: rawConfig.model || 'gemma2:2b',
-          system_prompt: rawConfig.system_prompt || '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
           temperature: rawConfig.temperature !== undefined ? Number(rawConfig.temperature) : 0.7,
+          system_prompt: rawConfig.system_prompt || defaultPrompts[backendType] || '',
         };
+
+        if (backendType === 'llm') {
+          sanitizedConfig.react_loop = rawConfig.react_loop ?? true;
+          sanitizedConfig.max_tool_iterations =
+            rawConfig.max_tool_iterations !== undefined ? Number(rawConfig.max_tool_iterations) : 3;
+          sanitizedConfig.tool_instruction = rawConfig.tool_instruction || '';
+        } else if (backendType === 'router') {
+          sanitizedConfig.max_loops =
+            rawConfig.max_loops !== undefined ? Number(rawConfig.max_loops) : 5;
+        }
       }
 
       return {
@@ -56,6 +84,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       id: edge.id,
       source: edge.source,
       target: edge.target,
+      ...(edge.sourceHandle ? { sourceHandle: edge.sourceHandle } : {}),
+      ...(edge.targetHandle ? { targetHandle: edge.targetHandle } : {}),
     }));
 
     return {
@@ -88,6 +118,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
 
     setDownloadedNotice(true);
     setTimeout(() => setDownloadedNotice(false), 3000);
+  };
+
+  // 로컬 실행기 설치 파일(.exe) 다운로드 트리거
+  const handleDownloadRunner = () => {
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', '/api/workflow/runtime/download');
+    downloadAnchor.setAttribute('download', 'NOA-E_Desktop_Setup_v1.0.0.exe');
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+
+    setRunnerDownloadedNotice(true);
+    setTimeout(() => setRunnerDownloadedNotice(false), 3000);
   };
 
   return (
@@ -228,6 +271,23 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
                   실행기를 띄운 후 좌측 하단의 <strong>[⚙️ 에이전트 설정]</strong>에서 다운로드한
                   JSON을 선택하고, 노드별 기본/커스텀 LLM을 설정하세요.
                 </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={handleDownloadRunner}
+                  type="button"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-inverse-primary via-primary-container to-secondary-container text-on-surface font-semibold text-sm shadow-[0_0_20px_rgba(77,142,255,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {runnerDownloadedNotice ? 'check' : 'download'}
+                  </span>
+                  <span>
+                    {runnerDownloadedNotice
+                      ? '다운로드 시작됨!'
+                      : '로컬 실행기 다운로드 (Windows .exe)'}
+                  </span>
+                </button>
               </div>
             </div>
           )}

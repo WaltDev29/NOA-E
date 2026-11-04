@@ -124,14 +124,10 @@ def load_agents_registry() -> List[Dict[str, Any]]:
         except Exception as e:
             print(f"Failed to load agent file {file_path}: {e}")
 
-    # last_used_at 최신순으로 내림차순 정렬
     agents.sort(key=lambda x: x.get("last_used_at", ""), reverse=True)
     return agents
 
 def get_last_agent_path() -> Optional[str]:
-    """
-    .storage/agents/에 보관된 에이전트 중 가장 최근에 사용된(last_used_at 최신) 에이전트의 경로를 반환합니다.
-    """
     agents = load_agents_registry()
     if not agents:
         return None
@@ -143,9 +139,6 @@ def get_last_agent_path() -> Optional[str]:
     return valid_agents[0].get("path")
 
 def set_last_agent_path(file_path: str):
-    """
-    해당 에이전트 JSON 파일의 metadata.last_used_at을 현재 시각으로 갱신합니다.
-    """
     if not file_path or not os.path.exists(file_path):
         return
 
@@ -165,10 +158,6 @@ def set_last_agent_path(file_path: str):
         print(f"Failed to update last_used_at for {file_path}: {e}")
 
 def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = None, description: str = "", workflow_dict: Optional[dict] = None) -> Dict[str, Any]:
-    """
-    불러온 에이전트 JSON 파일을 .storage/agents/{agent_id}.json 에 복사/저장하며,
-    metadata에 registered_at, last_used_at 필드를 추가/갱신합니다.
-    """
     ensure_storage_dirs()
     now_iso = datetime.now().isoformat()
 
@@ -198,10 +187,8 @@ def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = No
     if description:
         meta["description"] = description
 
-    # registered_at은 기존 값이 있으면 유지, 없으면 현재 시각
     if not meta.get("registered_at"):
         meta["registered_at"] = now_iso
-    # last_used_at은 현재 시각으로 갱신
     meta["last_used_at"] = now_iso
 
     target_filename = _safe_agent_filename(agent_id)
@@ -227,7 +214,6 @@ def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = No
 # -------------------------------------------------------------
 def _get_agent_chat_file(agent_id: str) -> str:
     ensure_storage_dirs()
-    # 파일명으로 안전하게 정제
     safe_id = "".join([c for c in agent_id if c.isalnum() or c in ("-", "_")]) or "default_agent"
     return os.path.join(CHATS_DIR, f"{safe_id}.json")
 
@@ -257,7 +243,6 @@ def save_agent_chat_data(agent_id: str, chat_data: Dict[str, Any]):
     ensure_storage_dirs()
     file_path = _get_agent_chat_file(agent_id)
     
-    # 최상단 필드에 agent_id가 반드시 위치하도록 구성
     payload = {
         "agent_id": agent_id,
         "agent_name": chat_data.get("agent_name", ""),
@@ -321,36 +306,85 @@ def update_session_messages(agent_id: str, session_id: str, messages: list, logs
     save_sessions(sessions, agent_id=agent_id)
 
 # -------------------------------------------------------------
-# Workflow & LLM Nodes 관리 (Workflow & Node Configs)
+# Workflow & Configurable Nodes 관리 (Workflow & Node Configs)
 # -------------------------------------------------------------
+DEFAULT_NODE_PROMPTS = {
+    "llm": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
+    "planner": "사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.",
+    "router": "당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.",
+    "aggregator": "각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.",
+    "agent": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
+}
+
+NODE_TYPE_NORMALIZE_MAP = {
+    "llm": "llm",
+    "llmNode": "llm",
+    "planner": "planner",
+    "plannerNode": "planner",
+    "router": "router",
+    "routerNode": "router",
+    "aggregator": "aggregator",
+    "aggregatorNode": "aggregator",
+    "agent": "agent",
+    "agentNode": "agent",
+}
+
 def extract_llm_nodes(workflow_json: dict) -> List[Dict[str, Any]]:
     """
-    Workflow JSON에서 LLM 및 Agent 노드들을 추출합니다.
+    Workflow JSON에서 설정 가능한 AI 노드(LLM, Planner, Router, Aggregator, Agent)들을 추출합니다.
+    (Input, Output 및 단순 Tool 노드는 설정 항목이 없으므로 제외)
     """
     nodes = workflow_json.get("nodes", [])
-    llm_nodes = []
+    configurable_nodes = []
     
     for n in nodes:
-        node_type = n.get("type", "")
-        if node_type in ("llm", "agent", "llmNode", "agentNode"):
+        raw_type = n.get("type", "")
+        norm_type = NODE_TYPE_NORMALIZE_MAP.get(raw_type)
+        if norm_type:
             config = n.get("config", {}) or n.get("data", {}).get("config", {})
-            label = n.get("label") or n.get("data", {}).get("label") or f"{node_type.upper()} ({n.get('id')})"
-            llm_nodes.append({
+            label = n.get("label") or n.get("data", {}).get("label") or f"{norm_type.upper()} ({n.get('id')})"
+            raw_prompt = config.get("system_prompt", "")
+            if raw_prompt == "You are a helpful assistant.":
+                raw_prompt = DEFAULT_NODE_PROMPTS.get(norm_type, "")
+            system_prompt = raw_prompt or DEFAULT_NODE_PROMPTS.get(norm_type, "")
+
+            try:
+                temp_val = float(config.get("temperature", 0.7))
+            except (TypeError, ValueError):
+                temp_val = 0.7
+
+            node_entry: Dict[str, Any] = {
                 "id": n.get("id"),
-                "type": node_type,
+                "type": norm_type,
+                "raw_type": raw_type,
                 "label": label,
-                "model": config.get("model", "gemma2:2b"),
+                "model": config.get("model") or "gemma2:2b",
                 "base_url": config.get("base_url", ""),
                 "api_key": config.get("api_key", ""),
                 "is_custom": config.get("is_custom", False) or bool(config.get("base_url") or config.get("api_key")),
-                "temperature": config.get("temperature", 0.7),
-                "system_prompt": config.get("system_prompt", ""),
-            })
-    return llm_nodes
+                "temperature": temp_val,
+                "system_prompt": system_prompt,
+            }
+
+            if norm_type == "router":
+                try:
+                    node_entry["max_loops"] = int(config.get("max_loops", 5))
+                except (TypeError, ValueError):
+                    node_entry["max_loops"] = 5
+            elif norm_type == "llm":
+                node_entry["react_loop"] = bool(config.get("react_loop", True))
+                try:
+                    node_entry["max_tool_iterations"] = int(config.get("max_tool_iterations", 3))
+                except (TypeError, ValueError):
+                    node_entry["max_tool_iterations"] = 3
+                node_entry["tool_instruction"] = config.get("tool_instruction", "")
+
+            configurable_nodes.append(node_entry)
+    return configurable_nodes
 
 def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[str, Dict[str, Any]], file_path: Optional[str] = None) -> dict:
     """
-    사용자가 GUI에서 설정한 LLM 노드별 설정을 workflow_json에 반영하고,
+    사용자가 GUI에서 설정한 노드별 상세 설정을 workflow_json에 반영하고,
     file_path가 제공된 경우 해당 파일에도 영구 저장합니다.
     """
     nodes = workflow_json.get("nodes", [])
@@ -358,7 +392,7 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
         node_id = n.get("id")
         if node_id in updated_configs:
             cfg = updated_configs[node_id]
-            updated_dict = {
+            updated_dict: Dict[str, Any] = {
                 "model": cfg.get("model", "gemma2:2b"),
                 "base_url": cfg.get("base_url", ""),
                 "api_key": cfg.get("api_key", ""),
@@ -367,6 +401,14 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
             }
             if "system_prompt" in cfg:
                 updated_dict["system_prompt"] = cfg["system_prompt"]
+            if "max_loops" in cfg:
+                updated_dict["max_loops"] = int(cfg["max_loops"])
+            if "react_loop" in cfg:
+                updated_dict["react_loop"] = bool(cfg["react_loop"])
+            if "max_tool_iterations" in cfg:
+                updated_dict["max_tool_iterations"] = int(cfg["max_tool_iterations"])
+            if "tool_instruction" in cfg:
+                updated_dict["tool_instruction"] = cfg["tool_instruction"]
 
             if "config" not in n or not isinstance(n["config"], dict):
                 n["config"] = {}

@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame,
+    QLabel, QPushButton, QLineEdit, QTextEdit, QSlider, QScrollArea, QFrame,
     QDialog, QFileDialog, QMessageBox, QCheckBox, QGroupBox, QSizePolicy,
     QTabWidget, QListWidget, QListWidgetItem, QAbstractItemView,
     QRadioButton, QButtonGroup
@@ -218,7 +218,7 @@ QLineEdit, QTextEdit {
     background-color: #161c27;
     border: 1px solid #283345;
     border-radius: 6px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     color: #ffffff;
     selection-background-color: #4d8eff;
 }
@@ -525,7 +525,7 @@ QLineEdit, QTextEdit {
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     color: #0f172a;
     selection-background-color: #bfdbfe;
     selection-color: #0f172a;
@@ -701,14 +701,24 @@ class AgentExecutionWorker(QThread):
                 "input_text": self.user_input,
                 "current_output": "",
                 "messages": self.conversation_messages,
-                "logs": []
+                "logs": [],
+                "plan": None,
+                "current_step": 0,
+                "intermediate_steps": [],
+                "loop_count": 0,
+                "next_worker": None,
+                "routing_result": None,
             }
 
             accumulated_logs = []
             final_output = ""
 
             # stream_mode="updates"를 사용하여 노드 실행 완료 시마다 실시간 로그 전달
-            for chunk in self.compiled_graph.stream(initial_state, stream_mode="updates"):
+            for chunk in self.compiled_graph.stream(
+                initial_state,
+                stream_mode="updates",
+                config={"recursion_limit": 40}
+            ):
                 if self._is_stopped:
                     stop_msg = "[시스템] 사용자에 의해 생성이 중단되었습니다."
                     accumulated_logs.append(stop_msg)
@@ -742,8 +752,8 @@ class ThoughtLogToggleWidget(QWidget):
     def __init__(self, logs: list = None, is_live: bool = False, parent=None):
         super().__init__(parent)
         self.logs = list(logs or [])
-        self.is_expanded = is_live        # 실행 중에는 펼침, 완료 후에는 접힘
-        self.is_finalized = not is_live   # is_live이면 아직 output 전(False), 아니면 완료 상태(True)
+        self.is_expanded = is_live
+        self.is_finalized = not is_live
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.init_ui()
 
@@ -760,9 +770,6 @@ class ThoughtLogToggleWidget(QWidget):
         self.btn_toggle.clicked.connect(self.toggle)
         layout.addWidget(self.btn_toggle)
 
-        # -------------------------------------------------------------
-        # 1. 실행 중(Live) 전용 스크롤 컨테이너 (200px 고정 + 자동 스크롤)
-        # -------------------------------------------------------------
         self.live_scroll_area = QScrollArea()
         self.live_scroll_area.setObjectName("ThoughtLogLiveArea")
         self.live_scroll_area.setWidgetResizable(True)
@@ -781,9 +788,6 @@ class ThoughtLogToggleWidget(QWidget):
 
         self.live_scroll_area.setWidget(self.live_content_widget)
 
-        # -------------------------------------------------------------
-        # 2. 완료 후(Finalized) 전용 전체 확장 컨테이너 (고정 높이 없이 내부 요소 전체 노출)
-        # -------------------------------------------------------------
         self.static_content_box = QFrame()
         self.static_content_box.setObjectName("ThoughtLogBox")
         self.static_content_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -792,11 +796,9 @@ class ThoughtLogToggleWidget(QWidget):
         self.static_layout.setContentsMargins(6, 6, 6, 6)
         self.static_layout.setSpacing(6)
 
-        # 초기 로그 아이템 배치
         for log in self.logs:
             self._add_log_item_ui(log)
 
-        # 다음 노드 실행 대기 애니메이션 라벨 (실행 중 스크롤 영역에만 표시)
         self.lbl_pending_dots = QLabel("다음 노드 실행 대기 중 .")
         self.lbl_pending_dots.setObjectName("ThoughtPendingDots")
         self.lbl_pending_dots.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -816,7 +818,6 @@ class ThoughtLogToggleWidget(QWidget):
         self._update_visibility()
 
     def _adjust_live_scroll_height(self):
-        """200px 이전까지는 내부 요소 크기만큼 높이를 가지고, 200px 도달 시 최대 높이 고정 및 스크롤 작동"""
         if not self.is_finalized:
             QApplication.processEvents()
             hint_h = self.live_layout.sizeHint().height() + 6
@@ -840,11 +841,8 @@ class ThoughtLogToggleWidget(QWidget):
         return item_frame
 
     def _add_log_item_ui(self, log_text: str):
-        # 1. 라이브 스크롤 컨테이너에 추가 (점 애니메이션 위쪽)
         idx_live = max(0, self.live_layout.count() - 1)
         self.live_layout.insertWidget(idx_live, self._create_log_item_frame(log_text))
-
-        # 2. 완료 후 전체 표시 컨테이너에도 추가
         self.static_layout.addWidget(self._create_log_item_frame(log_text))
 
     def update_dots(self):
@@ -875,12 +873,10 @@ class ThoughtLogToggleWidget(QWidget):
             self.static_content_box.setVisible(False)
         else:
             if not self.is_finalized:
-                # 실행 중: 내부 요소 높이에 맞춘 동적 높이(최대 200px) 스크롤 영역 활성화
                 self._adjust_live_scroll_height()
                 self.live_scroll_area.setVisible(True)
                 self.static_content_box.setVisible(False)
             else:
-                # 완료 후: 고정 높이 없이 모든 요소가 한 번에 다 보이는 정적 컨테이너 활성화
                 self.live_scroll_area.setVisible(False)
                 self.static_content_box.setVisible(True)
 
@@ -904,7 +900,7 @@ class ThoughtLogToggleWidget(QWidget):
 
 
 # -------------------------------------------------------------
-# 순수 점(...) 깜빡임 애니메이션 위젯 (텍스트 없이 순수 도트만)
+# 순수 점(...) 깜빡임 애니메이션 위젯
 # -------------------------------------------------------------
 class PureDotsAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -1008,16 +1004,13 @@ class SessionListItemWidget(QWidget):
 
 
 # -------------------------------------------------------------
-# 단일 화면으로 통합된 에이전트 설정 다이얼로그 (모델명 수정 완벽 지원)
-# -------------------------------------------------------------
-# -------------------------------------------------------------
-# 탭 기반 에이전트 설정 다이얼로그 (에이전트 목록 탭 기본 제공)
+# 탭 기반 에이전트 설정 다이얼로그 (LLM, Planner, Router, Aggregator 상세 설정 지원)
 # -------------------------------------------------------------
 class SettingsDialog(QDialog):
     def __init__(self, parent=None, workflow_dict=None, workflow_path=None):
         super().__init__(parent)
         self.setWindowTitle("에이전트 설정 및 관리")
-        self.resize(720, 600)
+        self.resize(760, 680)
         icon_path = get_asset_path("icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
@@ -1034,7 +1027,6 @@ class SettingsDialog(QDialog):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(14)
 
-        # 탭 위젯 생성
         self.tabs = QTabWidget()
 
         # -----------------------------
@@ -1045,7 +1037,6 @@ class SettingsDialog(QDialog):
         t_agents_layout.setContentsMargins(14, 16, 14, 14)
         t_agents_layout.setSpacing(12)
 
-        # 상단: 새 에이전트 불러오기 영역
         grp_browse = QGroupBox("새 에이전트 파일 불러오기")
         grp_browse.setStyleSheet("""
             QGroupBox {
@@ -1074,7 +1065,6 @@ class SettingsDialog(QDialog):
         g_browse_layout.addWidget(btn_browse)
         t_agents_layout.addWidget(grp_browse)
 
-        # 중단: 등록된 에이전트 목록
         lbl_list_title = QLabel("등록된 에이전트 목록 (선택 후 [저장] 클릭 시 해당 에이전트로 즉시 전환됩니다)")
         lbl_list_title.setStyleSheet("font-size: 12px; font-weight: 600; color: #94a3b8;")
         t_agents_layout.addWidget(lbl_list_title)
@@ -1088,14 +1078,16 @@ class SettingsDialog(QDialog):
         self.refresh_agents_list_ui()
 
         # -----------------------------
-        # Tab 2: LLM 노드 설정
+        # Tab 2: 노드 상세 설정 (LLM, Planner, Router, Aggregator)
         # -----------------------------
         tab_llm = QWidget()
         t_llm_layout = QVBoxLayout(tab_llm)
         t_llm_layout.setContentsMargins(14, 16, 14, 14)
         t_llm_layout.setSpacing(12)
 
-        self.lbl_llm_info = QLabel("현재 선택된 워크플로우의 LLM / Agent 노드 설정을 구성합니다.")
+        self.lbl_llm_info = QLabel(
+            "현재 선택된 워크플로우의 AI 노드(LLM, Planner, Router, Aggregator) 상세 파라미터를 편집합니다."
+        )
         self.lbl_llm_info.setStyleSheet("color: #4cd7f6; font-size: 12px; font-weight: bold;")
         t_llm_layout.addWidget(self.lbl_llm_info)
 
@@ -1104,8 +1096,8 @@ class SettingsDialog(QDialog):
         self.scroll_llm.setFrameShape(QFrame.NoFrame)
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
-        self.scroll_layout.setSpacing(12)
+        self.scroll_layout.setContentsMargins(0, 0, 4, 0)
+        self.scroll_layout.setSpacing(14)
         self.scroll_llm.setWidget(self.scroll_content)
         t_llm_layout.addWidget(self.scroll_llm)
 
@@ -1150,11 +1142,10 @@ class SettingsDialog(QDialog):
         t_theme_layout.addWidget(grp_theme)
         t_theme_layout.addStretch()
 
-        # 탭 추가 (에이전트 목록이 첫 번째 탭)
         self.tabs.addTab(tab_agents, "에이전트 목록")
-        self.tabs.addTab(tab_llm, "LLM 노드 설정")
+        self.tabs.addTab(tab_llm, "노드 상세 설정")
         self.tabs.addTab(tab_theme, "화면 테마 설정")
-        self.tabs.setCurrentIndex(0) # 기본 탭으로 에이전트 목록 표시
+        self.tabs.setCurrentIndex(0)
 
         main_layout.addWidget(self.tabs)
 
@@ -1195,7 +1186,6 @@ class SettingsDialog(QDialog):
             desc = agent.get("description", "설명 없음")
             agent_id = agent.get("id", "")
             
-            # 아이템 카드 위젯 생성
             item_widget = QWidget()
             g_layout = QGridLayout(item_widget)
             g_layout.setAlignment(Qt.AlignTop)
@@ -1203,13 +1193,11 @@ class SettingsDialog(QDialog):
             g_layout.setHorizontalSpacing(8)
             g_layout.setVerticalSpacing(4)
 
-            # 1. 에이전트 이름 헤더 (상단 정렬)
             lbl_name = QLabel(name)
             lbl_name.setAlignment(Qt.AlignTop | Qt.AlignLeft)
             lbl_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffffff; background: transparent; border: none;")
             g_layout.addWidget(lbl_name, 0, 0, 1, 2, Qt.AlignTop)
 
-            # 2. 에이전트 ID (상단 정렬)
             lbl_id_key = QLabel("ID:")
             lbl_id_key.setFixedWidth(42)
             lbl_id_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
@@ -1220,7 +1208,6 @@ class SettingsDialog(QDialog):
             g_layout.addWidget(lbl_id_key, 1, 0, Qt.AlignTop)
             g_layout.addWidget(lbl_id_val, 1, 1, Qt.AlignTop)
 
-            # 3. 경로 정보 (상단 정렬, 긴 경로 자동 줄바꿈)
             lbl_path_key = QLabel("경로:")
             lbl_path_key.setFixedWidth(42)
             lbl_path_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
@@ -1232,7 +1219,6 @@ class SettingsDialog(QDialog):
             g_layout.addWidget(lbl_path_key, 2, 0, Qt.AlignTop)
             g_layout.addWidget(lbl_path_val, 2, 1, Qt.AlignTop)
 
-            # 4. 설명 정보 (상단 정렬, 긴 설명 자동 줄바꿈)
             lbl_desc_key = QLabel("설명:")
             lbl_desc_key.setFixedWidth(42)
             lbl_desc_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
@@ -1246,13 +1232,11 @@ class SettingsDialog(QDialog):
 
             item = QListWidgetItem()
             item.setData(Qt.UserRole, agent)
-            # 상단 정렬 상태에서 내부 텍스트 크기에 맞게 충분한 높이 계산
             item.setSizeHint(QSize(0, max(124, item_widget.sizeHint().height() + 8)))
 
             self.agent_list_widget.addItem(item)
             self.agent_list_widget.setItemWidget(item, item_widget)
 
-            # 현재 활성화된 에이전트와 경로가 일치하면 자동 선택
             if self.selected_agent_path and (path == self.selected_agent_path or agent_id == self.selected_agent_path):
                 self.agent_list_widget.setCurrentItem(item)
 
@@ -1292,7 +1276,6 @@ class SettingsDialog(QDialog):
             agent_name = meta.get("agent_name", os.path.basename(file_path))
             desc = meta.get("description", "")
 
-            # 에이전트 목록에 등록 및 .storage/agents에 복사 저장
             reg_info = register_agent(
                 agent_id=agent_id,
                 agent_name=agent_name,
@@ -1336,69 +1319,84 @@ class SettingsDialog(QDialog):
 
         llm_nodes = extract_llm_nodes(self.workflow_dict)
         if not llm_nodes:
-            lbl = QLabel("현재 워크플로우에 LLM 또는 Agent 노드가 없습니다.")
+            lbl = QLabel("현재 워크플로우에 설정 가능한 AI 노드(LLM, Planner, Router, Aggregator)가 없습니다.")
             lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent; border: none;")
             lbl.setAlignment(Qt.AlignCenter)
             self.scroll_layout.addWidget(lbl)
             self.scroll_layout.addStretch()
             return
 
+        type_badge_map = {
+            "llm": "LLM (Worker)",
+            "planner": "Planner (계획 수립)",
+            "router": "Router (작업 분기/루프)",
+            "aggregator": "Aggregator (결과 종합)",
+            "agent": "Agent",
+        }
+        prompt_label_map = {
+            "router": "라우팅 규칙 지침 (Routing Instructions):",
+            "planner": "계획 수립 지침 (Planner Instructions):",
+            "aggregator": "결과 종합 지침 (Aggregator Instructions):",
+            "llm": "시스템 프롬프트 (System Prompt):",
+            "agent": "시스템 프롬프트 (System Prompt):",
+        }
+
         for node in llm_nodes:
+            node_type = node.get("type", "llm")
             card = QFrame()
             card.setStyleSheet("""
-                QFrame {
-                    background-color: #171d27;
-                    border: 1px solid #263345;
-                    border-radius: 6px;
-                    padding: 10px;
+                QFrame#NodeConfigCard {
+                    background-color: rgba(23, 29, 39, 0.45);
+                    border: 1px solid #2b394d;
+                    border-radius: 8px;
+                    padding: 12px;
                 }
             """)
+            card.setObjectName("NodeConfigCard")
             c_layout = QVBoxLayout(card)
-            c_layout.setContentsMargins(10, 10, 10, 10)
-            c_layout.setSpacing(8)
+            c_layout.setContentsMargins(12, 12, 12, 12)
+            c_layout.setSpacing(10)
 
-            lbl_header = QLabel(f"노드: <b>{node['label']}</b> (ID: {node['id']}, 타입: {node['type']})")
-            lbl_header.setStyleSheet("color: #ffffff; font-size: 12px; background: transparent; border: none;")
+            type_display = type_badge_map.get(node_type, node_type.upper())
+            lbl_header = QLabel(f"노드: <b>{node['label']}</b>  <span style='color:#7dd3fc;'>[{type_display} | ID: {node['id']}]</span>")
+            lbl_header.setStyleSheet("font-size: 13px; background: transparent; border: none;")
             c_layout.addWidget(lbl_header)
 
-            # 1. 모델명 입력 필드 (항상 직접 수정 가능하도록 상단에 배치)
+            # 1. Model 입력 필드
             h_m = QHBoxLayout()
             lbl_m = QLabel("Model:")
-            lbl_m.setFixedWidth(70)
+            lbl_m.setFixedWidth(85)
             lbl_m.setStyleSheet("color: #4cd7f6; font-weight: bold;")
             h_m.addWidget(lbl_m)
             txt_model = QLineEdit()
-            # 현재 노드에 실제로 설정되어 있는 모델명 표시
             txt_model.setText(node.get("model") or DEFAULT_MODEL)
-            txt_model.setPlaceholderText("예: gemma2:2b, qwen2.5:7b, gpt-4o-mini")
+            txt_model.setPlaceholderText("예: gemma2:2b, gpt-6-luna, gpt-4o-mini")
             h_m.addWidget(txt_model)
             c_layout.addLayout(h_m)
 
-            # 2. 외부 커스텀 API (Base URL, API Key) 사용 체크박스
-            chk_custom = QCheckBox("외부 커스텀 API 엔드포인트 (Base URL, API Key) 사용")
+            # 2. 외부 커스텀 API 엔드포인트 (Base URL, API Key)
+            chk_custom = QCheckBox("외부 커스텀 API 엔드포인트 (Base URL, API Key) 직접 지정")
             chk_custom.setChecked(node["is_custom"])
             c_layout.addWidget(chk_custom)
 
             custom_container = QWidget()
             cust_layout = QVBoxLayout(custom_container)
-            cust_layout.setContentsMargins(0, 4, 0, 4)
+            cust_layout.setContentsMargins(0, 2, 0, 2)
             cust_layout.setSpacing(6)
 
-            # Base URL
             h_u = QHBoxLayout()
             lbl_u = QLabel("Base URL:")
-            lbl_u.setFixedWidth(70)
+            lbl_u.setFixedWidth(85)
             h_u.addWidget(lbl_u)
             txt_url = QLineEdit()
             txt_url.setText(node.get("base_url", ""))
-            txt_url.setPlaceholderText("예: https://api.openai.com/v1 (비워두면 기본값)")
+            txt_url.setPlaceholderText("예: http://localhost:11434/v1 또는 https://api.openai.com/v1")
             h_u.addWidget(txt_url)
             cust_layout.addLayout(h_u)
 
-            # API Key
             h_k = QHBoxLayout()
             lbl_k = QLabel("API Key:")
-            lbl_k.setFixedWidth(70)
+            lbl_k.setFixedWidth(85)
             h_k.addWidget(lbl_k)
             txt_key = QLineEdit()
             txt_key.setEchoMode(QLineEdit.Password)
@@ -1409,8 +1407,129 @@ class SettingsDialog(QDialog):
 
             custom_container.setVisible(node["is_custom"])
             chk_custom.toggled.connect(custom_container.setVisible)
-
             c_layout.addWidget(custom_container)
+
+            # 3. Temperature 슬라이더 (0.0 ~ 2.0, 0.1 단위)
+            init_temp = max(0.0, min(2.0, float(node.get("temperature", 0.7))))
+            h_temp = QHBoxLayout()
+            lbl_temp_title = QLabel("Temperature:")
+            lbl_temp_title.setFixedWidth(85)
+            lbl_temp_title.setStyleSheet("color: #d0bcff; font-weight: bold;")
+            h_temp.addWidget(lbl_temp_title)
+
+            slider_temp = QSlider(Qt.Horizontal)
+            slider_temp.setMinimum(0)
+            slider_temp.setMaximum(20)
+            slider_temp.setSingleStep(1)
+            slider_temp.setPageStep(1)
+            slider_temp.setValue(int(round(init_temp * 10)))
+            h_temp.addWidget(slider_temp, 1)
+
+            lbl_temp_val = QLabel(f"{init_temp:.1f}")
+            lbl_temp_val.setFixedWidth(36)
+            lbl_temp_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            lbl_temp_val.setStyleSheet("color: #d0bcff; font-family: monospace; font-weight: bold;")
+            h_temp.addWidget(lbl_temp_val)
+
+            slider_temp.valueChanged.connect(
+                lambda val, label=lbl_temp_val: label.setText(f"{val / 10.0:.1f}")
+            )
+            c_layout.addLayout(h_temp)
+
+            lbl_temp_hint = QLabel("0.0 (일관성·정확성)  |  1.0 (균형)  |  2.0 (창의성)")
+            lbl_temp_hint.setStyleSheet("color: #64748b; font-size: 11px; margin-left: 85px;")
+            c_layout.addWidget(lbl_temp_hint)
+
+            # 4. 노드 타입별 고유 옵션 (Router: max_loops / LLM: react_loop, max_tool_iterations, tool_instruction)
+            slider_max_loops = None
+            chk_react_loop = None
+            slider_tool_iter = None
+            txt_tool_instruction = None
+
+            if node_type == "router":
+                init_loops = max(1, min(10, int(node.get("max_loops", 5))))
+                h_loops = QHBoxLayout()
+                lbl_loops_title = QLabel("최대 루프 횟수:")
+                lbl_loops_title.setFixedWidth(85)
+                lbl_loops_title.setStyleSheet("color: #d0bcff; font-weight: bold;")
+                h_loops.addWidget(lbl_loops_title)
+
+                slider_max_loops = QSlider(Qt.Horizontal)
+                slider_max_loops.setMinimum(1)
+                slider_max_loops.setMaximum(10)
+                slider_max_loops.setValue(init_loops)
+                h_loops.addWidget(slider_max_loops, 1)
+
+                lbl_loops_val = QLabel(f"{init_loops}회")
+                lbl_loops_val.setFixedWidth(36)
+                lbl_loops_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                lbl_loops_val.setStyleSheet("color: #d0bcff; font-family: monospace; font-weight: bold;")
+                h_loops.addWidget(lbl_loops_val)
+
+                slider_max_loops.valueChanged.connect(
+                    lambda val, label=lbl_loops_val: label.setText(f"{val}회")
+                )
+                c_layout.addLayout(h_loops)
+
+            elif node_type == "llm":
+                chk_react_loop = QCheckBox("ReAct Loop 활성화 (도구 연결 시 다단계 자율 추론 및 재시도)")
+                chk_react_loop.setChecked(bool(node.get("react_loop", True)))
+                c_layout.addWidget(chk_react_loop)
+
+                react_container = QWidget()
+                r_layout = QVBoxLayout(react_container)
+                r_layout.setContentsMargins(16, 2, 0, 4)
+                r_layout.setSpacing(6)
+
+                init_iter = max(1, min(5, int(node.get("max_tool_iterations", 3))))
+                h_iter = QHBoxLayout()
+                lbl_iter_title = QLabel("최대 도구 실행:")
+                lbl_iter_title.setFixedWidth(85)
+                lbl_iter_title.setStyleSheet("color: #4cd7f6; font-weight: 600;")
+                h_iter.addWidget(lbl_iter_title)
+
+                slider_tool_iter = QSlider(Qt.Horizontal)
+                slider_tool_iter.setMinimum(1)
+                slider_tool_iter.setMaximum(5)
+                slider_tool_iter.setValue(init_iter)
+                h_iter.addWidget(slider_tool_iter, 1)
+
+                lbl_iter_val = QLabel(f"{init_iter}회")
+                lbl_iter_val.setFixedWidth(36)
+                lbl_iter_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                lbl_iter_val.setStyleSheet("color: #4cd7f6; font-family: monospace; font-weight: bold;")
+                h_iter.addWidget(lbl_iter_val)
+
+                slider_tool_iter.valueChanged.connect(
+                    lambda val, label=lbl_iter_val: label.setText(f"{val}회")
+                )
+                r_layout.addLayout(h_iter)
+
+                lbl_tool_inst = QLabel("도구 평가 및 재시도 지침 (선택):")
+                lbl_tool_inst.setStyleSheet("color: #94a3b8; font-size: 11px; font-weight: 600;")
+                r_layout.addWidget(lbl_tool_inst)
+
+                txt_tool_instruction = QTextEdit()
+                txt_tool_instruction.setFixedHeight(58)
+                txt_tool_instruction.setPlaceholderText("예: 검색 결과가 충분하지 않으면 키워드를 변경하여 재검색하세요.")
+                txt_tool_instruction.setPlainText(node.get("tool_instruction", ""))
+                r_layout.addWidget(txt_tool_instruction)
+
+                react_container.setVisible(chk_react_loop.isChecked())
+                chk_react_loop.toggled.connect(react_container.setVisible)
+                c_layout.addWidget(react_container)
+
+            # 5. 시스템 프롬프트 / 역할 지침 (모든 설정 가능 AI 노드 공통)
+            lbl_prompt = QLabel(prompt_label_map.get(node_type, "시스템 프롬프트 (System Prompt):"))
+            lbl_prompt.setStyleSheet("color: #4d8eff; font-size: 12px; font-weight: bold; margin-top: 2px;")
+            c_layout.addWidget(lbl_prompt)
+
+            txt_system_prompt = QTextEdit()
+            txt_system_prompt.setFixedHeight(86)
+            txt_system_prompt.setPlaceholderText("노드의 역할과 행동 지침을 입력하세요...")
+            txt_system_prompt.setPlainText(node.get("system_prompt", ""))
+            c_layout.addWidget(txt_system_prompt)
+
             self.scroll_layout.addWidget(card)
 
             self.node_input_widgets[node["id"]] = {
@@ -1418,13 +1537,18 @@ class SettingsDialog(QDialog):
                 "txt_model": txt_model,
                 "txt_url": txt_url,
                 "txt_key": txt_key,
+                "slider_temp": slider_temp,
+                "txt_system_prompt": txt_system_prompt,
+                "slider_max_loops": slider_max_loops,
+                "chk_react_loop": chk_react_loop,
+                "slider_tool_iter": slider_tool_iter,
+                "txt_tool_instruction": txt_tool_instruction,
                 "node_info": node
             }
 
         self.scroll_layout.addStretch()
 
     def on_save_settings(self):
-        # 테마 설정 저장
         selected_theme = "light" if self.radio_light.isChecked() else "dark"
         self.selected_theme = selected_theme
         set_app_theme(selected_theme)
@@ -1435,16 +1559,32 @@ class SettingsDialog(QDialog):
 
         updated_configs = {}
         for node_id, w in self.node_input_widgets.items():
+            node_type = w["node_info"].get("type", "llm")
             is_custom = w["chk_custom"].isChecked()
-            # 사용자가 입력한 모델명을 항상 우선 적용
             model_val = w["txt_model"].text().strip() or (w["node_info"].get("model") or DEFAULT_MODEL)
-            updated_configs[node_id] = {
+            temp_val = round(w["slider_temp"].value() / 10.0, 1)
+            sys_prompt_val = w["txt_system_prompt"].toPlainText().strip()
+
+            cfg_entry: Dict[str, Any] = {
                 "is_custom": is_custom,
                 "model": model_val,
                 "base_url": w["txt_url"].text().strip() if is_custom else "",
                 "api_key": w["txt_key"].text().strip() if is_custom else "",
-                "temperature": float(w["node_info"].get("temperature", 0.7))
+                "temperature": temp_val,
+                "system_prompt": sys_prompt_val,
             }
+
+            if node_type == "router" and w.get("slider_max_loops") is not None:
+                cfg_entry["max_loops"] = int(w["slider_max_loops"].value())
+            elif node_type == "llm":
+                if w.get("chk_react_loop") is not None:
+                    cfg_entry["react_loop"] = bool(w["chk_react_loop"].isChecked())
+                if w.get("slider_tool_iter") is not None:
+                    cfg_entry["max_tool_iterations"] = int(w["slider_tool_iter"].value())
+                if w.get("txt_tool_instruction") is not None:
+                    cfg_entry["tool_instruction"] = w["txt_tool_instruction"].toPlainText().strip()
+
+            updated_configs[node_id] = cfg_entry
 
         self.workflow_dict = update_llm_configs_in_workflow(
             self.workflow_dict, updated_configs, self.workflow_path
@@ -1485,7 +1625,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.workflow_path = None
         self.compiled_graph = None
         
-        # 활성 실행 상태 관리 (세션별 격리 및 복원용)
         self.active_executions: Dict[str, Dict[str, Any]] = {}
         self.current_worker: Optional[AgentExecutionWorker] = None
         
@@ -1521,7 +1660,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         s_layout.setContentsMargins(18, 20, 18, 18)
         s_layout.setSpacing(12)
 
-        # 서비스 로고 (NOA-E Logo 단독 표시, 아이콘 추가 없음)
         logo_path = get_asset_path("logo.png")
         if os.path.exists(logo_path):
             lbl_brand = QLabel()
@@ -1535,13 +1673,11 @@ class AgentRuntimeMainWindow(QMainWindow):
             lbl_brand.setObjectName("AppBrandLabel")
             s_layout.addWidget(lbl_brand)
 
-        # 에이전트 이름
         self.lbl_agent_name = QLabel("에이전트 미로드")
         self.lbl_agent_name.setObjectName("AgentTitle")
         self.lbl_agent_name.setWordWrap(True)
         s_layout.addWidget(self.lbl_agent_name)
 
-        # 에이전트 설명
         self.lbl_agent_desc = QLabel("하단 설정에서 에이전트를 불러와주세요.")
         self.lbl_agent_desc.setObjectName("AgentDesc")
         self.lbl_agent_desc.setWordWrap(True)
@@ -1549,7 +1685,6 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         s_layout.addSpacing(6)
 
-        # 새로운 대화 버튼
         btn_new_chat = QPushButton("새로운 대화")
         btn_new_chat.setObjectName("PrimaryButton")
         btn_new_chat.clicked.connect(self.on_click_new_chat_button)
@@ -1559,7 +1694,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         lbl_sess_header.setStyleSheet("color: #7a889b; font-size: 11px; font-weight: bold; margin-top: 10px; background: transparent; border: none;")
         s_layout.addWidget(lbl_sess_header)
 
-        # 세션 목록 스크롤 영역
         self.scroll_sessions = QScrollArea()
         self.scroll_sessions.setWidgetResizable(True)
         self.scroll_sessions.setFrameShape(QFrame.NoFrame)
@@ -1571,7 +1705,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.scroll_sessions.setWidget(self.sessions_container)
         s_layout.addWidget(self.scroll_sessions)
 
-        # 좌측 하단 설정 버튼
         btn_settings = QPushButton("에이전트 로드 / 설정")
         btn_settings.setObjectName("SettingsButton")
         btn_settings.clicked.connect(self.on_open_settings)
@@ -1587,7 +1720,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         r_layout.setContentsMargins(0, 0, 0, 0)
         r_layout.setSpacing(0)
 
-        # 상단 헤더 (제목만 표시)
         header = QFrame()
         header.setObjectName("ChatHeader")
         h_layout = QHBoxLayout(header)
@@ -1598,7 +1730,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         h_layout.addStretch()
         r_layout.addWidget(header)
 
-        # 중앙 메시지 영역
         self.chat_scroll = QScrollArea()
         self.chat_scroll.setWidgetResizable(True)
         self.chat_scroll.setFrameShape(QFrame.NoFrame)
@@ -1610,7 +1741,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.chat_scroll.setWidget(self.chat_scroll_content)
         r_layout.addWidget(self.chat_scroll)
 
-        # 하단 입력 영역
         self.input_container = QFrame()
         self.input_container.setObjectName("InputContainerFrame")
         in_layout = QHBoxLayout(self.input_container)
@@ -1632,7 +1762,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         main_layout.addWidget(right_panel)
 
     def load_default_or_last_workflow(self):
-        # 1. 가장 마지막에 사용했던 에이전트 경로 확인
         last_path = get_last_agent_path()
         target_path = None
 
@@ -1659,8 +1788,13 @@ class AgentRuntimeMainWindow(QMainWindow):
             type_map = {
                 "inputNode": "input",
                 "llmNode": "llm",
+                "plannerNode": "planner",
+                "routerNode": "router",
+                "aggregatorNode": "aggregator",
                 "outputNode": "output",
                 "searchNode": "search",
+                "weatherNode": "weather",
+                "youtubeNode": "youtube",
                 "calculatorNode": "calculator",
                 "agentNode": "agent"
             }
@@ -1670,7 +1804,10 @@ class AgentRuntimeMainWindow(QMainWindow):
                         "id": n.get("id"),
                         "type": type_map.get(n.get("type"), n.get("type")),
                         "label": n.get("label") or n.get("data", {}).get("label"),
-                        "config": n.get("config", {}) or n.get("data", {}).get("config", {})
+                        "config": {
+                            **(n.get("config", {}) or n.get("data", {}).get("config", {})),
+                            "label": n.get("label") or n.get("data", {}).get("label") or n.get("type"),
+                        }
                     }
                     for n in workflow_dict.get("nodes", [])
                 ],
@@ -1685,7 +1822,6 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.current_agent_name = meta.get("agent_name", "Local Agent")
             agent_desc = meta.get("description", "설명 없음")
             
-            # Agent ID 설정 (없으면 파일명 기반 고유 ID 생성)
             fallback_id = f"agent-{os.path.splitext(os.path.basename(file_path))[0]}" if file_path else "default-agent"
             self.current_agent_id = meta.get("agent_id") or fallback_id
 
@@ -1702,7 +1838,6 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.lbl_agent_name.setText(self.current_agent_name)
             self.lbl_agent_desc.setText(agent_desc)
 
-            # 에이전트별 대화 세션 기록 로드
             self.sessions = load_sessions(self.current_agent_id)
             self.current_session_id = self.sessions[0]["id"] if self.sessions else None
             self.is_new_chat_mode = False
@@ -1780,7 +1915,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         has_sessions = len(self.sessions) > 0
         is_active = has_sessions or self.is_new_chat_mode
 
-        # 세션 0개이고 새 대화 모드가 아닐 때 입력창 숨김
         self.input_container.setVisible(is_active)
 
         if not self.current_session_id:
@@ -1810,7 +1944,6 @@ class AgentRuntimeMainWindow(QMainWindow):
             logs = msg.get("logs", [])
             self.add_message_bubble(role, content, logs)
 
-        # 만약 이 세션이 현재 실행 중인 상태라면 진행 중인 로그/로딩 버블 복원
         if self.current_session_id in self.active_executions:
             exec_state = self.active_executions[self.current_session_id]
             if exec_state.get("is_running", False):
@@ -1890,14 +2023,12 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.chat_messages_layout.insertWidget(idx, row_widget)
 
     def on_submit_or_stop(self):
-        # 1. 만약 현재 실행 중이라면 정지(Stop) 수행
         if self.current_worker and self.current_worker.isRunning():
             self.current_worker.stop()
             self.current_worker.wait(500)
             self.set_executing_state(False)
             return
 
-        # 2. 전송(Send) 수행
         text = self.txt_input.text().strip()
         if not text:
             return
@@ -1906,7 +2037,6 @@ class AgentRuntimeMainWindow(QMainWindow):
             QMessageBox.warning(self, "에이전트 미로드", "실행 가능한 에이전트가 없습니다.\n좌측 하단 [에이전트 로드 / 설정]에서 워크플로우를 불러와주세요.")
             return
 
-        # 새 세션 모드였다면 실제 세션 생성
         if not self.current_session_id or self.is_new_chat_mode:
             title = text[:18]
             new_s = create_new_session(
@@ -1923,7 +2053,6 @@ class AgentRuntimeMainWindow(QMainWindow):
         if not curr_session:
             return
 
-        # 첫 질문인 경우 세션 제목 업데이트
         if len(curr_session.get("messages", [])) == 0:
             curr_session["title"] = text[:18]
             self.lbl_chat_title.setText(curr_session["title"])
@@ -1932,14 +2061,12 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.txt_input.clear()
         self.set_executing_state(True)
 
-        # 기존 플레이스홀더 라벨 제거
         if len(curr_session.get("messages", [])) == 0:
             while self.chat_messages_layout.count() > 1:
                 item = self.chat_messages_layout.takeAt(0)
                 if item.widget():
                     item.widget().deleteLater()
 
-        # 1. 사용자 메시지 버블 추가 및 에이전트별 파일 영구 저장
         self.add_message_bubble("user", text)
         curr_session["messages"].append({
             "role": "user",
@@ -1953,7 +2080,6 @@ class AgentRuntimeMainWindow(QMainWindow):
             title=curr_session["title"]
         )
 
-        # 2. 점(...) 애니메이션 말풍선 표시
         self.loading_bubble = PureDotsAnimationWidget()
         idx = max(0, self.chat_messages_layout.count() - 1)
         self.chat_messages_layout.insertWidget(idx, self.loading_bubble)
@@ -1963,7 +2089,6 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.chat_scroll.verticalScrollBar().maximum()
         )
 
-        # 3. 비동기 Worker 실행 & active_executions에 등록
         target_sid = self.current_session_id
         self.active_executions[target_sid] = {
             "is_running": True,

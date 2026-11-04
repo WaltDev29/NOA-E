@@ -45,18 +45,23 @@ def run_cli_chat(workflow_path: str):
     print(f"{Fore.YELLOW}• 워크플로우 경로: {workflow_path}")
 
     llm_nodes = extract_llm_nodes(workflow_json)
-    print(f"{Fore.YELLOW}• 감지된 LLM/Agent 노드: {len(llm_nodes)}개")
+    print(f"{Fore.YELLOW}• 감지된 설정 가능 노드: {len(llm_nodes)}개")
     for n in llm_nodes:
         mode_str = "커스텀 API" if n["is_custom"] else "기본 서버 Ollama"
-        print(f"   - [{n['id']}] {n['label']} (Model: {n['model']}, 모드: {mode_str})")
+        print(f"   - [{n['id']}] {n['label']} (Type: {n['type']}, Model: {n['model']}, 모드: {mode_str})")
 
     print(f"\n{Fore.CYAN}[컴파일 중...] LangGraph StateGraph 구축 중...")
     try:
         type_map = {
             "inputNode": "input",
             "llmNode": "llm",
+            "plannerNode": "planner",
+            "routerNode": "router",
+            "aggregatorNode": "aggregator",
             "outputNode": "output",
             "searchNode": "search",
+            "weatherNode": "weather",
+            "youtubeNode": "youtube",
             "calculatorNode": "calculator",
             "agentNode": "agent"
         }
@@ -65,7 +70,11 @@ def run_cli_chat(workflow_path: str):
                 {
                     "id": n.get("id"),
                     "type": type_map.get(n.get("type"), n.get("type")),
-                    "config": n.get("config", {}) or n.get("data", {}).get("config", {})
+                    "label": n.get("label") or n.get("data", {}).get("label"),
+                    "config": {
+                        **(n.get("config", {}) or n.get("data", {}).get("config", {})),
+                        "label": n.get("label") or n.get("data", {}).get("label") or n.get("type"),
+                    }
                 }
                 for n in workflow_json.get("nodes", [])
             ],
@@ -105,11 +114,17 @@ def run_cli_chat(workflow_path: str):
                 "input_text": user_input,
                 "current_output": "",
                 "messages": conversation_messages,
-                "logs": []
+                "logs": [],
+                "plan": None,
+                "current_step": 0,
+                "intermediate_steps": [],
+                "loop_count": 0,
+                "next_worker": None,
+                "routing_result": None,
             }
 
             print(f"\n{Fore.MAGENTA}🤖 Agent 생각 중...{Style.RESET_ALL}")
-            result = graph.invoke(initial_state)
+            result = graph.invoke(initial_state, config={"recursion_limit": 40})
             
             output = result.get("current_output", "")
             logs = result.get("logs", [])
@@ -163,7 +178,6 @@ def main():
     if args.cli and args.workflow:
         run_cli_chat(args.workflow)
     else:
-        # 기본값: PySide6 GUI 실행
         run_pyside_gui()
 
 if __name__ == "__main__":
