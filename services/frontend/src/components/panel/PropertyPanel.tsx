@@ -42,8 +42,10 @@ export const PropertyPanel: React.FC = () => {
   const getNodeDefaultName = (nodeType?: string) => {
     const labels: Record<string, string> = {
       inputNode: 'Input',
-      llmNode: 'LLM',
-      agentNode: 'Autonomous Agent',
+      plannerNode: 'Planner',
+      routerNode: 'Router',
+      llmNode: 'LLM (Worker)',
+      aggregatorNode: 'Aggregator',
       searchNode: '웹 검색',
       calculatorNode: '계산기',
       outputNode: 'Output',
@@ -57,8 +59,12 @@ export const PropertyPanel: React.FC = () => {
         return 'login';
       case 'llmNode':
         return 'neurology';
-      case 'agentNode':
-        return 'smart_toy';
+      case 'plannerNode':
+        return 'assignment';
+      case 'routerNode':
+        return 'alt_route';
+      case 'aggregatorNode':
+        return 'auto_awesome';
       case 'searchNode':
         return 'travel_explore';
       case 'calculatorNode':
@@ -177,7 +183,7 @@ export const PropertyPanel: React.FC = () => {
           </div>
         )}
 
-        {(type === 'llmNode' || type === 'agentNode') && (
+        {(type === 'llmNode' || type === 'plannerNode' || type === 'routerNode' || type === 'aggregatorNode') && (
           <>
             {/* 1. 모델명 */}
             <div className="flex flex-col gap-2">
@@ -187,7 +193,7 @@ export const PropertyPanel: React.FC = () => {
               </label>
               <input
                 type="text"
-                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs text-on-surface focus:border-secondary focus:outline-none transition-colors"
+                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs text-on-surface focus:border-secondary focus:outline-none transition-colors font-mono"
                 placeholder="gemma2:2b, gpt-4o-mini..."
                 value={config.model || ''}
                 onChange={(e) => handleChange('model', e.target.value)}
@@ -224,21 +230,98 @@ export const PropertyPanel: React.FC = () => {
               />
             </div>
 
-            {/* 4. 시스템 프롬프트 */}
-            {type === 'llmNode' && (
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                  시스템 프롬프트 (System Prompt)
-                </label>
-                <textarea
-                  className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-3 text-xs text-on-surface focus:border-primary focus:outline-none min-h-[120px] resize-y transition-colors leading-relaxed"
-                  placeholder="You are a helpful assistant..."
-                  value={config.system_prompt || ''}
-                  onChange={(e) => handleChange('system_prompt', e.target.value)}
+            {/* Router 전용: 최대 루프 반복 횟수 */}
+            {type === 'routerNode' && (
+              <div className="flex flex-col gap-2 p-3 rounded-xl bg-surface-container/60 border border-secondary/30">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-secondary flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">sync</span>
+                    최대 루프 횟수 (Max Loops)
+                  </label>
+                  <span className="text-xs font-mono font-bold text-secondary">
+                    {config.max_loops ?? 5}회
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={config.max_loops ?? 5}
+                  onChange={(e) => handleChange('max_loops', parseInt(e.target.value, 10))}
+                  className="w-full accent-secondary cursor-pointer"
                 />
+                <p className="text-[11px] text-outline">
+                  Worker 노드로부터 복귀하는 루프가 초과되면 안전하게 종료 경로로 탈출합니다.
+                </p>
               </div>
             )}
+
+            {/* LLM 전용: 도구 ReAct 루프 및 자율 재시도 설정 */}
+            {type === 'llmNode' && (
+              <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-surface-container/60 border border-outline-variant/40">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-on-surface flex items-center gap-1">
+                    <span className="material-symbols-outlined text-tertiary text-[16px]">autorenew</span>
+                    도구 자율 ReAct 루프
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={config.react_loop ?? true}
+                    onChange={(e) => handleChange('react_loop', e.target.checked)}
+                    className="w-4 h-4 accent-tertiary cursor-pointer"
+                  />
+                </div>
+
+                {(config.react_loop ?? true) && (
+                  <>
+                    <div className="flex justify-between items-center pt-1">
+                      <span className="text-[11px] text-outline">최대 도구 실행 횟수:</span>
+                      <span className="text-xs font-mono font-bold text-tertiary">
+                        {config.max_tool_iterations ?? 3}회
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      value={config.max_tool_iterations ?? 3}
+                      onChange={(e) => handleChange('max_tool_iterations', parseInt(e.target.value, 10))}
+                      className="w-full accent-tertiary cursor-pointer"
+                    />
+
+                    <div className="flex flex-col gap-1 pt-1">
+                      <span className="text-[11px] text-outline font-medium">도구 평가 및 재시도 지침:</span>
+                      <textarea
+                        className="w-full rounded-lg border border-outline-variant/40 bg-surface-container-lowest p-2 text-[11px] text-on-surface focus:border-tertiary focus:outline-none min-h-[60px] resize-y"
+                        placeholder="예: 검색 결과가 충분하지 않으면 키워드를 변경하여 재검색하세요."
+                        value={config.tool_instruction || ''}
+                        onChange={(e) => handleChange('tool_instruction', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* 4. 시스템 프롬프트 */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                {type === 'routerNode'
+                  ? '라우팅 규칙 지침 (Routing Instructions)'
+                  : type === 'plannerNode'
+                  ? '계획 수립 지침 (Planner Instructions)'
+                  : type === 'aggregatorNode'
+                  ? '결과 종합 지침 (Aggregator Instructions)'
+                  : '시스템 프롬프트 (System Prompt)'}
+              </label>
+              <textarea
+                className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-3 text-xs text-on-surface focus:border-primary focus:outline-none min-h-[120px] resize-y transition-colors leading-relaxed"
+                placeholder="지침을 입력하세요..."
+                value={config.system_prompt || ''}
+                onChange={(e) => handleChange('system_prompt', e.target.value)}
+              />
+            </div>
           </>
         )}
 

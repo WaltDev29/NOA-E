@@ -10,7 +10,9 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
-  const { logs, isExecuting } = useWorkflowStore();
+  const { logs, isExecuting, activeNodeId, nodes } = useWorkflowStore();
+  const activeNode = nodes.find((n) => n.id === activeNodeId);
+  const activeNodeName = (activeNode?.data as any)?.label || activeNodeId || '노드';
 
   const [panelHeight, setPanelHeight] = useState(180);
   const [isResizing, setIsResizing] = useState(false);
@@ -108,16 +110,19 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
             <span className="text-white">파이프라인 환경 구성 완료. 상단 '실행하기' 버튼을 누르면 에이전트 워크플로우가 시작됩니다.</span>
           </div>
         )}
-        {logs.map((log, i) => (
-          <div key={i} className="flex items-start gap-2 text-slate-300">
-            <span className="text-tertiary shrink-0">➜</span>
-            <span className="text-white font-mono">{log}</span>
-          </div>
-        ))}
+        {logs.map((log, i) => {
+          const isPipelineBoundary = log === '파이프라인 시작' || log === '파이프라인 종료';
+          return (
+            <div key={i} className="flex items-start gap-2 text-slate-300">
+              {!isPipelineBoundary && <span className="text-tertiary shrink-0">➜</span>}
+              <span className={`font-mono ${isPipelineBoundary ? 'text-primary font-bold' : 'text-white'}`}>{log}</span>
+            </div>
+          );
+        })}
         {isExecuting && (
           <div className="flex items-center gap-2 text-tertiary animate-pulse mt-1">
             <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
-            <span className="text-white">노드 파이프라인 처리 중...</span>
+            <span className="text-white">{activeNodeName} 노드 동작 중...</span>
           </div>
         )}
       </div>

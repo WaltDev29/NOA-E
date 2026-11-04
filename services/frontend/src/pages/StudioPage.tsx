@@ -531,7 +531,7 @@ const HiddenRunTrigger: React.FC = () => {
     setIsExecuting(true);
     clearLogs();
     setActiveNodeId(inputNodes[0].id);
-    addLog('파이프라인 실행 시작...');
+    addLog('파이프라인 시작');
 
     let previousOutput = (inputNodes[0]?.data as any)?.config?.input_text || '';
 
@@ -567,7 +567,7 @@ const HiddenRunTrigger: React.FC = () => {
             if (dataStr.trim() === '[DONE]') {
               setIsExecuting(false);
               setActiveNodeId(null);
-              addLog('파이프라인 실행 완료.');
+              addLog('파이프라인 종료');
               return;
             }
 
@@ -578,8 +578,6 @@ const HiddenRunTrigger: React.FC = () => {
               } else {
                 const nodeName = Object.keys(parsed)[0];
                 const stateUpdates = parsed[nodeName];
-
-                addLog(`[${nodeName}] 노드 처리 완료`);
 
                 const targetNode = nodes.find((n) => n.id === nodeName);
                 const nodeInput =
@@ -604,8 +602,27 @@ const HiddenRunTrigger: React.FC = () => {
 
                 previousOutput = nodeOutput || previousOutput;
 
+                const nodeLabel = (targetNode?.data as any)?.label || nodeName;
+
+                // 도구 호출, 라우터 분기 등 세부 로그가 있을 경우 먼저 표시 (노드 라벨 적용)
                 if (stateUpdates.logs && Array.isArray(stateUpdates.logs)) {
-                  addLog(`  -> ${stateUpdates.logs[stateUpdates.logs.length - 1]}`);
+                  for (const logItem of stateUpdates.logs) {
+                    if (
+                      logItem.includes('도구 호출:') ||
+                      logItem.includes('도구 실행 결과:') ||
+                      logItem.includes('배정 작업:') ||
+                      logItem.includes('노드로 분기합니다')
+                    ) {
+                      const formattedLog = logItem.replace(`[${nodeName}]`, `[${nodeLabel}]`);
+                      addLog(formattedLog);
+                    }
+                  }
+                }
+
+                // 사용자가 지정한 노드 라벨([LLM] 등)을 붙여서 출력 결과 표시
+                // 단, Router 노드는 제어 흐름 노드이므로 입력을 그대로 출력(current_output)하지 않음
+                if (nodeOutput && targetNode?.type !== 'routerNode') {
+                  addLog(`[${nodeLabel}] ${nodeOutput}`);
                 }
 
                 if (stateUpdates.current_output) {

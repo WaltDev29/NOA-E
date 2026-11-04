@@ -15,17 +15,22 @@ import { useOnboarding } from '../../context/OnboardingContext';
 import {
   InputNode,
   LLMNode,
-  AgentNode,
   SearchNode,
   CalculatorNode,
   OutputNode,
+  PlannerNode,
+  RouterNode,
+  AggregatorNode,
 } from './CustomNodes';
+import type { Connection, Edge } from '@xyflow/react';
 import CustomEdge from './CustomEdge';
 
 const nodeTypes = {
   inputNode: InputNode,
   llmNode: LLMNode,
-  agentNode: AgentNode,
+  plannerNode: PlannerNode,
+  routerNode: RouterNode,
+  aggregatorNode: AggregatorNode,
   searchNode: SearchNode,
   calculatorNode: CalculatorNode,
   outputNode: OutputNode,
@@ -59,6 +64,27 @@ const EditorInner: React.FC = () => {
   const { showAlert } = useModal();
 
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useWorkflowStore();
+
+  const isValidConnection = useCallback((connection: Edge | Connection) => {
+    if (connection.source === connection.target) return false;
+
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+
+    // Output 노드로부터 나가는 연결 금지
+    if (sourceNode?.type === 'outputNode') return false;
+
+    // Router의 루프 회수 포트(loop-return)로의 역방향 연결 제약:
+    // 시작 노드(Input, Planner)는 루프 회수 포트로 연결될 수 없음
+    if (connection.targetHandle === 'loop-return') {
+      if (sourceNode?.type === 'inputNode' || sourceNode?.type === 'plannerNode') {
+        showAlert('루프 회수 포트는 Worker 노드(LLM, 도구 등)의 작업 완료 후 복귀선만 연결할 수 있습니다.', { type: 'warning' });
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  }, [nodes, showAlert]);
 
   // 에이전트 가이드 시 캔버스가 노드 1개 크기로 과도하게 줌인되지 않도록 넉넉한 뷰포트(zoom 0.8) 유지
   useEffect(() => {
@@ -100,17 +126,37 @@ const EditorInner: React.FC = () => {
 
       const labels: Record<string, string> = {
         inputNode: 'Input',
+        plannerNode: 'Planner',
+        routerNode: 'Router',
         llmNode: 'LLM',
-        agentNode: 'Autonomous Agent',
+        aggregatorNode: 'Aggregator',
         searchNode: '웹 검색',
         calculatorNode: '계산기 도구',
         outputNode: 'Output',
       };
 
       const defaultConfigs: Record<string, any> = {
-        llmNode: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' },
-        agentNode: { model: 'gemma2:2b', system_prompt: 'You are an autonomous agent.' },
         inputNode: { input_text: '' },
+        plannerNode: {
+          model: 'gemma2:2b',
+          system_prompt: '당신은 전략적 AI 플래너입니다. 사용자의 복합 질문을 분석하여 목표를 달성하기 위한 구체적인 단계별 실행 계획을 세우세요.',
+        },
+        routerNode: {
+          model: 'gemma2:2b',
+          max_loops: 5,
+          system_prompt: '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
+        },
+        llmNode: {
+          model: 'gemma2:2b',
+          system_prompt: 'You are a helpful assistant.',
+          react_loop: true,
+          max_tool_iterations: 3,
+          tool_instruction: '',
+        },
+        aggregatorNode: {
+          model: 'gemma2:2b',
+          system_prompt: '당신은 분석 종합 전문가입니다. 다양한 단계에서 수집되고 처리된 정보들을 바탕으로 논리적이고 친절한 최종 답변을 작성하세요.',
+        },
         searchNode: {},
         calculatorNode: {},
         outputNode: {},
@@ -220,6 +266,7 @@ const EditorInner: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}

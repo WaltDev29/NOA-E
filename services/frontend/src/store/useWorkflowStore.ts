@@ -299,17 +299,37 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     const labels: Record<string, string> = {
       inputNode: 'Input',
+      plannerNode: 'Planner',
+      routerNode: 'Router',
       llmNode: 'LLM',
-      agentNode: 'Autonomous Agent',
+      aggregatorNode: 'Aggregator',
       searchNode: '웹 검색',
       calculatorNode: '계산기 도구',
       outputNode: 'Output',
     };
 
     const defaultConfigs: Record<string, any> = {
-      llmNode: { model: 'gemma2:2b', system_prompt: 'You are a helpful assistant.' },
-      agentNode: { model: 'gemma2:2b', system_prompt: 'You are an autonomous agent.' },
       inputNode: { input_text: '' },
+      plannerNode: {
+        model: 'gemma2:2b',
+        system_prompt: '당신은 전략적 AI 플래너입니다. 사용자의 복합 질문을 분석하여 목표를 달성하기 위한 구체적인 단계별 실행 계획을 세우세요.',
+      },
+      routerNode: {
+        model: 'gemma2:2b',
+        max_loops: 5,
+        system_prompt: '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
+      },
+      llmNode: {
+        model: 'gemma2:2b',
+        system_prompt: 'You are a helpful assistant.',
+        react_loop: true,
+        max_tool_iterations: 3,
+        tool_instruction: '',
+      },
+      aggregatorNode: {
+        model: 'gemma2:2b',
+        system_prompt: '당신은 분석 종합 전문가입니다. 다양한 단계에서 수집되고 처리된 정보들을 바탕으로 논리적이고 친절한 최종 답변을 작성하세요.',
+      },
       searchNode: {},
       calculatorNode: {},
       outputNode: {},
@@ -320,9 +340,12 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       if (type === 'searchNode' || type === 'calculatorNode') {
         const toolCount = currentNodes.filter((n) => n.type === 'searchNode' || n.type === 'calculatorNode').length;
         calculatedPos = { x: 380 + (toolCount * 170), y: -40 };
-      } else if (type === 'agentNode') {
-        const agentCount = currentNodes.filter((n) => n.type === 'agentNode').length;
-        calculatedPos = { x: 400 + (agentCount * 40), y: 260 + (agentCount * 40) };
+      } else if (type === 'plannerNode') {
+        calculatedPos = { x: 260, y: 150 };
+      } else if (type === 'routerNode') {
+        calculatedPos = { x: 450, y: 150 };
+      } else if (type === 'aggregatorNode') {
+        calculatedPos = { x: 750, y: 150 };
       } else {
         const lastNode = currentNodes[currentNodes.length - 1];
         calculatedPos = lastNode

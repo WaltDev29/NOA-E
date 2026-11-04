@@ -224,7 +224,9 @@ async def run_workflow(request: WorkflowRequest):
         "outputNode": "output",
         "searchNode": "search",
         "calculatorNode": "calculator",
-        "agentNode": "agent"
+        "plannerNode": "planner",
+        "routerNode": "router",
+        "aggregatorNode": "aggregator",
     }
     
     workflow_json = {
@@ -232,7 +234,7 @@ async def run_workflow(request: WorkflowRequest):
             {
                 "id": n.id, 
                 "type": type_map.get(n.type, n.type), 
-                "config": n.data.get("config", {})
+                "config": {**n.data.get("config", {}), "label": n.data.get("label", n.type)}
             } 
             for n in request.nodes
         ],
@@ -259,7 +261,12 @@ async def run_workflow(request: WorkflowRequest):
         "input_text": initial_text,
         "current_output": "",
         "messages": request.messages,
-        "logs": []
+        "logs": [],
+        "plan": None,
+        "current_step": 0,
+        "intermediate_steps": [],
+        "loop_count": 0,
+        "next_worker": None,
     }
     
     async def event_generator():
@@ -272,7 +279,7 @@ async def run_workflow(request: WorkflowRequest):
             
         try:
             # stream_mode="updates"는 각 노드가 실행될 때 반환하는 상태 업데이트(dict)를 스트리밍합니다.
-            async for chunk in graph.astream(initial_state, stream_mode="updates"):
+            async for chunk in graph.astream(initial_state, stream_mode="updates", config={"recursion_limit": 40}):
                 # chunk is typically {"node_name": {"key": "value"}}
                 yield f"data: {json.dumps(chunk, default=custom_serializer)}\n\n"
             

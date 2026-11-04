@@ -100,40 +100,114 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
       },
     ],
   },
-  agent: {
-    id: 'agent',
-    name: '자율 에이전트 (Autonomous Agent)',
-    subtitle: '스스로 판단하고 도구를 자율 실행하는 독립 에이전트',
+  planner: {
+    id: 'planner',
+    name: '플래너 (Planner)',
+    subtitle: '다단계 작업 계획 수립',
     category: 'LLM',
-    badgeType: 'Agentic',
-    icon: 'smart_toy',
-    accentColor: 'secondary',
-    tagList: ['자율 추론', 'ReAct 아키텍처', '목표 지향', '자동 도구 호출'],
+    badgeType: 'Planning',
+    icon: 'assignment',
+    accentColor: 'primary',
+    tagList: ['계획 수립', 'Task 분해', '전략 플래닝', '복합 질의'],
     description:
-      '자율 에이전트 노드는 주어진 목표(Goal)를 달성하기 위해 필요한 도구(웹 검색, 계산 등)를 스스로 판단하여 단계별로 실행하고, 최종 답변을 종합해내는 고도화된 에이전트 노드입니다.',
+      '플래너 노드는 사용자의 복합 질문을 분석하여, 문제를 해결하기 위해 어떤 순서로 어떤 작업(Task)들을 수행해야 하는지 구체적인 실행 계획 목록을 수립합니다.',
     features: [
       {
-        title: 'ReAct (Reason + Act) 자율 사이클',
-        desc: '생각(Thought) -> 행동(Action) -> 관찰(Observation) 사이클을 스스로 반복 수행',
+        title: '다단계 작업 분해',
+        desc: '복합 질문을 해결하기 위한 개별 태스크들을 순차 목록(Task List)으로 명확히 분할',
       },
       {
-        title: '자율 도구 오케스트레이션',
-        desc: '질문 해결에 필요한 도구를 에이전트가 직접 선택하고 파라미터를 구성해 호출',
+        title: '전략적 플래닝',
+        desc: '어떤 도구나 지능이 필요한지 파악하여 후속 라우터 노드가 분배할 수 있도록 구조화',
       },
       {
-        title: '원스톱 파이프라인 구성',
-        desc: '복잡한 다중 분기 연결 없이 단일 노드로 자율 추론과 작업 완결 지원',
+        title: '유연한 파이프라인 연계',
+        desc: '라우터 없이 LLM 노드나 Output에 바로 연결하여 단독 계획 수립기로도 활용 가능',
       },
     ],
     modelsOrConfigs: [
-      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '추론 모델', context: '로컬 ReAct 에이전트' },
-      { name: 'system_prompt', org: 'System Instruction', badge: '에이전트 지침', context: '자율 행동 규칙 설정' },
+      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '추론 모델', context: '로컬 계획 수립기' },
+      { name: 'system_prompt', org: 'Planner Instructions', badge: '지침', context: '계획 수립 가이드' },
     ],
     examples: [
       {
-        title: '복합 목표 자율 해결 예시',
-        prompt: 'Goal: "2026년 최신 파이썬 버전을 검색하고, 그 버전 번호의 제곱근을 계산해줘."',
-        resultJson: '{\n  "thought": "최신 파이썬 버전 정보를 검색한 후 수학 계산 도구를 실행해야 합니다.",\n  "actions": ["search_web", "calculator"],\n  "final_answer": "최신 파이썬 버전 정보를 바탕으로 연산된 결과입니다."\n}',
+        title: '복합 질의 계획 수립 예시',
+        prompt: 'Input: "2026년 전기차 시장 트렌드를 조사하고 가격 변동성을 분석해줘."',
+        resultJson: '{\n  "plan": [\n    "1. 2026년 전기차 시장 최신 동향 및 주요 모델 검색",\n    "2. 주요 제조사별 배터리 및 차량 가격 변동 데이터 수집",\n    "3. 수집된 데이터를 바탕으로 종합 분석 보고서 작성"\n  ]\n}',
+      },
+    ],
+  },
+  router: {
+    id: 'router',
+    name: '라우터 (Router)',
+    subtitle: '지능형 작업 분기 및 루프 제어',
+    category: 'LLM',
+    badgeType: 'Routing',
+    icon: 'alt_route',
+    accentColor: 'secondary',
+    tagList: ['작업 분기', '루프 제어', '시맨틱 라우팅', '시스템 프롬프트'],
+    description:
+      '라우터 노드는 시스템 지침(System Instructions)과 현재 작업 내용을 분석하여 연결된 Worker 노드 중 가장 알맞은 노드로 작업을 분배하고, 작업 완료 후 루프를 통제합니다.',
+    features: [
+      {
+        title: '자연어 라우팅 지침 제어',
+        desc: '시스템 프롬프트를 통해 자연어로 작업 분기 기준(조건)을 직관적으로 설정',
+      },
+      {
+        title: '제어된 루프 (Controlled Loop)',
+        desc: 'Worker의 작업 완료 후 복귀선(loop-return)을 받아 다음 작업을 순차적으로 배분',
+      },
+      {
+        title: '최대 루프 상한 안전장치',
+        desc: '설정된 최대 루프 횟수(기본 5회) 도달 시 무한 루프 없이 안전하게 종료 경로로 탈출',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'max_loops', org: '1~10회 (기본: 5)', badge: '루프 한도', context: '무한 루프 방지 상한선' },
+      { name: 'system_prompt', org: 'Routing Instructions', badge: '라우팅 지침', context: '자연어 분기 규칙' },
+    ],
+    examples: [
+      {
+        title: '자연어 기반 분기 예시',
+        prompt: 'System: 수학 계산이면 계산기로, 최신 정보면 검색기로 보내세요.\nTask: "2026년 파이썬 출시일 조사하기"',
+        resultJson: '{\n  "selected_worker": "search-1",\n  "reason": "최신 인터넷 정보 조사가 필요한 작업입니다."\n}',
+      },
+    ],
+  },
+  aggregator: {
+    id: 'aggregator',
+    name: '어그리게이터 (Aggregator)',
+    subtitle: '중간 산출물 종합 및 최종 합성',
+    category: '기본',
+    badgeType: 'Synthesis',
+    icon: 'auto_awesome',
+    accentColor: 'tertiary',
+    tagList: ['결과 종합', '보고서 합성', '중복 정리', '최종 완성'],
+    description:
+      '어그리게이터 노드는 여러 단계에서 Worker 노드들이 수집하고 처리한 중간 결과들을 취합하여, 논리적이고 깔끔한 단일 최종 답변으로 합성합니다.',
+    features: [
+      {
+        title: '다중 산출물 자동 종합',
+        desc: '여러 Worker 노드가 거쳐간 중간 실행 단계(intermediate_steps)를 한눈에 수집',
+      },
+      {
+        title: '완성도 높은 답변 합성',
+        desc: '중복 내용을 제거하고 핵심 통찰을 정리하여 마크다운 서식으로 최종 답변 작성',
+      },
+      {
+        title: '독립 모듈러 지원',
+        desc: '루프 파이프라인의 종결점뿐만 아니라 다중 노드의 병렬 취합기로도 유연하게 활용',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '합성 모델', context: '최종 보고서 작성' },
+      { name: 'system_prompt', org: 'Aggregator Instructions', badge: '지침', context: '종합 서식 가이드' },
+    ],
+    examples: [
+      {
+        title: '다단계 결과 종합 예시',
+        prompt: 'Inputs: [검색 결과 요약, 수식 계산 결과]\nQuery: "기술 분석 및 비용 계산"',
+        resultJson: '{\n  "final_answer": "## 2026년 기술 동향 분석 및 비용 산출 보고서\n\n1. 최신 기술 분석: ...\n2. 예상 비용 계산: 총 14,250원\n\n### 결론: ...",\n  "status": "completed"\n}',
       },
     ],
   },
@@ -405,8 +479,10 @@ export const NodeInstructionPage: React.FC = () => {
                         onClick={() => {
                           const nodeTypeMap: Record<string, string> = {
                             input: 'inputNode',
+                            planner: 'plannerNode',
+                            router: 'routerNode',
                             llm: 'llmNode',
-                            agent: 'agentNode',
+                            aggregator: 'aggregatorNode',
                             'web-search': 'searchNode',
                             calculator: 'calculatorNode',
                             output: 'outputNode',
