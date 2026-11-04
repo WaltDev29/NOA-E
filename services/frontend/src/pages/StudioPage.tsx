@@ -116,6 +116,11 @@ export const StudioPage: React.FC = () => {
     }
   }, [user?.id, setNodes, setEdges, addLog]);
 
+  // 컴포넌트 마운트 시: 백엔드 환경 변수 기반 모델 기능(capabilities) 로드
+  useEffect(() => {
+    useWorkflowStore.getState().fetchModelCapabilities();
+  }, []);
+
   // 컴포넌트 마운트 시: Nodes 페이지 등 외부에서 넘어온 노드 추가 요청(?addNode=...) 처리
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -611,7 +616,9 @@ const HiddenRunTrigger: React.FC = () => {
             try {
               const parsed = JSON.parse(dataStr);
               if (parsed.error) {
-                addLog(`에러 발생: ${parsed.error}`);
+                addLog(`❌ [시스템 오류] ${parsed.error}`);
+                setIsExecuting(false);
+                setActiveNodeId(null);
               } else {
                 const nodeName = Object.keys(parsed)[0];
                 const stateUpdates = parsed[nodeName];
@@ -637,11 +644,14 @@ const HiddenRunTrigger: React.FC = () => {
                   }
                 }
 
+                const safeNodeInput = typeof nodeInput === 'string' ? nodeInput : JSON.stringify(nodeInput, null, 2);
+                const safeNodeOutput = typeof nodeOutput === 'string' ? nodeOutput : JSON.stringify(nodeOutput, null, 2);
+
                 appendNodeStep(
                   nodeName,
                   {
-                    input: nodeInput,
-                    output: nodeOutput,
+                    input: safeNodeInput,
+                    output: safeNodeOutput,
                     logs: stateUpdates.logs,
                   },
                   {

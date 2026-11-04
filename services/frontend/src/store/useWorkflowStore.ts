@@ -75,6 +75,10 @@ interface WorkflowState {
   closeOutputModal: () => void;
   activeNodeId: string | null;
   setActiveNodeId: (nodeId: string | null) => void;
+  modelCapabilities: Record<string, { image: boolean; tool: boolean; mcp: boolean; skill: boolean }>;
+  setModelCapabilities: (caps: Record<string, { image: boolean; tool: boolean; mcp: boolean; skill: boolean }>) => void;
+  fetchModelCapabilities: () => Promise<void>;
+
 }
 
 const initialNodes: Node[] = [
@@ -98,6 +102,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   isExecuting: false,
   nodeResults: {},
   selectedResultNodeId: null,
+  modelCapabilities: {},
+  setModelCapabilities: (caps) => set({ modelCapabilities: caps }),
+  fetchModelCapabilities: async () => {
+    try {
+      const res = await (await import('../services/workflowApi')).workflowApi.getAvailableModels();
+      if (res.model_capabilities) {
+        set({ modelCapabilities: res.model_capabilities });
+      }
+    } catch (e) {
+      console.error('Failed to fetch model capabilities:', e);
+    }
+  },
+
   onNodesChange: (changes: NodeChange<Node>[]) => {
     set({
       nodes: applyNodeChanges(changes, get().nodes),
@@ -279,6 +296,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
           edges: parsed.edges,
           selectedNode: null,
           selectedResultNodeId: null,
+  modelCapabilities: {},
+  setModelCapabilities: (caps) => set({ modelCapabilities: caps }),
+  fetchModelCapabilities: async () => {
+    try {
+      const res = await (await import('../services/workflowApi')).workflowApi.getAvailableModels();
+      if (res.model_capabilities) {
+        set({ modelCapabilities: res.model_capabilities });
+      }
+    } catch (e) {
+      console.error('Failed to fetch model capabilities:', e);
+    }
+  },
+
         });
         return parsed.agentName || null;
       }
@@ -381,8 +411,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       routerNode: 'Router',
       llmNode: 'LLM',
       aggregatorNode: 'Aggregator',
-      searchNode: '웹 검색',
-      calculatorNode: '계산기 도구',
+      searchNode: '검색 Tool',
       outputNode: 'Output',
     };
 
@@ -409,14 +438,13 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         system_prompt: '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
       },
       searchNode: {},
-      calculatorNode: {},
       outputNode: {},
     };
 
     let calculatedPos = position;
     if (!calculatedPos) {
-      if (type === 'searchNode' || type === 'calculatorNode') {
-        const toolCount = currentNodes.filter((n) => n.type === 'searchNode' || n.type === 'calculatorNode').length;
+      if (type === 'searchNode') {
+        const toolCount = currentNodes.filter((n) => n.type === 'searchNode').length;
         calculatedPos = { x: 380 + (toolCount * 170), y: -40 };
       } else if (type === 'plannerNode') {
         calculatedPos = { x: 260, y: 150 };

@@ -57,19 +57,11 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
   },
   {
     type: 'searchNode',
-    name: '웹 검색',
+    name: '검색 Tool',
     subtitle: '웹에서 정보 검색',
     icon: 'travel_explore',
     category: '도구',
     color: 'primary',
-  },
-  {
-    type: 'calculatorNode',
-    name: '계산기 도구',
-    subtitle: '정밀 수학 연산',
-    icon: 'calculate',
-    category: '도구',
-    color: 'tertiary',
   },
   {
     type: 'outputNode',

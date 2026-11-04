@@ -213,7 +213,7 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
   },
   'web-search': {
     id: 'web-search',
-    name: '웹 검색 도구 (Web Search)',
+    name: '검색 Tool',
     subtitle: '실시간 인터넷 정보 검색 및 요약 수집',
     category: '도구',
     badgeType: 'Tool',
@@ -245,43 +245,6 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
         title: '최신 트렌드 검색 예시',
         prompt: 'Query: "2026 AI Agent framework trends"',
         resultJson: '{\n  "query": "2026 AI Agent framework trends",\n  "results": [\n    {"title": "Latest Autonomous AI Trends", "snippet": "자율 에이전트 프레임워크 최신 동향..."}\n  ]\n}',
-      },
-    ],
-  },
-  calculator: {
-    id: 'calculator',
-    name: '계산기 도구 (Calculator)',
-    subtitle: '수학 수식 및 정밀 산술 연산 도구',
-    category: '도구',
-    badgeType: 'Tool',
-    icon: 'calculate',
-    accentColor: 'tertiary',
-    tagList: ['도구 노드', '정밀 계산', '사칙연산', '오차 방지'],
-    description:
-      '계산기 노드는 언어 모델이 계산 실수나 환각을 일으키기 쉬운 복잡한 수학 연산과 수식을 정확하고 안전하게 계산해주는 도구 노드입니다.',
-    features: [
-      {
-        title: '정밀 산술 연산 지원',
-        desc: '사칙연산(+, -, *, /) 및 괄호 수식을 오차 없이 안전하고 정확하게 계산',
-      },
-      {
-        title: 'LLM 도구 포트 연동',
-        desc: 'LLM 노드의 상단 도구 포트에 결합되어 수식 계산 필요 시 즉시 호출',
-      },
-      {
-        title: '안전한 샌드박스 연산',
-        desc: '안전한 수식 파서를 적용하여 유효한 수학식만 정밀 계산 후 결과 반환',
-      },
-    ],
-    modelsOrConfigs: [
-      { name: 'engine', org: 'Math Evaluator', badge: '연산 엔진', context: '정밀 수식 연산기' },
-      { name: 'operators', org: '+, -, *, /, ()', badge: '지원 연산', context: '표준 사칙연산 수식' },
-    ],
-    examples: [
-      {
-        title: '복합 수식 계산 예시',
-        prompt: 'Expression: "(15000 * 0.85) + 3000 / 2"',
-        resultJson: '{\n  "expression": "(15000 * 0.85) + 3000 / 2",\n  "result": 14250.0,\n  "status": "success"\n}',
       },
     ],
   },
@@ -484,7 +447,6 @@ export const NodeInstructionPage: React.FC = () => {
                             llm: 'llmNode',
                             aggregator: 'aggregatorNode',
                             'web-search': 'searchNode',
-                            calculator: 'calculatorNode',
                             output: 'outputNode',
                           };
                           const targetType = nodeTypeMap[current.id] || 'llmNode';

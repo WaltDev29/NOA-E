@@ -13,6 +13,19 @@ export interface WorkflowDetail {
   updated_at: string;
 }
 
+export interface ModelCapabilities {
+  image: boolean;
+  tool: boolean;
+  mcp: boolean;
+  skill: boolean;
+}
+
+export interface AvailableModelsResponse {
+  default: string;
+  models: string[];
+  model_capabilities?: Record<string, ModelCapabilities>;
+}
+
 export interface WorkflowSavePayload {
   id?: string;
   user_id: string;
@@ -62,8 +75,8 @@ export const workflowApi = {
     });
   },
 
-  async getAvailableModels(): Promise<{ default: string; models: string[] }> {
-    const res = await apiClient.get<{ default: string; models: string[] }>('/models');
+  async getAvailableModels(): Promise<AvailableModelsResponse> {
+    const res = await apiClient.get<AvailableModelsResponse>('/models');
     return res.data;
   },
 };

@@ -1,7 +1,7 @@
 import json
 import re
 from typing import Dict, Any, List
-from .base import BaseNode
+from .base import BaseNode, extract_text_content
 from ..registry import register_node
 from app.services.llm_service import get_llm
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -124,7 +124,7 @@ class RouterNode(BaseNode):
                 SystemMessage(content=system_instruction),
                 HumanMessage(content=routing_prompt)
             ])
-            raw_content = res.content.strip()
+            raw_content = extract_text_content(res.content).strip()
 
             # JSON 파싱 시도
             match = re.search(r'\{\s*"selected_id"\s*:\s*".*?"\s*\}', raw_content)

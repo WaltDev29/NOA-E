@@ -16,7 +16,6 @@ import {
   InputNode,
   LLMNode,
   SearchNode,
-  CalculatorNode,
   OutputNode,
   PlannerNode,
   RouterNode,
@@ -33,7 +32,6 @@ const nodeTypes = {
   routerNode: RouterNode,
   aggregatorNode: AggregatorNode,
   searchNode: SearchNode,
-  calculatorNode: CalculatorNode,
   outputNode: OutputNode,
 };
 
@@ -136,9 +134,8 @@ const EditorInner: React.FC = () => {
         routerNode: 'Router',
         llmNode: 'LLM',
         aggregatorNode: 'Aggregator',
-        searchNode: '웹 검색',
-        calculatorNode: '계산기 도구',
-        outputNode: 'Output',
+        searchNode: '검색 Tool',
+          outputNode: 'Output',
       };
 
       const defaultConfigs: Record<string, any> = {
@@ -164,8 +161,7 @@ const EditorInner: React.FC = () => {
           system_prompt: '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
         },
         searchNode: {},
-        calculatorNode: {},
-        outputNode: {},
+          outputNode: {},
       };
 
       const newId = getUniqueId(type, currentNodes);

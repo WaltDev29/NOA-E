@@ -24,7 +24,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
       llmNode: 'llm',
       outputNode: 'output',
       searchNode: 'search',
-      calculatorNode: 'calculator',
       agentNode: 'agent',
     };
 

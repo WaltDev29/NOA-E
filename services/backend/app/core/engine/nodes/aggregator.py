@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from .base import BaseNode
+from .base import BaseNode, extract_text_content
 from ..registry import register_node
 from app.services.llm_service import get_llm
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -67,7 +67,7 @@ class AggregatorNode(BaseNode):
                 SystemMessage(content=system_instruction),
                 HumanMessage(content=aggregation_prompt)
             ])
-            content = response.content
+            content = extract_text_content(response.content)
             logs.append(f"[{self.node_id}] 전체 실행 내역 종합 및 최종 답변 작성 완료")
 
             return {

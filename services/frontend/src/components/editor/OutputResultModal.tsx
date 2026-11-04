@@ -56,7 +56,7 @@ export const OutputResultModal: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto min-h-[220px] bg-surface-container-lowest/90 p-5 rounded-xl border border-outline-variant/30 text-sm text-on-surface leading-relaxed select-text font-sans">
           {executionResult ? (
-            <ReactMarkdown>{executionResult}</ReactMarkdown>
+            <ReactMarkdown>{typeof executionResult === 'string' ? executionResult : JSON.stringify(executionResult, null, 2)}</ReactMarkdown>
           ) : (
             <div className="h-full flex items-center justify-center text-outline italic text-xs">
               아직 실행 결과가 없습니다. 상단의 '실행하기'를 먼저 눌러주세요.

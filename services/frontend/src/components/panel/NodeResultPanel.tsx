@@ -2,6 +2,32 @@ import React, { useState } from 'react';
 import { useWorkflowStore, type ExecutionStep } from '../../store/useWorkflowStore';
 import ReactMarkdown from 'react-markdown';
 
+
+const toSafeString = (val: any): string => {
+  if (val === null || val === undefined) return '';
+  if (Array.isArray(val)) {
+    const texts = val
+      .map((item) => (typeof item === 'object' && item?.text ? item.text : typeof item === 'string' ? item : ''))
+      .filter(Boolean);
+    if (texts.length > 0) return texts.join('\n\n');
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.startsWith('[') && (trimmed.includes("'text':") || trimmed.includes('"text":'))) {
+      const match = trimmed.match(/['"]text['"]\s*:\s*(['"])(.*?)\1(?=\s*,|\s*\})/s);
+      if (match && match[2]) {
+        return match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      }
+    }
+    return val;
+  }
+  try {
+    return typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+  } catch {
+    return String(val);
+  }
+};
+
 export const NodeResultPanel: React.FC = () => {
   const {
     selectedNode,
@@ -68,9 +94,8 @@ export const NodeResultPanel: React.FC = () => {
       llmNode: 'LLM',
       aggregatorNode: 'Aggregator',
       agentNode: 'Autonomous Agent',
-      searchNode: '웹 검색',
-      calculatorNode: '계산기',
-      outputNode: 'Output',
+      searchNode: '검색 Tool',
+        outputNode: 'Output',
     };
     return node.data?.label || labels[node.type] || node.id;
   };
@@ -91,8 +116,6 @@ export const NodeResultPanel: React.FC = () => {
         return 'smart_toy';
       case 'searchNode':
         return 'travel_explore';
-      case 'calculatorNode':
-        return 'calculate';
       case 'outputNode':
         return 'output';
       default:
@@ -266,42 +289,48 @@ export const NodeResultPanel: React.FC = () => {
                         </div>
                       </div>
 
-                      {type === 'routerNode' ? (
-                        <div className="py-2.5 px-3 rounded-xl bg-surface-container-high/90 border border-secondary/30 text-xs text-on-surface flex flex-col gap-1.5 select-text shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-secondary text-[18px] shrink-0">
-                              alt_route
-                            </span>
-                            <span className="font-bold text-secondary">
-                              {(step.output || '분기 대기 중').split('\n')[0]}
-                            </span>
-                          </div>
-                          {step.output && step.output.includes('\n') && (
-                            <div className="ml-6.5 text-[11px] text-on-surface font-mono bg-surface-container/70 px-2.5 py-1.5 rounded-lg border border-outline-variant/30 flex items-center gap-1.5 whitespace-pre-wrap">
-                              <span className="material-symbols-outlined text-tertiary text-[14px] shrink-0">
-                                task_alt
-                              </span>
-                              <span>{step.output.split('\n').slice(1).join('\n')}</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="min-h-[90px] max-h-[300px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
-                          {step.output ? (
-                            format === 'markdown' ? (
-                              <div className="prose prose-invert prose-xs max-w-none space-y-1.5">
-                                <ReactMarkdown>{step.output}</ReactMarkdown>
+                      {(() => {
+                        const safeOutput = toSafeString(step.output);
+                        if (type === 'routerNode') {
+                          return (
+                            <div className="py-2.5 px-3 rounded-xl bg-surface-container-high/90 border border-secondary/30 text-xs text-on-surface flex flex-col gap-1.5 select-text shadow-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-secondary text-[18px] shrink-0">
+                                  alt_route
+                                </span>
+                                <span className="font-bold text-secondary">
+                                  {(safeOutput || '분기 대기 중').split('\n')[0]}
+                                </span>
                               </div>
-                            ) : (
-                              <pre className="font-mono whitespace-pre-wrap">{step.output}</pre>
-                            )
-                          ) : (
-                            <div className="text-outline italic py-3 text-center">
-                              출력 결과가 비어있습니다.
+                              {safeOutput && safeOutput.includes('\n') && (
+                                <div className="ml-6.5 text-[11px] text-on-surface font-mono bg-surface-container/70 px-2.5 py-1.5 rounded-lg border border-outline-variant/30 flex items-center gap-1.5 whitespace-pre-wrap">
+                                  <span className="material-symbols-outlined text-tertiary text-[14px] shrink-0">
+                                    task_alt
+                                  </span>
+                                  <span>{safeOutput.split('\n').slice(1).join('\n')}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
+                          );
+                        }
+                        return (
+                          <div className="min-h-[90px] max-h-[300px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
+                            {safeOutput ? (
+                              format === 'markdown' ? (
+                                <div className="prose prose-invert prose-xs max-w-none space-y-1.5">
+                                  <ReactMarkdown>{safeOutput}</ReactMarkdown>
+                                </div>
+                              ) : (
+                                <pre className="font-mono whitespace-pre-wrap">{safeOutput}</pre>
+                              )
+                            ) : (
+                              <div className="text-outline italic py-3 text-center">
+                                출력 결과가 비어있습니다.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}

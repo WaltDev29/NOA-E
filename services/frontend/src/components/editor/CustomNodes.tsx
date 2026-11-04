@@ -204,7 +204,7 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
               <span>ReAct 루프 활성 (최대 {maxToolIterations}회)</span>
             </div>
           ) : (
-            <span className="text-[10px] text-outline mt-0.5">상단에 Tool 연결 가능</span>
+            <span className="text-[10px] text-outline mt-0.5">Tool 연결 시 1회만 사용 (반복 없음)</span>
           )}
         </div>
       </NodeWrapper>
@@ -344,7 +344,7 @@ export const SearchNode = memo(({ id, data, selected }: any) => {
       <NodeWrapper
         id={id}
         selected={selected}
-        title={data?.label || "웹 검색"}
+        title={data?.label || "검색 Tool"}
         badge="Search"
         icon="travel_explore"
         colorType="primary"
@@ -356,29 +356,6 @@ export const SearchNode = memo(({ id, data, selected }: any) => {
         type="source"
         position={Position.Bottom}
         className="!bg-primary"
-      />
-    </>
-  );
-});
-
-export const CalculatorNode = memo(({ id, data, selected }: any) => {
-  return (
-    <>
-      <NodeWrapper
-        id={id}
-        selected={selected}
-        title={data?.label || "계산기 도구"}
-        badge="Calculator"
-        icon="calculate"
-        colorType="tertiary"
-        nodeType="calculatorNode"
-      >
-        <span className="text-[11px] text-outline">정밀 수학 수식 계산 실행</span>
-      </NodeWrapper>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-tertiary"
       />
     </>
   );

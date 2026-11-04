@@ -20,7 +20,7 @@ class WorkflowCompiler:
         aggregator_node_id = None
         
         node_instances = {}
-        tool_node_types = {"search", "calculator"}
+        tool_node_types = {"search"}
         
         # 1. 모든 노드 인스턴스화
         for node_data in nodes:
@@ -59,12 +59,12 @@ class WorkflowCompiler:
             if source_info["type"] == "llm" and target_info["type"] in tool_node_types:
                 if not hasattr(source_info["obj"], "tools"):
                     source_info["obj"].tools = []
-                source_info["obj"].tools.append(target_info["obj"].get_tool())
+                source_info["obj"].add_tool(target_info["obj"].get_tool(), target_info["label"])
                 
             elif target_info["type"] == "llm" and source_info["type"] in tool_node_types:
                 if not hasattr(target_info["obj"], "tools"):
                     target_info["obj"].tools = []
-                target_info["obj"].tools.append(source_info["obj"].get_tool())
+                target_info["obj"].add_tool(source_info["obj"].get_tool(), source_info["label"])
 
         # 3. Router 노드에 연결된 타겟 노드(Worker, Exit) 메타데이터 주입
         router_outgoing_map = {}

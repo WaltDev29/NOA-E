@@ -16,10 +16,35 @@ def load_backend_env() -> Dict[str, str]:
                 with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
 
-                # MODELS_CONFIG={...} 블록 추출 (여러 줄 JSON 지원)
-                models_match = re.search(r"MODELS_CONFIG\s*=\s*(\{.*?\n\s*\})", content, re.DOTALL)
-                if models_match:
-                    env_vars["MODELS_CONFIG"] = models_match.group(1).strip()
+                # MODELS_CONFIG={...} 블록 추출 (중첩 중괄호 완벽 지원)
+                idx = content.find("MODELS_CONFIG")
+                if idx != -1:
+                    eq_idx = content.find("=", idx)
+                    if eq_idx != -1:
+                        brace_start = content.find("{", eq_idx)
+                        if brace_start != -1:
+                            depth = 0
+                            in_str = False
+                            escape = False
+                            for i in range(brace_start, len(content)):
+                                ch = content[i]
+                                if in_str:
+                                    if escape:
+                                        escape = False
+                                    elif ch == "\\":
+                                        escape = True
+                                    elif ch == '"':
+                                        in_str = False
+                                else:
+                                    if ch == '"':
+                                        in_str = True
+                                    elif ch == '{':
+                                        depth += 1
+                                    elif ch == '}':
+                                        depth -= 1
+                                        if depth == 0:
+                                            env_vars["MODELS_CONFIG"] = content[brace_start:i+1].strip()
+                                            break
 
                 # 단일 라인 키=값 파싱
                 for line in content.splitlines():
@@ -118,3 +143,50 @@ def get_llm(custom_config: Optional[Dict[str, Any]] = None):
             reasoning_effort="none" if not (target_model.startswith("o1") or target_model.startswith("o3")) else None
         )
     return llm
+
+
+def extract_model_capabilities(config: Dict[str, Any]) -> Dict[str, bool]:
+    """
+    모델 설정 딕셔너리에서 image, tool, mcp, skill 지원 여부를 추출합니다.
+    기본값은 모두 False이며, 명시적으로 True로 선언된 속성만 True로 설정됩니다.
+    최상위 키("tool": true) 및 중첩 키("capabilities": {"tool": true}) 모두 지원합니다.
+    """
+    caps_data = config.get("capabilities", {}) if isinstance(config.get("capabilities"), dict) else {}
+    
+    def check_bool(key: str) -> bool:
+        # 최상위 키 우선 확인 (대소문자 무관)
+        for k in [key, key.lower(), key.capitalize(), key.upper()]:
+            if k in config:
+                val = config[k]
+                return str(val).lower() in ("true", "1", "yes")
+            if k in caps_data:
+                val = caps_data[k]
+                return str(val).lower() in ("true", "1", "yes")
+        return False
+
+    return {
+        "image": check_bool("image"),
+        "tool": check_bool("tool"),
+        "mcp": check_bool("mcp"),
+        "skill": check_bool("skill")
+    }
+
+def get_backend_models_capabilities() -> Dict[str, Dict[str, bool]]:
+    """
+    모든 등록된 모델의 image, tool, mcp, skill 기능 지원 맵을 동적으로 반환합니다.
+    """
+    default_model, models_config = get_backend_models_config()
+    capabilities_map = {}
+    
+    # 등록된 각 모델의 capabilities 추출
+    for model_name, cfg in models_config.items():
+        if isinstance(cfg, dict):
+            capabilities_map[model_name] = extract_model_capabilities(cfg)
+        else:
+            capabilities_map[model_name] = {"image": False, "tool": False, "mcp": False, "skill": False}
+            
+    # default_model이 누락되어 있다면 기본값(전부 False)으로 추가
+    if default_model not in capabilities_map:
+        capabilities_map[default_model] = {"image": False, "tool": False, "mcp": False, "skill": False}
+        
+    return capabilities_map

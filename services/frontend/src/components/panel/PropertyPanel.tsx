@@ -38,6 +38,9 @@ export const PropertyPanel: React.FC = () => {
       .then((data) => {
         if (!isMounted) return;
         setServerModels(data.models || []);
+        if (data.model_capabilities) {
+          useWorkflowStore.getState().setModelCapabilities(data.model_capabilities);
+        }
       })
       .catch((err) => {
         console.error('사용 가능 모델 목록 조회 실패:', err);
@@ -108,9 +111,8 @@ export const PropertyPanel: React.FC = () => {
 
       aggregatorNode: 'Aggregator',
 
-      searchNode: '웹 검색',
+      searchNode: '검색 Tool',
 
-      calculatorNode: '계산기',
 
       outputNode: 'Output',
 
@@ -148,9 +150,6 @@ export const PropertyPanel: React.FC = () => {
 
         return 'travel_explore';
 
-      case 'calculatorNode':
-
-        return 'calculate';
 
       case 'outputNode':
 
@@ -580,7 +579,7 @@ export const PropertyPanel: React.FC = () => {
 
                     <span className="material-symbols-outlined text-tertiary text-[16px]">autorenew</span>
 
-                    도구 자율 ReAct 루프
+                    ReAct Loop
 
                   </label>
 
@@ -715,7 +714,7 @@ export const PropertyPanel: React.FC = () => {
             <div className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-3 text-xs text-on-surface min-h-[180px] max-h-[400px] overflow-y-auto leading-relaxed select-text">
               {executionResult ? (
                 <div className="prose prose-invert prose-xs max-w-none [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_code]:bg-surface-container [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-surface-container-high [&_pre]:p-2 [&_pre]:rounded-lg [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-2 [&_strong]:text-primary">
-                  <ReactMarkdown>{executionResult}</ReactMarkdown>
+                  <ReactMarkdown>{typeof executionResult === 'string' ? executionResult : JSON.stringify(executionResult, null, 2)}</ReactMarkdown>
                 </div>
               ) : (
                 <span className="text-outline italic">실행 결과가 아직 없습니다.</span>

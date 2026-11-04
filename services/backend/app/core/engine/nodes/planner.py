@@ -1,7 +1,7 @@
 import json
 import re
 from typing import Dict, Any, List
-from .base import BaseNode
+from .base import BaseNode, extract_text_content
 from ..registry import register_node
 from app.services.llm_service import get_llm
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -42,7 +42,7 @@ class PlannerNode(BaseNode):
 
         try:
             response = llm.invoke(messages)
-            raw_content = response.content.strip()
+            raw_content = extract_text_content(response.content).strip()
 
             # JSON 배열 추출 시도
             match = re.search(r'\[\s*".*?"\s*(?:,\s*".*?"\s*)*\]', raw_content, re.DOTALL)
