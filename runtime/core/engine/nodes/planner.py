@@ -46,7 +46,7 @@ class PlannerNode(BaseNode):
             HumanMessage(content=prompt)
         ]
 
-        logs = [f"[{self.node_id}] 플래너가 사용자 요청 분석 및 실행 계획 수립을 시작합니다."]
+        logs = []
 
         try:
             response = llm.invoke(messages)

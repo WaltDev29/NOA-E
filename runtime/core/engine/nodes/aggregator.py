@@ -29,7 +29,7 @@ class AggregatorNode(BaseNode):
             "각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 가독성 좋은 최종 답변을 작성하세요."
         )
 
-        logs = [f"[{self.node_id}] 파이프라인 전체 실행 내역을 종합하여 최종 답변 생성을 시작합니다."]
+        logs = []
 
         summary_sections = []
 
@@ -73,7 +73,6 @@ class AggregatorNode(BaseNode):
                 HumanMessage(content=aggregation_prompt)
             ])
             content = extract_text_content(response.content)
-            logs.append(f"[{self.node_id}] 전체 실행 내역 종합 및 최종 답변 작성 완료")
 
             return {
                 "current_output": content,

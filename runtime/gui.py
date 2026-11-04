@@ -50,116 +50,118 @@ except ModuleNotFoundError:
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
 
 
-DARK_STYLESHEET = """
-QMainWindow, QWidget {
+_CHECK_ICON_PATH = get_asset_path("check.png").replace("\\", "/")
+
+DARK_STYLESHEET = f"""
+QMainWindow, QWidget {{
     background-color: #11151c;
     color: #e6edf3;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
     font-size: 13px;
-}
+}}
 
-QLabel {
+QLabel {{
     background-color: transparent;
     border: none;
     color: #e6edf3;
-}
+}}
 
 /* Sidebar */
-#SidebarFrame {
+#SidebarFrame {{
     background-color: #161b24;
     border-right: 1px solid #222938;
-}
+}}
 
-#AppBrandLabel {
+#AppBrandLabel {{
     font-size: 17px;
     font-weight: 800;
     color: #4d8eff;
     letter-spacing: 0.5px;
     background-color: transparent;
     border: none;
-}
+}}
 
-#AgentTitle {
+#AgentTitle {{
     font-size: 14px;
     font-weight: bold;
     color: #ffffff;
     background-color: transparent;
     border: none;
-}
+}}
 
-#AgentDesc {
+#AgentDesc {{
     font-size: 11px;
     color: #8c9ba5;
     line-height: 1.35;
     background-color: transparent;
     border: none;
-}
+}}
 
 /* Buttons */
-QPushButton {
+QPushButton {{
     background-color: #1f2736;
     border: 1px solid #2c384d;
     color: #e6edf3;
     padding: 8px 14px;
     border-radius: 6px;
     font-weight: 500;
-}
-QPushButton:hover {
+}}
+QPushButton:hover {{
     background-color: #273245;
     border-color: #4d8eff;
-}
-QPushButton:pressed {
+}}
+QPushButton:pressed {{
     background-color: #19202c;
-}
+}}
 
-#PrimaryButton {
+#PrimaryButton {{
     background-color: #3875e8;
     border: 1px solid #4882ee;
     color: #ffffff;
     font-weight: bold;
-}
-#PrimaryButton:hover {
+}}
+#PrimaryButton:hover {{
     background-color: #4a84f3;
     border-color: #6da0ff;
-}
+}}
 
-#StopButton {
+#StopButton {{
     background-color: #ba1a1a;
     border: 1px solid #ff5449;
     color: #ffffff;
     font-weight: bold;
-}
-#StopButton:hover {
+}}
+#StopButton:hover {{
     background-color: #cf2222;
     border-color: #ff736a;
-}
+}}
 
-#SettingsButton {
+#SettingsButton {{
     background-color: #1a2230;
     border: 1px solid #2c384d;
     color: #b9c8de;
     font-weight: 600;
     padding: 10px;
     border-radius: 6px;
-}
-#SettingsButton:hover {
+}}
+#SettingsButton:hover {{
     background-color: #242f42;
     border-color: #4d8eff;
     color: #ffffff;
-}
+}}
 
 /* Session Item */
-#SessionItemWidget {
+#SessionItemWidget {{
     background-color: #1a212d;
     border: 1px solid #232c3d;
     border-radius: 6px;
-}
-#SessionItemWidget[selected="true"] {
+}}
+#SessionItemWidget[selected="true"] {{
     background-color: #222d3d;
     border: 1px solid #4d8eff;
-}
+}}
 
-#SessionDeleteBtn {
+#SessionDeleteBtn {{
     background-color: #2c384d;
     border: 1px solid #3d4d68;
     color: #ff8c82;
@@ -167,105 +169,159 @@ QPushButton:pressed {
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: bold;
-}
-#SessionDeleteBtn:hover {
+}}
+#SessionDeleteBtn:hover {{
     background-color: #ba1a1a;
     border-color: #ff5449;
     color: #ffffff;
-}
+}}
 
 /* Chat Header */
-#ChatHeader {
+#ChatHeader {{
     background-color: #141923;
     border-bottom: 1px solid #222938;
-}
+}}
 
-#ChatHeaderLabel {
+#ChatHeaderLabel {{
     font-size: 15px;
     font-weight: bold;
     color: #ffffff;
     background: transparent;
     border: none;
-}
+}}
 
 /* Message Bubbles */
-#UserBubbleFrame {
+#UserBubbleFrame {{
     background-color: #1e2e45;
     border: 1px solid #2d4263;
     border-radius: 10px;
-}
-#UserBubbleFrame QLabel {
+}}
+#UserBubbleFrame QLabel {{
     color: #f0f6fc;
-}
+}}
 
-#AgentBubbleFrame {
+#AgentBubbleFrame {{
     background-color: #161e2b;
     border: 1px solid #243044;
     border-radius: 10px;
-}
-#AgentBubbleFrame QLabel {
+}}
+#AgentBubbleFrame QLabel {{
     color: #e6edf3;
-}
+}}
 
 /* Scroll Area */
-QScrollArea {
+QScrollArea {{
     background-color: transparent;
     border: none;
-}
+}}
 
 /* Input Box */
-QLineEdit, QTextEdit {
+QLineEdit, QTextEdit {{
     background-color: #161c27;
     border: 1px solid #283345;
     border-radius: 6px;
     padding: 8px 12px;
     color: #ffffff;
     selection-background-color: #4d8eff;
-}
-QLineEdit:focus, QTextEdit:focus {
+}}
+QLineEdit:focus, QTextEdit:focus {{
     border: 1px solid #4d8eff;
-}
+}}
 
-#InputContainerFrame {
+#InputContainerFrame {{
     background-color: #141923;
     border-top: 1px solid #222938;
     padding: 14px 22px;
-}
+}}
 
-/* Dialog */
-QDialog {
+/* Dialog & GroupBox */
+QDialog {{
     background-color: #141923;
     color: #e6edf3;
-}
+}}
 
-/* Radio Buttons */
-QRadioButton {
+QGroupBox {{
+    font-weight: bold;
+    border: 1px solid #283548;
+    border-radius: 6px;
+    padding-top: 14px;
+    color: #4d8eff;
+    background-color: transparent;
+}}
+
+/* CheckBox & Radio Buttons */
+QCheckBox {{
+    color: #e6edf3;
+    font-size: 12px;
+    font-weight: 500;
+    spacing: 8px;
+    background: transparent;
+    padding: 2px 0px;
+}}
+QCheckBox::indicator {{
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #7c8ea6;
+    background-color: #0d131c;
+}}
+QCheckBox::indicator:hover {{
+    border-color: #4d8eff;
+    background-color: #1a2436;
+}}
+QCheckBox::indicator:checked {{
+    background-color: #3875e8;
+    border: 2px solid #6da0ff;
+    image: url("{_CHECK_ICON_PATH}");
+}}
+
+QRadioButton {{
     color: #e6edf3;
     font-size: 13px;
     spacing: 8px;
     background: transparent;
-}
-QRadioButton::indicator {
+}}
+QRadioButton::indicator {{
     width: 16px;
     height: 16px;
     border-radius: 8px;
-    border: 1px solid #3d4d68;
+    border: 2px solid #64748b;
     background-color: #161c27;
-}
-QRadioButton::indicator:checked {
+}}
+QRadioButton::indicator:checked {{
     background-color: #4d8eff;
     border: 3px solid #141923;
-}
+}}
+
+/* Slider */
+QSlider::groove:horizontal {{
+    border: 1px solid #283548;
+    height: 6px;
+    background: #1a2230;
+    border-radius: 3px;
+}}
+QSlider::sub-page:horizontal {{
+    background: #4d8eff;
+    border-radius: 3px;
+}}
+QSlider::handle:horizontal {{
+    background: #ffffff;
+    border: 2px solid #4d8eff;
+    width: 14px;
+    height: 14px;
+    margin: -5px 0;
+    border-radius: 7px;
+}}
 
 /* Tab Widget */
-QTabWidget::pane {
+QTabWidget::pane {{
     border: 1px solid #283548;
     background-color: #141923;
     border-radius: 8px;
     top: -1px;
-}
+}}
 
-QTabBar::tab {
+QTabBar::tab {{
     background-color: #1a2230;
     border: 1px solid #283548;
     color: #94a3b8;
@@ -274,36 +330,156 @@ QTabBar::tab {
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     font-weight: 600;
-}
+}}
 
-QTabBar::tab:selected {
+QTabBar::tab:selected {{
     background-color: #141923;
     border-bottom-color: #141923;
     color: #4d8eff;
-}
+}}
 
-QTabBar::tab:hover:!selected {
+QTabBar::tab:hover:!selected {{
     background-color: #232d3f;
     color: #e6edf3;
-}
+}}
 
 /* Agent List in Settings */
-QListWidget#AgentListWidget {
+QListWidget#AgentListWidget {{
     background-color: #0f131a;
     border: 1px solid #263345;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 6px;
-}
+    outline: none;
+}}
 
-QListWidget#AgentListWidget::item {
-    background-color: #161c26;
-    border: 1px solid #222c3c;
-    border-radius: 6px;
+QListWidget#AgentListWidget::item {{
+    background: transparent;
+    border: none;
     margin: 4px 2px;
-}
+}}
+
+QFrame#AgentItemCard {{
+    background-color: #161c26;
+    border: 1px solid #243044;
+    border-radius: 8px;
+}}
+QFrame#AgentItemCard:hover {{
+    background-color: #1c2535;
+    border: 1px solid #3b5275;
+}}
+QFrame#AgentItemCard[selected="true"] {{
+    background-color: #1c2c47;
+    border: 2px solid #4d8eff;
+    border-radius: 8px;
+}}
+QLabel#AgentCheckBadge {{
+    background-color: #3875e8;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 5px 11px;
+    border-radius: 12px;
+}}
+QLabel#AgentItemName {{
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffffff;
+    background: transparent;
+}}
+QLabel#AgentItemId {{
+    font-size: 11px;
+    font-weight: 600;
+    font-family: monospace;
+    color: #7dd3fc;
+    background: transparent;
+}}
+QLabel#AgentItemPath {{
+    font-size: 11px;
+    color: #94a3b8;
+    background: transparent;
+}}
+QLabel#AgentItemDescKey {{
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: transparent;
+}}
+QLabel#AgentItemDescVal {{
+    font-size: 11px;
+    color: #cbd5e1;
+    background: transparent;
+}}
+
+/* Node Accordion Card in Settings */
+QFrame#NodeConfigCard {{
+    background-color: #171d27;
+    border: 1px solid #2b394d;
+    border-radius: 8px;
+}}
+QPushButton#NodeAccordionHeader {{
+    background-color: #1b2330;
+    border: none;
+    border-radius: 7px;
+    color: #e6edf3;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px 14px;
+}}
+QPushButton#NodeAccordionHeader:hover {{
+    background-color: #232e40;
+    color: #ffffff;
+}}
+QPushButton#NodeAccordionHeader[expanded="true"] {{
+    background-color: #1e293b;
+    border-bottom: 1px solid #2b394d;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    color: #7dd3fc;
+}}
+QLabel#NodeFieldCyanLabel {{
+    color: #4cd7f6;
+    font-weight: bold;
+}}
+QLabel#NodeFieldPurpleLabel {{
+    color: #d0bcff;
+    font-weight: bold;
+}}
+QLabel#NodeFieldBlueLabel {{
+    color: #4d8eff;
+    font-size: 12px;
+    font-weight: bold;
+}}
+QLabel#NodeFieldSubLabel {{
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QLabel#NodeFieldHintLabel {{
+    color: #64748b;
+    font-size: 11px;
+    margin-left: 85px;
+}}
+QLabel#SectionInfoLabel {{
+    color: #4cd7f6;
+    font-size: 12px;
+    font-weight: bold;
+}}
+QLabel#SectionSubTitleLabel {{
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QFrame#NodeSectionDivider {{
+    background-color: #283548;
+    border: none;
+    min-height: 1px;
+    max-height: 1px;
+    margin: 4px 0px;
+}}
 
 /* Thought Log & Pure Dots (Dark) */
-#ThoughtLogToggleBtn {
+#ThoughtLogToggleBtn {{
     background-color: #171f2b;
     border: 1px solid #263245;
     border-radius: 6px;
@@ -312,161 +488,165 @@ QListWidget#AgentListWidget::item {
     font-weight: bold;
     text-align: left;
     padding: 7px 10px;
-}
-#ThoughtLogToggleBtn:hover {
+}}
+#ThoughtLogToggleBtn:hover {{
     background-color: #1f2a3a;
     border-color: #4d8eff;
-}
-#ThoughtLogLiveArea, #ThoughtLogBox {
+}}
+#ThoughtLogLiveArea, #ThoughtLogBox {{
     background-color: #0d121a;
     border: 1px solid #243245;
     border-radius: 6px;
-}
-#ThoughtLogItemFrame {
+}}
+#ThoughtLogLiveContent {{
+    background-color: transparent;
+    border: none;
+}}
+#ThoughtLogItemFrame {{
     background-color: #141b26;
     border: 1px solid #263345;
     border-radius: 5px;
-}
-#ThoughtLogItemLabel {
+}}
+#ThoughtLogItemLabel {{
     color: #b0c4de;
     font-family: monospace;
     font-size: 11px;
     line-height: 1.4;
     background: transparent;
     border: none;
-}
-#ThoughtPendingDots {
+}}
+#ThoughtPendingDots {{
     color: #4d8eff;
     font-size: 11px;
     font-style: italic;
     background: transparent;
     border: none;
     padding: 4px;
-}
-#PureDotsFrame {
+}}
+#PureDotsFrame {{
     background-color: #161e2b;
     border: 1px solid #243044;
     border-radius: 10px;
-}
-#PureDotsLabel {
+}}
+#PureDotsLabel {{
     color: #4d8eff;
     font-size: 16px;
     font-weight: bold;
     background: transparent;
     border: none;
-}
+}}
 """
 
-LIGHT_STYLESHEET = """
-QMainWindow, QWidget {
+LIGHT_STYLESHEET = f"""
+QMainWindow, QWidget {{
     background-color: #f8fafc;
     color: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
     font-size: 13px;
-}
+}}
 
-QLabel {
+QLabel {{
     background-color: transparent;
     border: none;
     color: #0f172a;
-}
+}}
 
 /* Sidebar */
-#SidebarFrame {
+#SidebarFrame {{
     background-color: #ffffff;
     border-right: 1px solid #e2e8f0;
-}
+}}
 
-#AppBrandLabel {
+#AppBrandLabel {{
     font-size: 17px;
     font-weight: 800;
     color: #2563eb;
     letter-spacing: 0.5px;
     background-color: transparent;
     border: none;
-}
+}}
 
-#AgentTitle {
+#AgentTitle {{
     font-size: 14px;
     font-weight: bold;
     color: #0f172a;
     background-color: transparent;
     border: none;
-}
+}}
 
-#AgentDesc {
+#AgentDesc {{
     font-size: 11px;
     color: #64748b;
     line-height: 1.35;
     background-color: transparent;
     border: none;
-}
+}}
 
 /* Buttons */
-QPushButton {
+QPushButton {{
     background-color: #f1f5f9;
     border: 1px solid #cbd5e1;
     color: #1e293b;
     padding: 8px 14px;
     border-radius: 6px;
     font-weight: 500;
-}
-QPushButton:hover {
+}}
+QPushButton:hover {{
     background-color: #e2e8f0;
     border-color: #2563eb;
-}
-QPushButton:pressed {
+}}
+QPushButton:pressed {{
     background-color: #cbd5e1;
-}
+}}
 
-#PrimaryButton {
+#PrimaryButton {{
     background-color: #2563eb;
     border: 1px solid #1d4ed8;
     color: #ffffff;
     font-weight: bold;
-}
-#PrimaryButton:hover {
+}}
+#PrimaryButton:hover {{
     background-color: #1d4ed8;
     border-color: #1e40af;
-}
+}}
 
-#StopButton {
+#StopButton {{
     background-color: #dc2626;
     border: 1px solid #b91c1c;
     color: #ffffff;
     font-weight: bold;
-}
-#StopButton:hover {
+}}
+#StopButton:hover {{
     background-color: #b91c1c;
     border-color: #991b1b;
-}
+}}
 
-#SettingsButton {
+#SettingsButton {{
     background-color: #f8fafc;
     border: 1px solid #cbd5e1;
     color: #334155;
     font-weight: 600;
     padding: 10px;
     border-radius: 6px;
-}
-#SettingsButton:hover {
+}}
+#SettingsButton:hover {{
     background-color: #e2e8f0;
     border-color: #2563eb;
     color: #0f172a;
-}
+}}
 
 /* Session Item */
-#SessionItemWidget {
+#SessionItemWidget {{
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-}
-#SessionItemWidget[selected="true"] {
+}}
+#SessionItemWidget[selected="true"] {{
     background-color: #eff6ff;
     border: 1px solid #3b82f6;
-}
+}}
 
-#SessionDeleteBtn {
+#SessionDeleteBtn {{
     background-color: #fee2e2;
     border: 1px solid #fecaca;
     color: #dc2626;
@@ -474,54 +654,54 @@ QPushButton:pressed {
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: bold;
-}
-#SessionDeleteBtn:hover {
+}}
+#SessionDeleteBtn:hover {{
     background-color: #dc2626;
     border-color: #b91c1c;
     color: #ffffff;
-}
+}}
 
 /* Chat Header */
-#ChatHeader {
+#ChatHeader {{
     background-color: #ffffff;
     border-bottom: 1px solid #e2e8f0;
-}
+}}
 
-#ChatHeaderLabel {
+#ChatHeaderLabel {{
     font-size: 15px;
     font-weight: bold;
     color: #0f172a;
     background: transparent;
     border: none;
-}
+}}
 
 /* Message Bubbles */
-#UserBubbleFrame {
+#UserBubbleFrame {{
     background-color: #e0edff;
     border: 1px solid #bfdbfe;
     border-radius: 10px;
-}
-#UserBubbleFrame QLabel {
+}}
+#UserBubbleFrame QLabel {{
     color: #0f172a;
-}
+}}
 
-#AgentBubbleFrame {
+#AgentBubbleFrame {{
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-}
-#AgentBubbleFrame QLabel {
+}}
+#AgentBubbleFrame QLabel {{
     color: #1e293b;
-}
+}}
 
 /* Scroll Area */
-QScrollArea {
+QScrollArea {{
     background-color: transparent;
     border: none;
-}
+}}
 
 /* Input Box */
-QLineEdit, QTextEdit {
+QLineEdit, QTextEdit {{
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
@@ -529,51 +709,105 @@ QLineEdit, QTextEdit {
     color: #0f172a;
     selection-background-color: #bfdbfe;
     selection-color: #0f172a;
-}
-QLineEdit:focus, QTextEdit:focus {
+}}
+QLineEdit:focus, QTextEdit:focus {{
     border: 1px solid #2563eb;
-}
+}}
 
-#InputContainerFrame {
+#InputContainerFrame {{
     background-color: #ffffff;
     border-top: 1px solid #e2e8f0;
     padding: 14px 22px;
-}
+}}
 
-/* Dialog */
-QDialog {
+/* Dialog & GroupBox */
+QDialog {{
     background-color: #ffffff;
     color: #0f172a;
-}
+}}
 
-/* Radio Buttons */
-QRadioButton {
+QGroupBox {{
+    font-weight: bold;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding-top: 14px;
+    color: #2563eb;
+    background-color: #f8fafc;
+}}
+
+/* CheckBox & Radio Buttons */
+QCheckBox {{
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 500;
+    spacing: 8px;
+    background: transparent;
+    padding: 2px 0px;
+}}
+QCheckBox::indicator {{
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #94a3b8;
+    background-color: #ffffff;
+}}
+QCheckBox::indicator:hover {{
+    border-color: #2563eb;
+    background-color: #eff6ff;
+}}
+QCheckBox::indicator:checked {{
+    background-color: #2563eb;
+    border: 2px solid #1d4ed8;
+    image: url("{_CHECK_ICON_PATH}");
+}}
+
+QRadioButton {{
     color: #0f172a;
     font-size: 13px;
     spacing: 8px;
     background: transparent;
-}
-QRadioButton::indicator {
+}}
+QRadioButton::indicator {{
     width: 16px;
     height: 16px;
     border-radius: 8px;
-    border: 1px solid #94a3b8;
+    border: 2px solid #94a3b8;
     background-color: #ffffff;
-}
-QRadioButton::indicator:checked {
+}}
+QRadioButton::indicator:checked {{
     background-color: #2563eb;
     border: 3px solid #ffffff;
-}
+}}
+
+/* Slider */
+QSlider::groove:horizontal {{
+    border: 1px solid #cbd5e1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+}}
+QSlider::sub-page:horizontal {{
+    background: #2563eb;
+    border-radius: 3px;
+}}
+QSlider::handle:horizontal {{
+    background: #ffffff;
+    border: 2px solid #2563eb;
+    width: 14px;
+    height: 14px;
+    margin: -5px 0;
+    border-radius: 7px;
+}}
 
 /* Tab Widget */
-QTabWidget::pane {
+QTabWidget::pane {{
     border: 1px solid #cbd5e1;
     background-color: #ffffff;
     border-radius: 8px;
     top: -1px;
-}
+}}
 
-QTabBar::tab {
+QTabBar::tab {{
     background-color: #f1f5f9;
     border: 1px solid #cbd5e1;
     color: #64748b;
@@ -582,46 +816,156 @@ QTabBar::tab {
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     font-weight: 600;
-}
+}}
 
-QTabBar::tab:selected {
+QTabBar::tab:selected {{
     background-color: #ffffff;
     border-bottom-color: #ffffff;
     color: #2563eb;
-}
+}}
 
-QTabBar::tab:hover:!selected {
+QTabBar::tab:hover:!selected {{
     background-color: #e2e8f0;
     color: #0f172a;
-}
+}}
 
 /* Agent List in Settings */
-QListWidget#AgentListWidget {
-    background-color: #f8fafc;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 6px;
-}
-
-QListWidget#AgentListWidget::item {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    margin: 4px 2px;
-}
-
-QListWidget#AgentListWidget::item:selected {
-    background-color: #eff6ff;
-    border: 1px solid #3b82f6;
-}
-
-QListWidget#AgentListWidget::item:hover {
+QListWidget#AgentListWidget {{
     background-color: #f1f5f9;
-    border-color: #60a5fa;
-}
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px;
+    outline: none;
+}}
+
+QListWidget#AgentListWidget::item {{
+    background: transparent;
+    border: none;
+    margin: 4px 2px;
+}}
+
+QFrame#AgentItemCard {{
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}}
+QFrame#AgentItemCard:hover {{
+    background-color: #f8fafc;
+    border: 1px solid #60a5fa;
+}}
+QFrame#AgentItemCard[selected="true"] {{
+    background-color: #eff6ff;
+    border: 2px solid #2563eb;
+    border-radius: 8px;
+}}
+QLabel#AgentCheckBadge {{
+    background-color: #2563eb;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 5px 11px;
+    border-radius: 12px;
+}}
+QLabel#AgentItemName {{
+    font-size: 14px;
+    font-weight: bold;
+    color: #0f172a;
+    background: transparent;
+}}
+QLabel#AgentItemId {{
+    font-size: 11px;
+    font-weight: 600;
+    font-family: monospace;
+    color: #0284c7;
+    background: transparent;
+}}
+QLabel#AgentItemPath {{
+    font-size: 11px;
+    color: #475569;
+    background: transparent;
+}}
+QLabel#AgentItemDescKey {{
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+}}
+QLabel#AgentItemDescVal {{
+    font-size: 11px;
+    color: #1e293b;
+    background: transparent;
+}}
+
+/* Node Accordion Card in Settings */
+QFrame#NodeConfigCard {{
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}}
+QPushButton#NodeAccordionHeader {{
+    background-color: #f8fafc;
+    border: none;
+    border-radius: 7px;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px 14px;
+}}
+QPushButton#NodeAccordionHeader:hover {{
+    background-color: #f1f5f9;
+    color: #2563eb;
+}}
+QPushButton#NodeAccordionHeader[expanded="true"] {{
+    background-color: #eff6ff;
+    border-bottom: 1px solid #bfdbfe;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    color: #1d4ed8;
+}}
+QLabel#NodeFieldCyanLabel {{
+    color: #0284c7;
+    font-weight: bold;
+}}
+QLabel#NodeFieldPurpleLabel {{
+    color: #7c3aed;
+    font-weight: bold;
+}}
+QLabel#NodeFieldBlueLabel {{
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: bold;
+}}
+QLabel#NodeFieldSubLabel {{
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QLabel#NodeFieldHintLabel {{
+    color: #64748b;
+    font-size: 11px;
+    margin-left: 85px;
+}}
+QLabel#SectionInfoLabel {{
+    color: #0284c7;
+    font-size: 12px;
+    font-weight: bold;
+}}
+QLabel#SectionSubTitleLabel {{
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QFrame#NodeSectionDivider {{
+    background-color: #e2e8f0;
+    border: none;
+    min-height: 1px;
+    max-height: 1px;
+    margin: 4px 0px;
+}}
 
 /* Thought Log & Pure Dots (Light) */
-#ThoughtLogToggleBtn {
+#ThoughtLogToggleBtn {{
     background-color: #eff6ff;
     border: 1px solid #bfdbfe;
     border-radius: 6px;
@@ -630,49 +974,53 @@ QListWidget#AgentListWidget::item:hover {
     font-weight: bold;
     text-align: left;
     padding: 7px 10px;
-}
-#ThoughtLogToggleBtn:hover {
+}}
+#ThoughtLogToggleBtn:hover {{
     background-color: #dbeafe;
     border-color: #2563eb;
-}
-#ThoughtLogLiveArea, #ThoughtLogBox {
+}}
+#ThoughtLogLiveArea, #ThoughtLogBox {{
     background-color: #f1f5f9;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-}
-#ThoughtLogItemFrame {
+}}
+#ThoughtLogLiveContent {{
+    background-color: transparent;
+    border: none;
+}}
+#ThoughtLogItemFrame {{
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 5px;
-}
-#ThoughtLogItemLabel {
+}}
+#ThoughtLogItemLabel {{
     color: #334155;
     font-family: monospace;
     font-size: 11px;
     line-height: 1.4;
     background: transparent;
     border: none;
-}
-#ThoughtPendingDots {
+}}
+#ThoughtPendingDots {{
     color: #2563eb;
     font-size: 11px;
     font-style: italic;
     background: transparent;
     border: none;
     padding: 4px;
-}
-#PureDotsFrame {
+}}
+#PureDotsFrame {{
     background-color: #f1f5f9;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
-}
-#PureDotsLabel {
+}}
+#PureDotsLabel {{
     color: #2563eb;
     font-size: 16px;
     font-weight: bold;
     background: transparent;
     border: none;
-}
+}}
 """
 
 
@@ -684,13 +1032,31 @@ class AgentExecutionWorker(QThread):
     finished_signal = Signal(str, str, list)   # session_id, output, logs
     error_signal = Signal(str, str)            # session_id, error_message
 
-    def __init__(self, session_id: str, compiled_graph, user_input: str, conversation_messages: list):
+    def __init__(
+        self,
+        session_id: str,
+        compiled_graph,
+        user_input: str,
+        conversation_messages: list,
+        workflow_dict: Optional[dict] = None
+    ):
         super().__init__()
         self.session_id = session_id
         self.compiled_graph = compiled_graph
         self.user_input = user_input
         self.conversation_messages = conversation_messages
+        self.workflow_dict = workflow_dict or {}
         self._is_stopped = False
+
+        # 왜: 웹 스튜디오 실행 콘솔과 동일하게 노드 ID 대신 사용자 지정 라벨을 표시하고
+        # Router/일반 노드의 출력 포맷을 일치시키기 위해 노드 메타데이터 맵을 구성합니다.
+        self.node_map: Dict[str, Dict[str, str]] = {}
+        for n in self.workflow_dict.get("nodes", []):
+            nid = n.get("id")
+            if nid:
+                label = n.get("label") or n.get("data", {}).get("label") or nid
+                ntype = n.get("type", "")
+                self.node_map[nid] = {"label": label, "type": ntype}
 
     def stop(self):
         self._is_stopped = True
@@ -713,7 +1079,7 @@ class AgentExecutionWorker(QThread):
             accumulated_logs = []
             final_output = ""
 
-            # stream_mode="updates"를 사용하여 노드 실행 완료 시마다 실시간 로그 전달
+            # stream_mode="updates"를 사용하여 노드 실행 완료 시마다 웹과 동일한 포맷의 실시간 로그 전달
             for chunk in self.compiled_graph.stream(
                 initial_state,
                 stream_mode="updates",
@@ -727,13 +1093,33 @@ class AgentExecutionWorker(QThread):
                     break
 
                 for node_name, state_update in chunk.items():
-                    if "logs" in state_update and state_update["logs"]:
-                        for log_line in state_update["logs"]:
-                            accumulated_logs.append(log_line)
-                            self.step_log_signal.emit(self.session_id, node_name, log_line)
+                    node_meta = self.node_map.get(node_name, {})
+                    node_label = node_meta.get("label") or node_name
+                    node_type = node_meta.get("type", "")
 
-                    if "current_output" in state_update and state_update["current_output"]:
-                        final_output = state_update["current_output"]
+                    node_output = state_update.get("current_output", "")
+                    if node_output:
+                        final_output = node_output
+
+                    # 왜: Input/Output 노드는 채팅 말풍선(사용자 질문/최종 답변)과 중복되므로 사고 과정 로그에서 제외합니다.
+                    if node_type in ("input", "inputNode", "output", "outputNode"):
+                        continue
+
+                    raw_logs = state_update.get("logs") or []
+                    if isinstance(raw_logs, list):
+                        for log_item in raw_logs:
+                            if any(
+                                kw in log_item
+                                for kw in ("도구 호출:", "도구 실행 결과:", "배정 작업:", "노드로 분기합니다")
+                            ):
+                                formatted_log = log_item.replace(f"[{node_name}]", f"[{node_label}]")
+                                accumulated_logs.append(formatted_log)
+                                self.step_log_signal.emit(self.session_id, node_name, formatted_log)
+
+                    if node_output and node_type not in ("router", "routerNode"):
+                        out_log = f"[{node_label}] {node_output}"
+                        accumulated_logs.append(out_log)
+                        self.step_log_signal.emit(self.session_id, node_name, out_log)
 
             if not final_output and not self._is_stopped:
                 final_output = "응답이 생성되지 않았습니다."
@@ -779,8 +1165,8 @@ class ThoughtLogToggleWidget(QWidget):
         self.live_scroll_area.setFixedHeight(200)
 
         self.live_content_widget = QWidget()
+        self.live_content_widget.setObjectName("ThoughtLogLiveContent")
         self.live_content_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.live_content_widget.setStyleSheet("background: transparent; border: none;")
         self.live_layout = QVBoxLayout(self.live_content_widget)
         self.live_layout.setAlignment(Qt.AlignTop)
         self.live_layout.setContentsMargins(6, 6, 6, 6)
@@ -1038,16 +1424,6 @@ class SettingsDialog(QDialog):
         t_agents_layout.setSpacing(12)
 
         grp_browse = QGroupBox("새 에이전트 파일 불러오기")
-        grp_browse.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #283548;
-                border-radius: 6px;
-                padding-top: 14px;
-                color: #4d8eff;
-                background-color: transparent;
-            }
-        """)
         g_browse_layout = QHBoxLayout(grp_browse)
         g_browse_layout.setContentsMargins(12, 12, 12, 12)
         g_browse_layout.setSpacing(8)
@@ -1066,7 +1442,7 @@ class SettingsDialog(QDialog):
         t_agents_layout.addWidget(grp_browse)
 
         lbl_list_title = QLabel("등록된 에이전트 목록 (선택 후 [저장] 클릭 시 해당 에이전트로 즉시 전환됩니다)")
-        lbl_list_title.setStyleSheet("font-size: 12px; font-weight: 600; color: #94a3b8;")
+        lbl_list_title.setObjectName("SectionSubTitleLabel")
         t_agents_layout.addWidget(lbl_list_title)
 
         self.agent_list_widget = QListWidget()
@@ -1086,9 +1462,9 @@ class SettingsDialog(QDialog):
         t_llm_layout.setSpacing(12)
 
         self.lbl_llm_info = QLabel(
-            "현재 선택된 워크플로우의 AI 노드(LLM, Planner, Router, Aggregator) 상세 파라미터를 편집합니다."
+            "현재 선택된 워크플로우의 AI 노드(LLM, Planner, Router, Aggregator) 상세 파라미터를 편집합니다. (노드를 클릭하여 펼치기/접기)"
         )
-        self.lbl_llm_info.setStyleSheet("color: #4cd7f6; font-size: 12px; font-weight: bold;")
+        self.lbl_llm_info.setObjectName("SectionInfoLabel")
         t_llm_layout.addWidget(self.lbl_llm_info)
 
         self.scroll_llm = QScrollArea()
@@ -1097,7 +1473,7 @@ class SettingsDialog(QDialog):
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
         self.scroll_layout.setContentsMargins(0, 0, 4, 0)
-        self.scroll_layout.setSpacing(14)
+        self.scroll_layout.setSpacing(10)
         self.scroll_llm.setWidget(self.scroll_content)
         t_llm_layout.addWidget(self.scroll_llm)
 
@@ -1110,19 +1486,10 @@ class SettingsDialog(QDialog):
         t_theme_layout.setSpacing(14)
 
         lbl_theme_title = QLabel("화면 테마 설정 (Theme Preference)")
-        lbl_theme_title.setStyleSheet("font-size: 13px; font-weight: bold; color: #4d8eff;")
+        lbl_theme_title.setObjectName("NodeFieldBlueLabel")
         t_theme_layout.addWidget(lbl_theme_title)
 
         grp_theme = QGroupBox("애플리케이션 인터페이스 모드")
-        grp_theme.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #283548;
-                border-radius: 6px;
-                padding-top: 14px;
-                background-color: transparent;
-            }
-        """)
         g_theme_layout = QVBoxLayout(grp_theme)
         g_theme_layout.setContentsMargins(14, 16, 14, 16)
         g_theme_layout.setSpacing(12)
@@ -1139,50 +1506,35 @@ class SettingsDialog(QDialog):
 
         g_theme_layout.addWidget(self.radio_dark)
         g_theme_layout.addWidget(self.radio_light)
+        self.radio_light.toggled.connect(self._on_theme_radio_toggled)
         t_theme_layout.addWidget(grp_theme)
         t_theme_layout.addStretch()
 
-        self.tabs.addTab(tab_agents, "에이전트 목록")
-        self.tabs.addTab(tab_llm, "노드 상세 설정")
         # -----------------------------
-        # Tab 4: YouTube API Key 설정
+        # Tab 4: API Key 설정
         # -----------------------------
         tab_youtube = QWidget()
         t_yt_layout = QVBoxLayout(tab_youtube)
         t_yt_layout.setContentsMargins(16, 18, 16, 16)
         t_yt_layout.setSpacing(14)
 
-        lbl_yt_title = QLabel("YouTube 검색 도구 API Key 설정")
-        lbl_yt_title.setStyleSheet("font-size: 13px; font-weight: bold; color: #4d8eff;")
-        t_yt_layout.addWidget(lbl_yt_title)
-
         grp_yt = QGroupBox("YouTube Data API v3 Key")
-        grp_yt.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #283548;
-                border-radius: 6px;
-                padding-top: 14px;
-                background-color: transparent;
-            }
-        """)
         g_yt_layout = QVBoxLayout(grp_yt)
         g_yt_layout.setContentsMargins(14, 16, 14, 16)
         g_yt_layout.setSpacing(10)
 
         lbl_yt_desc = QLabel(
             "워크플로우에 YouTube 검색 도구(YouTube Search Node)가 포함된 경우,\n"
-            "영상을 검색하기 위해 Google Cloud Console에서 발급받은 YouTube Data API v3 Key가 필요합니다.\n"
-            "(DuckDuckGo 웹 검색, Open-Meteo 날씨 조회, 사칙연산 계산기 도구는 별도 API Key 없이 동작합니다.)"
+            "영상을 검색하기 위해 Google Cloud Console에서 발급받은 YouTube Data API v3 Key가 필요합니다."
         )
         lbl_yt_desc.setWordWrap(True)
-        lbl_yt_desc.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.4;")
+        lbl_yt_desc.setObjectName("SectionSubTitleLabel")
         g_yt_layout.addWidget(lbl_yt_desc)
 
         h_yt_input = QHBoxLayout()
         lbl_yt_key = QLabel("API Key:")
         lbl_yt_key.setFixedWidth(70)
-        lbl_yt_key.setStyleSheet("color: #4cd7f6; font-weight: bold;")
+        lbl_yt_key.setObjectName("NodeFieldCyanLabel")
         h_yt_input.addWidget(lbl_yt_key)
 
         self.txt_youtube_api_key = QLineEdit()
@@ -1203,7 +1555,9 @@ class SettingsDialog(QDialog):
         t_yt_layout.addWidget(grp_yt)
         t_yt_layout.addStretch()
 
-        self.tabs.addTab(tab_youtube, "YouTube API 설정")
+        self.tabs.addTab(tab_agents, "에이전트 목록")
+        self.tabs.addTab(tab_llm, "노드 상세 설정")
+        self.tabs.addTab(tab_youtube, "API Key 설정")
         self.tabs.addTab(tab_theme, "화면 테마 설정")
         self.tabs.setCurrentIndex(0)
 
@@ -1223,17 +1577,29 @@ class SettingsDialog(QDialog):
 
         btn_close = QPushButton("닫기")
         btn_close.setFixedWidth(80)
-        btn_close.clicked.connect(self.reject)
+        btn_close.clicked.connect(self.on_cancel_settings)
         h_bottom.addWidget(btn_close)
 
         main_layout.addLayout(h_bottom)
 
         self.refresh_llm_nodes_ui()
 
+    def _on_theme_radio_toggled(self, is_light: bool):
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(LIGHT_STYLESHEET if is_light else DARK_STYLESHEET)
+
+    def on_cancel_settings(self):
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(LIGHT_STYLESHEET if self.current_app_theme == "light" else DARK_STYLESHEET)
+        self.reject()
+
     def refresh_agents_list_ui(self):
         self.agent_list_widget.clear()
         self.registered_agents = load_agents_registry()
-        
+        self.agent_card_widgets = []
+
         if not self.registered_agents:
             item = QListWidgetItem("등록된 에이전트가 없습니다. 상단의 [파일 찾아보기]로 에이전트를 추가하세요.")
             item.setFlags(Qt.NoItemFlags)
@@ -1245,50 +1611,71 @@ class SettingsDialog(QDialog):
             path = agent.get("path", "")
             desc = agent.get("description", "설명 없음")
             agent_id = agent.get("id", "")
-            
-            item_widget = QWidget()
-            g_layout = QGridLayout(item_widget)
+
+            is_selected = bool(
+                self.selected_agent_path
+                and (path == self.selected_agent_path or agent_id == self.selected_agent_path)
+            )
+
+            item_widget = QFrame()
+            item_widget.setObjectName("AgentItemCard")
+            item_widget.setProperty("selected", "true" if is_selected else "false")
+            item_widget.setCursor(QCursor(Qt.PointingHandCursor))
+
+            card_h_layout = QHBoxLayout(item_widget)
+            card_h_layout.setContentsMargins(14, 12, 16, 12)
+            card_h_layout.setSpacing(12)
+
+            g_layout = QGridLayout()
             g_layout.setAlignment(Qt.AlignTop)
-            g_layout.setContentsMargins(14, 12, 14, 12)
+            g_layout.setContentsMargins(0, 0, 0, 0)
             g_layout.setHorizontalSpacing(8)
             g_layout.setVerticalSpacing(4)
 
             lbl_name = QLabel(name)
+            lbl_name.setObjectName("AgentItemName")
             lbl_name.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffffff; background: transparent; border: none;")
             g_layout.addWidget(lbl_name, 0, 0, 1, 2, Qt.AlignTop)
 
             lbl_id_key = QLabel("ID:")
+            lbl_id_key.setObjectName("AgentItemId")
             lbl_id_key.setFixedWidth(42)
             lbl_id_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_id_key.setStyleSheet("font-size: 11px; font-weight: 600; color: #7dd3fc; background: transparent; border: none;")
             lbl_id_val = QLabel(agent_id)
+            lbl_id_val.setObjectName("AgentItemId")
             lbl_id_val.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_id_val.setStyleSheet("font-size: 11px; font-family: monospace; color: #7dd3fc; background: transparent; border: none;")
             g_layout.addWidget(lbl_id_key, 1, 0, Qt.AlignTop)
             g_layout.addWidget(lbl_id_val, 1, 1, Qt.AlignTop)
 
             lbl_path_key = QLabel("경로:")
+            lbl_path_key.setObjectName("AgentItemPath")
             lbl_path_key.setFixedWidth(42)
             lbl_path_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_path_key.setStyleSheet("font-size: 11px; font-weight: 600; color: #94a3b8; background: transparent; border: none;")
             lbl_path_val = QLabel(path)
+            lbl_path_val.setObjectName("AgentItemPath")
             lbl_path_val.setWordWrap(True)
             lbl_path_val.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_path_val.setStyleSheet("font-size: 11px; color: #94a3b8; background: transparent; border: none;")
             g_layout.addWidget(lbl_path_key, 2, 0, Qt.AlignTop)
             g_layout.addWidget(lbl_path_val, 2, 1, Qt.AlignTop)
 
             lbl_desc_key = QLabel("설명:")
+            lbl_desc_key.setObjectName("AgentItemDescKey")
             lbl_desc_key.setFixedWidth(42)
             lbl_desc_key.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_desc_key.setStyleSheet("font-size: 11px; font-weight: 600; color: #64748b; background: transparent; border: none;")
             lbl_desc_val = QLabel(desc)
+            lbl_desc_val.setObjectName("AgentItemDescVal")
             lbl_desc_val.setWordWrap(True)
             lbl_desc_val.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            lbl_desc_val.setStyleSheet("font-size: 11px; color: #cbd5e1; background: transparent; border: none;")
             g_layout.addWidget(lbl_desc_key, 3, 0, Qt.AlignTop)
             g_layout.addWidget(lbl_desc_val, 3, 1, Qt.AlignTop)
+
+            card_h_layout.addLayout(g_layout, 1)
+
+            lbl_check = QLabel("✓ 선택됨")
+            lbl_check.setObjectName("AgentCheckBadge")
+            lbl_check.setAlignment(Qt.AlignCenter)
+            lbl_check.setVisible(is_selected)
+            card_h_layout.addWidget(lbl_check, 0, Qt.AlignVCenter | Qt.AlignRight)
 
             item = QListWidgetItem()
             item.setData(Qt.UserRole, agent)
@@ -1296,9 +1683,22 @@ class SettingsDialog(QDialog):
 
             self.agent_list_widget.addItem(item)
             self.agent_list_widget.setItemWidget(item, item_widget)
+            self.agent_card_widgets.append((item, item_widget, lbl_check, path, agent_id))
 
-            if self.selected_agent_path and (path == self.selected_agent_path or agent_id == self.selected_agent_path):
+            if is_selected:
                 self.agent_list_widget.setCurrentItem(item)
+
+    def _update_agent_selection_visuals(self):
+        for item, card_widget, lbl_check, path, agent_id in getattr(self, "agent_card_widgets", []):
+            is_sel = bool(
+                self.selected_agent_path
+                and (path == self.selected_agent_path or agent_id == self.selected_agent_path)
+            )
+            card_widget.setProperty("selected", "true" if is_sel else "false")
+            card_widget.style().unpolish(card_widget)
+            card_widget.style().polish(card_widget)
+            card_widget.update()
+            lbl_check.setVisible(is_sel)
 
     def on_agent_item_clicked(self, item: QListWidgetItem):
         agent_data = item.data(Qt.UserRole)
@@ -1314,6 +1714,7 @@ class SettingsDialog(QDialog):
                 self.workflow_path = file_path
                 self.selected_agent_path = file_path
                 self.txt_selected_file.setText(file_path)
+                self._update_agent_selection_visuals()
                 self.refresh_llm_nodes_ui()
             except Exception as e:
                 QMessageBox.warning(self, "파일 열기 실패", f"에이전트 파일을 읽을 수 없습니다:\n{e}")
@@ -1371,7 +1772,7 @@ class SettingsDialog(QDialog):
 
         if not self.workflow_dict:
             lbl = QLabel("에이전트 목록 탭에서 에이전트를 선택하거나 새 파일을 불러오세요.")
-            lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent; border: none;")
+            lbl.setObjectName("SectionSubTitleLabel")
             lbl.setAlignment(Qt.AlignCenter)
             self.scroll_layout.addWidget(lbl)
             self.scroll_layout.addStretch()
@@ -1380,7 +1781,7 @@ class SettingsDialog(QDialog):
         llm_nodes = extract_llm_nodes(self.workflow_dict)
         if not llm_nodes:
             lbl = QLabel("현재 워크플로우에 설정 가능한 AI 노드(LLM, Planner, Router, Aggregator)가 없습니다.")
-            lbl.setStyleSheet("color: #8c9ba5; padding: 20px; background: transparent; border: none;")
+            lbl.setObjectName("SectionSubTitleLabel")
             lbl.setAlignment(Qt.AlignCenter)
             self.scroll_layout.addWidget(lbl)
             self.scroll_layout.addStretch()
@@ -1403,36 +1804,60 @@ class SettingsDialog(QDialog):
 
         for node in llm_nodes:
             node_type = node.get("type", "llm")
-            card = QFrame()
-            card.setStyleSheet("""
-                QFrame#NodeConfigCard {
-                    background-color: rgba(23, 29, 39, 0.45);
-                    border: 1px solid #2b394d;
-                    border-radius: 8px;
-                    padding: 12px;
-                }
-            """)
-            card.setObjectName("NodeConfigCard")
-            c_layout = QVBoxLayout(card)
-            c_layout.setContentsMargins(12, 12, 12, 12)
-            c_layout.setSpacing(10)
-
             type_display = type_badge_map.get(node_type, node_type.upper())
-            lbl_header = QLabel(f"노드: <b>{node['label']}</b>  <span style='color:#7dd3fc;'>[{type_display} | ID: {node['id']}]</span>")
-            lbl_header.setStyleSheet("font-size: 13px; background: transparent; border: none;")
-            c_layout.addWidget(lbl_header)
+            initial_model = node.get("model") or DEFAULT_MODEL
+
+            card = QFrame()
+            card.setObjectName("NodeConfigCard")
+            card_outer_layout = QVBoxLayout(card)
+            card_outer_layout.setContentsMargins(0, 0, 0, 0)
+            card_outer_layout.setSpacing(0)
+
+            # 아코디언 토글 헤더 버튼 (처음 열었을 때는 모두 접혀 있음)
+            btn_header = QPushButton(
+                f"▶  {node['label']}   [{type_display} | ID: {node['id']} | Model: {initial_model}]"
+            )
+            btn_header.setObjectName("NodeAccordionHeader")
+            btn_header.setProperty("expanded", "false")
+            btn_header.setCursor(QCursor(Qt.PointingHandCursor))
+            card_outer_layout.addWidget(btn_header)
+
+            body_widget = QWidget()
+            body_widget.setVisible(False)
+            c_layout = QVBoxLayout(body_widget)
+            c_layout.setContentsMargins(14, 12, 14, 14)
+            c_layout.setSpacing(10)
 
             # 1. Model 입력 필드
             h_m = QHBoxLayout()
             lbl_m = QLabel("Model:")
             lbl_m.setFixedWidth(85)
-            lbl_m.setStyleSheet("color: #4cd7f6; font-weight: bold;")
+            lbl_m.setObjectName("NodeFieldCyanLabel")
             h_m.addWidget(lbl_m)
             txt_model = QLineEdit()
-            txt_model.setText(node.get("model") or DEFAULT_MODEL)
+            txt_model.setText(initial_model)
             txt_model.setPlaceholderText("예: gemma2:2b, gpt-6-luna, gpt-4o-mini")
             h_m.addWidget(txt_model)
             c_layout.addLayout(h_m)
+
+            def _make_toggle_handler(btn=btn_header, body=body_widget, n_label=node["label"], t_disp=type_display, n_id=node["id"], m_edit=txt_model):
+                def _toggle():
+                    expanded = not body.isVisible()
+                    body.setVisible(expanded)
+                    arrow = "▼" if expanded else "▶"
+                    cur_m = m_edit.text().strip() or DEFAULT_MODEL
+                    btn.setText(f"{arrow}  {n_label}   [{t_disp} | ID: {n_id} | Model: {cur_m}]")
+                    btn.setProperty("expanded", "true" if expanded else "false")
+                    btn.style().unpolish(btn)
+                    btn.style().polish(btn)
+                return _toggle
+
+            btn_header.clicked.connect(_make_toggle_handler())
+            txt_model.textChanged.connect(
+                lambda val, btn=btn_header, body=body_widget, n_label=node["label"], t_disp=type_display, n_id=node["id"]: (
+                    btn.setText(f"{'▼' if body.isVisible() else '▶'}  {n_label}   [{t_disp} | ID: {n_id} | Model: {val.strip() or DEFAULT_MODEL}]")
+                )
+            )
 
             # 2. 외부 커스텀 API 엔드포인트 (Base URL, API Key)
             chk_custom = QCheckBox("외부 커스텀 API 엔드포인트 (Base URL, API Key) 직접 지정")
@@ -1469,12 +1894,17 @@ class SettingsDialog(QDialog):
             chk_custom.toggled.connect(custom_container.setVisible)
             c_layout.addWidget(custom_container)
 
+            div_after_model = QFrame()
+            div_after_model.setObjectName("NodeSectionDivider")
+            div_after_model.setFrameShape(QFrame.HLine)
+            c_layout.addWidget(div_after_model)
+
             # 3. Temperature 슬라이더 (0.0 ~ 2.0, 0.1 단위)
             init_temp = max(0.0, min(2.0, float(node.get("temperature", 0.7))))
             h_temp = QHBoxLayout()
             lbl_temp_title = QLabel("Temperature:")
             lbl_temp_title.setFixedWidth(85)
-            lbl_temp_title.setStyleSheet("color: #d0bcff; font-weight: bold;")
+            lbl_temp_title.setObjectName("NodeFieldPurpleLabel")
             h_temp.addWidget(lbl_temp_title)
 
             slider_temp = QSlider(Qt.Horizontal)
@@ -1488,7 +1918,7 @@ class SettingsDialog(QDialog):
             lbl_temp_val = QLabel(f"{init_temp:.1f}")
             lbl_temp_val.setFixedWidth(36)
             lbl_temp_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            lbl_temp_val.setStyleSheet("color: #d0bcff; font-family: monospace; font-weight: bold;")
+            lbl_temp_val.setObjectName("NodeFieldPurpleLabel")
             h_temp.addWidget(lbl_temp_val)
 
             slider_temp.valueChanged.connect(
@@ -1497,8 +1927,13 @@ class SettingsDialog(QDialog):
             c_layout.addLayout(h_temp)
 
             lbl_temp_hint = QLabel("0.0 (일관성·정확성)  |  1.0 (균형)  |  2.0 (창의성)")
-            lbl_temp_hint.setStyleSheet("color: #64748b; font-size: 11px; margin-left: 85px;")
+            lbl_temp_hint.setObjectName("NodeFieldHintLabel")
             c_layout.addWidget(lbl_temp_hint)
+
+            div_after_temp = QFrame()
+            div_after_temp.setObjectName("NodeSectionDivider")
+            div_after_temp.setFrameShape(QFrame.HLine)
+            c_layout.addWidget(div_after_temp)
 
             # 4. 노드 타입별 고유 옵션 (Router: max_loops / LLM: react_loop, max_tool_iterations, tool_instruction)
             slider_max_loops = None
@@ -1511,7 +1946,7 @@ class SettingsDialog(QDialog):
                 h_loops = QHBoxLayout()
                 lbl_loops_title = QLabel("최대 루프 횟수:")
                 lbl_loops_title.setFixedWidth(85)
-                lbl_loops_title.setStyleSheet("color: #d0bcff; font-weight: bold;")
+                lbl_loops_title.setObjectName("NodeFieldPurpleLabel")
                 h_loops.addWidget(lbl_loops_title)
 
                 slider_max_loops = QSlider(Qt.Horizontal)
@@ -1523,13 +1958,18 @@ class SettingsDialog(QDialog):
                 lbl_loops_val = QLabel(f"{init_loops}회")
                 lbl_loops_val.setFixedWidth(36)
                 lbl_loops_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                lbl_loops_val.setStyleSheet("color: #d0bcff; font-family: monospace; font-weight: bold;")
+                lbl_loops_val.setObjectName("NodeFieldPurpleLabel")
                 h_loops.addWidget(lbl_loops_val)
 
                 slider_max_loops.valueChanged.connect(
                     lambda val, label=lbl_loops_val: label.setText(f"{val}회")
                 )
                 c_layout.addLayout(h_loops)
+
+                div_after_router = QFrame()
+                div_after_router.setObjectName("NodeSectionDivider")
+                div_after_router.setFrameShape(QFrame.HLine)
+                c_layout.addWidget(div_after_router)
 
             elif node_type == "llm":
                 chk_react_loop = QCheckBox("ReAct Loop 활성화 (도구 연결 시 다단계 자율 추론 및 재시도)")
@@ -1538,14 +1978,15 @@ class SettingsDialog(QDialog):
 
                 react_container = QWidget()
                 r_layout = QVBoxLayout(react_container)
-                r_layout.setContentsMargins(16, 2, 0, 4)
+                # 왜: 다른 설정 요소(Model, Temperature 등)와 좌측 정렬선이 정확히 맞도록 좌측 마진을 0으로 설정합니다.
+                r_layout.setContentsMargins(0, 2, 0, 4)
                 r_layout.setSpacing(6)
 
                 init_iter = max(1, min(5, int(node.get("max_tool_iterations", 3))))
                 h_iter = QHBoxLayout()
                 lbl_iter_title = QLabel("최대 도구 실행:")
                 lbl_iter_title.setFixedWidth(85)
-                lbl_iter_title.setStyleSheet("color: #4cd7f6; font-weight: 600;")
+                lbl_iter_title.setObjectName("NodeFieldCyanLabel")
                 h_iter.addWidget(lbl_iter_title)
 
                 slider_tool_iter = QSlider(Qt.Horizontal)
@@ -1557,7 +1998,7 @@ class SettingsDialog(QDialog):
                 lbl_iter_val = QLabel(f"{init_iter}회")
                 lbl_iter_val.setFixedWidth(36)
                 lbl_iter_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                lbl_iter_val.setStyleSheet("color: #4cd7f6; font-family: monospace; font-weight: bold;")
+                lbl_iter_val.setObjectName("NodeFieldCyanLabel")
                 h_iter.addWidget(lbl_iter_val)
 
                 slider_tool_iter.valueChanged.connect(
@@ -1566,7 +2007,7 @@ class SettingsDialog(QDialog):
                 r_layout.addLayout(h_iter)
 
                 lbl_tool_inst = QLabel("도구 평가 및 재시도 지침 (선택):")
-                lbl_tool_inst.setStyleSheet("color: #94a3b8; font-size: 11px; font-weight: 600;")
+                lbl_tool_inst.setObjectName("NodeFieldSubLabel")
                 r_layout.addWidget(lbl_tool_inst)
 
                 txt_tool_instruction = QTextEdit()
@@ -1579,9 +2020,14 @@ class SettingsDialog(QDialog):
                 chk_react_loop.toggled.connect(react_container.setVisible)
                 c_layout.addWidget(react_container)
 
+                div_after_react = QFrame()
+                div_after_react.setObjectName("NodeSectionDivider")
+                div_after_react.setFrameShape(QFrame.HLine)
+                c_layout.addWidget(div_after_react)
+
             # 5. 시스템 프롬프트 / 역할 지침 (모든 설정 가능 AI 노드 공통)
             lbl_prompt = QLabel(prompt_label_map.get(node_type, "시스템 프롬프트 (System Prompt):"))
-            lbl_prompt.setStyleSheet("color: #4d8eff; font-size: 12px; font-weight: bold; margin-top: 2px;")
+            lbl_prompt.setObjectName("NodeFieldBlueLabel")
             c_layout.addWidget(lbl_prompt)
 
             txt_system_prompt = QTextEdit()
@@ -1590,6 +2036,7 @@ class SettingsDialog(QDialog):
             txt_system_prompt.setPlainText(node.get("system_prompt", ""))
             c_layout.addWidget(txt_system_prompt)
 
+            card_outer_layout.addWidget(body_widget)
             self.scroll_layout.addWidget(card)
 
             self.node_input_widgets[node["id"]] = {
@@ -2169,7 +2616,8 @@ class AgentRuntimeMainWindow(QMainWindow):
             session_id=target_sid,
             compiled_graph=self.compiled_graph,
             user_input=text,
-            conversation_messages=history_messages
+            conversation_messages=history_messages,
+            workflow_dict=self.workflow_dict
         )
         self.current_worker.step_log_signal.connect(self.on_agent_step_log)
         self.current_worker.finished_signal.connect(self.on_agent_finished)

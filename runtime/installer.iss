@@ -45,7 +45,7 @@ Type: filesandordirs; Name: "{app}\_internal"
 
 [Files]
 ; PyInstaller --onedir 출력 디렉터리의 모든 파일 및 하위 폴더 포함
-Source: "dist\noa-e\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\noa-e\*"; DestDir: "{app}"; Excludes: "*.old_locked"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
