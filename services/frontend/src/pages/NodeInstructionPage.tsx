@@ -110,11 +110,11 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
     accentColor: 'primary',
     tagList: ['계획 수립', 'Task 분해', '전략 플래닝', '복합 질의'],
     description:
-      '플래너 노드는 사용자의 복합 질문을 분석하여, 문제를 해결하기 위해 어떤 순서로 어떤 작업(Task)들을 수행해야 하는지 구체적인 실행 계획 목록을 수립합니다.',
+      '플래너 노드는 사용자 요청을 달성하기 위해, 어떤 순서로 어떤 작업(Task)들을 수행해야 하는지 구체적인 실행 계획 목록을 수립합니다.',
     features: [
       {
         title: '다단계 작업 분해',
-        desc: '복합 질문을 해결하기 위한 개별 태스크들을 순차 목록(Task List)으로 명확히 분할',
+        desc: '사용자 요청을 달성하기 위한 개별 태스크들을 순차 목록(Task List)으로 명확히 분할',
       },
       {
         title: '전략적 플래닝',

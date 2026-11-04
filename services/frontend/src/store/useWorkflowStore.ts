@@ -390,7 +390,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       inputNode: { input_text: '' },
       plannerNode: {
         model: 'gemma2:2b',
-        system_prompt: '당신은 전략적 AI 플래너입니다. 사용자의 복합 질문을 분석하여 목표를 달성하기 위한 구체적인 단계별 실행 계획을 세우세요.',
+        system_prompt: '사용자 요청을 달성하기 위한 구체적인 단계별 실행 계획을 수립하세요.',
       },
       routerNode: {
         model: 'gemma2:2b',
@@ -406,7 +406,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       },
       aggregatorNode: {
         model: 'gemma2:2b',
-        system_prompt: '당신은 분석 종합 전문가입니다. 다양한 단계에서 수집되고 처리된 정보들을 바탕으로 논리적이고 친절한 최종 답변을 작성하세요.',
+        system_prompt: '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
       },
       searchNode: {},
       calculatorNode: {},

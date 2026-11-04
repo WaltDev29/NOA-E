@@ -80,11 +80,17 @@ export const StudioPage: React.FC = () => {
           if (data.graph_data?.edges) {
             setEdges(data.graph_data.edges);
           }
-          addLog(`에이전트 [${data.title}]을(를) 성공적으로 불러왔습니다.`);
+          showAlert(`에이전트 [${data.title}]을(를) 성공적으로 불러왔습니다.`, {
+            type: 'success',
+            title: '에이전트 불러오기',
+          });
         })
         .catch((err) => {
           console.error('Failed to load workflow by id:', err);
-          addLog('[오류] 에이전트를 불러오지 못했습니다.');
+          showAlert('에이전트를 불러오지 못했습니다.', {
+            type: 'error',
+            title: '불러오기 오류',
+          });
         });
     } else {
       // 신규 생성 모드: 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
@@ -667,11 +673,24 @@ const HiddenRunTrigger: React.FC = () => {
                   setMessages([...useWorkflowStore.getState().messages, ...stateUpdates.messages]);
                 }
 
-                const nextEdge = edges.find((e) => e.source === nodeName);
-                if (nextEdge) {
-                  setActiveNodeId(nextEdge.target);
+                // 다음 활성 노드(activeNodeId) 결정:
+                // 1) Router 등에서 명시적으로 다음 Worker/타겟 노드를 지정한 경우 (next_worker)
+                // 2) Worker 노드에서 Router로 돌아가는 루프 엣지
+                // 3) 일반 단일 연결 엣지
+                if (stateUpdates.next_worker) {
+                  setActiveNodeId(stateUpdates.next_worker);
                 } else {
-                  setActiveNodeId(null);
+                  const outgoingEdges = edges.filter((e) => e.source === nodeName);
+                  if (outgoingEdges.length > 0) {
+                    const loopEdge = outgoingEdges.find(
+                      (e) =>
+                        e.targetHandle === 'loop-return' ||
+                        nodes.find((n) => n.id === e.target)?.type === 'routerNode'
+                    );
+                    setActiveNodeId(loopEdge ? loopEdge.target : outgoingEdges[0].target);
+                  } else {
+                    setActiveNodeId(null);
+                  }
                 }
               }
             } catch (e) {

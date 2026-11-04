@@ -16,7 +16,7 @@ class PlannerNode(BaseNode):
         input_text = state.get("current_output") or state.get("input_text", "")
         system_instruction = self.config.get(
             "system_prompt",
-            "당신은 전략적 AI 플래너입니다. 사용자의 복합 질문을 분석하여 목표를 달성하기 위한 구체적인 단계별 실행 계획을 세우세요."
+            "사용자 요청을 달성하기 위한 구체적인 단계별 실행 계획을 수립하세요."
         )
 
         prompt = f"""사용자의 요청:

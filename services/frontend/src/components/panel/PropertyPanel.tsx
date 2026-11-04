@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 
 import { workflowApi } from '../../services/workflowApi';
+import ReactMarkdown from 'react-markdown';
 
 export const PropertyPanel: React.FC = () => {
 
@@ -25,7 +26,6 @@ export const PropertyPanel: React.FC = () => {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [tempLabel, setTempLabel] = useState('');
   const [serverModels, setServerModels] = useState<string[]>([]);
-  const [defaultModel, setDefaultModel] = useState<string>('');
   const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
 
   const currentNodeId = selectedNode?.id;
@@ -38,7 +38,6 @@ export const PropertyPanel: React.FC = () => {
       .then((data) => {
         if (!isMounted) return;
         setServerModels(data.models || []);
-        setDefaultModel(data.default || '');
       })
       .catch((err) => {
         console.error('사용 가능 모델 목록 조회 실패:', err);
@@ -425,7 +424,7 @@ export const PropertyPanel: React.FC = () => {
 
                   <option key={m} value={m}>
 
-                    {m} {m === defaultModel ? '(기본값)' : ''}
+                    {m}
 
                   </option>
 
@@ -699,34 +698,30 @@ export const PropertyPanel: React.FC = () => {
 
         )}
 
-        {type === 'outputNode' && (
-
+                {type === 'outputNode' && (
           <div className="flex flex-col gap-2">
-
-            <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
-
-              <span className="w-1.5 h-1.5 rounded-full bg-error"></span>
-
-              최종 산출물 미리보기
-
-            </label>
-
-            <div className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-3 text-xs text-on-surface min-h-[180px] whitespace-pre-wrap overflow-y-auto leading-relaxed">
-
-              {executionResult ? (
-
-                executionResult
-
-              ) : (
-
-                <span className="text-outline italic">실행 결과가 아직 없습니다.</span>
-
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-error"></span>
+                최종 산출물 미리보기
+              </label>
+              {executionResult && (
+                <span className="text-[10px] font-mono text-outline">
+                  Markdown
+                </span>
               )}
-
             </div>
 
+            <div className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-3 text-xs text-on-surface min-h-[180px] max-h-[400px] overflow-y-auto leading-relaxed select-text">
+              {executionResult ? (
+                <div className="prose prose-invert prose-xs max-w-none [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_code]:bg-surface-container [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-surface-container-high [&_pre]:p-2 [&_pre]:rounded-lg [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-2 [&_strong]:text-primary">
+                  <ReactMarkdown>{executionResult}</ReactMarkdown>
+                </div>
+              ) : (
+                <span className="text-outline italic">실행 결과가 아직 없습니다.</span>
+              )}
+            </div>
           </div>
-
         )}
 
       </div>
