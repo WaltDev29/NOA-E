@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 interface NodePaletteProps {
   onClose?: () => void;
@@ -92,8 +93,17 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
 const CATEGORIES = ['전체', '기본', 'LLM', '도구'];
 
 export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
+  const { activeGuide, studioQuestStep } = useOnboarding();
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 에이전트 제작 가이드 실습 단계(Step 3: Input, Step 5: LLM, Step 7: Output) 진입 시 대상 노드가 잘 보이도록 카테고리/검색어 초기화
+  useEffect(() => {
+    if (activeGuide === 'studio_quest' && (studioQuestStep === 3 || studioQuestStep === 5 || studioQuestStep === 7)) {
+      setSelectedCategory('전체');
+      setSearchQuery('');
+    }
+  }, [activeGuide, studioQuestStep]);
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
@@ -163,13 +173,24 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
 
       {/* Node List Items */}
       <div className="flex-1 overflow-y-auto p-space-md flex flex-col gap-2">
-        {filteredItems.map((item) => (
-          <div
-            key={item.type}
-            draggable
-            onDragStart={(e) => onDragStart(e, item.type)}
-            className="group p-2.5 rounded-xl bg-surface-container/40 hover:bg-surface-container border border-outline-variant/30 hover:border-outline-variant/60 cursor-grab active:cursor-grabbing transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex items-center gap-3 select-none"
-          >
+        {filteredItems.map((item) => {
+          const dataTourAttr =
+            item.type === 'inputNode'
+              ? 'palette-input-node'
+              : item.type === 'llmNode'
+              ? 'palette-llm-node'
+              : item.type === 'outputNode'
+              ? 'palette-output-node'
+              : undefined;
+
+          return (
+            <div
+              key={item.type}
+              data-tour={dataTourAttr}
+              draggable
+              onDragStart={(e) => onDragStart(e, item.type)}
+              className="group p-2.5 rounded-xl bg-surface-container/40 hover:bg-surface-container border border-outline-variant/30 hover:border-outline-variant/60 cursor-grab active:cursor-grabbing transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex items-center gap-3 select-none"
+            >
             <div
               className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                 item.color === 'primary'
@@ -193,7 +214,8 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
               drag_indicator
             </span>
           </div>
-        ))}
+          );
+        })}
       </div>
     </aside>
   );
