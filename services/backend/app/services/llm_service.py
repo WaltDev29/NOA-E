@@ -76,22 +76,25 @@ def get_backend_models_config() -> Tuple[str, Dict[str, Any]]:
     default_model = env_file.get("LLM_MODEL") or os.getenv("LLM_MODEL", "gemma2:2b")
     return default_model, models_config
 
-def get_llm(custom_config: Optional[Dict[str, Any]] = None):
+def resolve_model_endpoint_config(custom_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    왜: 웹 스튜디오 직접 실행(get_llm)과 로컬 런타임의 웹 경유 프록시 요청(/api/workflow/llm/v1/chat/completions)이
+    동일한 우선순위 규칙(.env.backend의 MODELS_CONFIG -> 글로벌 설정)으로 모델별 엔드포인트와 API Key를 해석하도록 모듈화합니다.
+    """
     custom_config = custom_config or {}
     env_file = load_backend_env()
-    
     default_model, models_config = get_backend_models_config()
-    
+
     # 1. 사용할 모델명 결정 (노드 config > 환경설정 LLM_MODEL > 기본값)
     target_model = custom_config.get("model") or default_model
-    
+
     # 2. 모델별 사전 정의 설정 확인
     matched_model_config = models_config.get(target_model, {})
 
     # 3. 엔드포인트 URL 및 API Key 우선순위 매핑
     node_base_url = custom_config.get("base_url")
     node_api_key = custom_config.get("api_key")
-    
+
     matched_base_url = matched_model_config.get("base_url")
     matched_api_key = matched_model_config.get("api_key")
 
@@ -100,9 +103,9 @@ def get_llm(custom_config: Optional[Dict[str, Any]] = None):
     global_api_key = env_file.get("LLM_API_KEY") or os.getenv("LLM_API_KEY", "ollama")
 
     is_openai_model = (
-        target_model.startswith("gpt-") or 
-        target_model.startswith("o1") or 
-        target_model.startswith("o3") or 
+        target_model.startswith("gpt-") or
+        target_model.startswith("o1") or
+        target_model.startswith("o3") or
         target_model.startswith("chatgpt")
     )
 
@@ -126,6 +129,27 @@ def get_llm(custom_config: Optional[Dict[str, Any]] = None):
     else:
         final_api_key = global_api_key or "ollama"
 
+    is_reasoning_model = target_model.startswith("o1") or target_model.startswith("o3")
+
+    return {
+        "target_model": target_model,
+        "final_base_url": final_base_url,
+        "final_api_key": final_api_key,
+        "is_openai_model": is_openai_model,
+        "is_reasoning_model": is_reasoning_model,
+    }
+
+
+def get_llm(custom_config: Optional[Dict[str, Any]] = None):
+    custom_config = custom_config or {}
+    resolved = resolve_model_endpoint_config(custom_config)
+
+    target_model = resolved["target_model"]
+    final_base_url = resolved["final_base_url"]
+    final_api_key = resolved["final_api_key"]
+    is_openai_model = resolved["is_openai_model"]
+    is_reasoning_model = resolved["is_reasoning_model"]
+
     default_headers = custom_config.get("default_headers") or {"User-Agent": "Mozilla/5.0"}
 
     # Temperature 파라미터 추출 (기본값 0.7, 0.0 ~ 2.0 범위 클램핑)
@@ -134,8 +158,6 @@ def get_llm(custom_config: Optional[Dict[str, Any]] = None):
         temperature = max(0.0, min(2.0, float(raw_temp))) if raw_temp is not None else 0.7
     except (ValueError, TypeError):
         temperature = 0.7
-
-    is_reasoning_model = target_model.startswith("o1") or target_model.startswith("o3")
 
     # ChatOpenAI 객체 생성
     if is_openai_model and (not final_base_url or final_base_url == "https://api.openai.com/v1"):

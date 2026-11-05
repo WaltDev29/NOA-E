@@ -3,11 +3,11 @@ import os
 
 import uuid
 
-from typing import List
+from typing import List, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-
-from fastapi.responses import StreamingResponse, FileResponse
+import requests
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
+from fastapi.responses import StreamingResponse, FileResponse, Response
 
 from sqlalchemy.orm import Session
 
@@ -62,6 +62,86 @@ def get_available_models():
         "models": models or [default_model],
         "model_capabilities": models_capabilities,
     }
+
+
+@router.post("/llm/v1/chat/completions", summary="로컬 런타임용 웹 경유 LLM 프록시 (OpenAI 호환)")
+def proxy_llm_chat_completions(payload: Dict[str, Any] = Body(...)):
+    """
+    왜: 로컬 런타임에서 외부 커스텀 API를 설정하지 않은 경우,
+    '로컬 런타임 -> 웹 페이지(백엔드) -> 웹 페이지에서 사용하는 LLM API' 경로로 호출하여
+    JSON에 서버 API Key를 노출하지 않고도 웹 스튜디오에 등록된 모든 LLM(gemma2:2b, gpt-6-luna 등)을 동일하게 사용할 수 있게 합니다.
+    """
+    from app.services.llm_service import resolve_model_endpoint_config
+
+    try:
+        requested_model = payload.get("model")
+        resolved = resolve_model_endpoint_config({"model": requested_model})
+
+        target_model = resolved["target_model"]
+        final_base_url = (resolved["final_base_url"] or "http://ollama:11434/v1").rstrip("/")
+        final_api_key = resolved["final_api_key"] or "ollama"
+        is_reasoning_model = resolved["is_reasoning_model"]
+
+        upstream_payload = dict(payload)
+        upstream_payload["model"] = target_model
+
+        if is_reasoning_model:
+            upstream_payload.pop("temperature", None)
+        elif final_base_url != "https://api.openai.com/v1":
+            upstream_payload.setdefault("reasoning_effort", "none")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {final_api_key}",
+            "User-Agent": "Mozilla/5.0",
+        }
+
+        def _send_upstream(base_url: str, body: Dict[str, Any], is_stream: bool):
+            url = f"{base_url.rstrip('/')}/chat/completions"
+            try:
+                return requests.post(url, json=body, headers=headers, stream=is_stream, timeout=300)
+            except requests.exceptions.ConnectionError:
+                # 백엔드가 Docker 외부(호스트)에서 실행 중일 때 ollama 호스트명을 localhost로 자동 폴백
+                if "://ollama:" in url:
+                    fallback_url = url.replace("://ollama:", "://localhost:")
+                    return requests.post(fallback_url, json=body, headers=headers, stream=is_stream, timeout=300)
+                raise
+
+        is_stream = bool(upstream_payload.get("stream", False))
+        resp = _send_upstream(final_base_url, upstream_payload, is_stream)
+
+        # 일부 업스트림 서버가 reasoning_effort 필드를 거부(400)할 경우 제거 후 1회 재시도
+        if resp.status_code == 400 and "reasoning_effort" in upstream_payload:
+            retry_payload = dict(upstream_payload)
+            retry_payload.pop("reasoning_effort", None)
+            resp = _send_upstream(final_base_url, retry_payload, is_stream)
+
+        if is_stream and resp.status_code == 200:
+            def _stream_chunks():
+                try:
+                    for chunk in resp.iter_content(chunk_size=None):
+                        if chunk:
+                            yield chunk
+                finally:
+                    resp.close()
+
+            return StreamingResponse(
+                _stream_chunks(),
+                status_code=resp.status_code,
+                media_type=resp.headers.get("Content-Type", "text/event-stream"),
+            )
+
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code,
+            media_type=resp.headers.get("Content-Type", "application/json"),
+        )
+    except Exception as e:
+        print(f"[LLM_PROXY_ERROR] model={payload.get('model')} error={type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"웹 페이지 LLM 게이트웨이 호출 실패: {str(e)}",
+        )
 
 
 @router.api_route("/runtime/download", methods=["GET", "HEAD"], summary="로컬 런타임 실행기 설치 파일 다운로드")

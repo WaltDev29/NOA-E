@@ -1029,6 +1029,7 @@ QFrame#NodeSectionDivider {{
 # -------------------------------------------------------------
 class AgentExecutionWorker(QThread):
     step_log_signal = Signal(str, str, str)    # session_id, node_name, log_message
+    active_node_signal = Signal(str, str)      # session_id, active_node_label
     finished_signal = Signal(str, str, list)   # session_id, output, logs
     error_signal = Signal(str, str)            # session_id, error_message
 
@@ -1057,6 +1058,44 @@ class AgentExecutionWorker(QThread):
                 label = n.get("label") or n.get("data", {}).get("label") or nid
                 ntype = n.get("type", "")
                 self.node_map[nid] = {"label": label, "type": ntype}
+        self.edges: List[Dict[str, Any]] = self.workflow_dict.get("edges", [])
+
+    def _resolve_next_node_label(self, current_node_id: str, state_update: dict) -> Optional[str]:
+        """현재 노드 완료 후 다음으로 실행될 노드의 라벨을 추론합니다."""
+        tool_types = {
+            "search", "searchNode",
+            "weather", "weatherNode",
+            "youtube", "youtubeNode",
+            "calculator", "calculatorNode",
+        }
+        output_types = {"output", "outputNode"}
+
+        next_id = state_update.get("next_worker")
+        if not next_id:
+            outgoing = [
+                e for e in self.edges
+                if e.get("source") == current_node_id
+                and self.node_map.get(e.get("target", ""), {}).get("type") not in tool_types
+            ]
+            if outgoing:
+                loop_edge = next(
+                    (
+                        e for e in outgoing
+                        if e.get("targetHandle") == "loop-return"
+                        or self.node_map.get(e.get("target", ""), {}).get("type") in ("router", "routerNode")
+                    ),
+                    None,
+                )
+                next_id = loop_edge.get("target") if loop_edge else outgoing[0].get("target")
+
+        if not next_id:
+            return None
+
+        next_meta = self.node_map.get(next_id, {})
+        if next_meta.get("type") in output_types:
+            return None
+
+        return next_meta.get("label") or next_id
 
     def stop(self):
         self._is_stopped = True
@@ -1079,6 +1118,14 @@ class AgentExecutionWorker(QThread):
             accumulated_logs = []
             final_output = ""
 
+            # 시작 시 Input 노드 직후에 실행될 첫 번째 AI 노드 라벨을 먼저 통지
+            for nid, meta in self.node_map.items():
+                if meta.get("type") in ("input", "inputNode"):
+                    first_label = self._resolve_next_node_label(nid, {})
+                    if first_label:
+                        self.active_node_signal.emit(self.session_id, first_label)
+                    break
+
             # stream_mode="updates"를 사용하여 노드 실행 완료 시마다 웹과 동일한 포맷의 실시간 로그 전달
             for chunk in self.compiled_graph.stream(
                 initial_state,
@@ -1096,6 +1143,7 @@ class AgentExecutionWorker(QThread):
                     node_meta = self.node_map.get(node_name, {})
                     node_label = node_meta.get("label") or node_name
                     node_type = node_meta.get("type", "")
+                    next_label = self._resolve_next_node_label(node_name, state_update)
 
                     node_output = state_update.get("current_output", "")
                     if node_output:
@@ -1103,6 +1151,8 @@ class AgentExecutionWorker(QThread):
 
                     # 왜: Input/Output 노드는 채팅 말풍선(사용자 질문/최종 답변)과 중복되므로 사고 과정 로그에서 제외합니다.
                     if node_type in ("input", "inputNode", "output", "outputNode"):
+                        if next_label:
+                            self.active_node_signal.emit(self.session_id, next_label)
                         continue
 
                     raw_logs = state_update.get("logs") or []
@@ -1121,6 +1171,9 @@ class AgentExecutionWorker(QThread):
                         accumulated_logs.append(out_log)
                         self.step_log_signal.emit(self.session_id, node_name, out_log)
 
+                    if next_label:
+                        self.active_node_signal.emit(self.session_id, next_label)
+
             if not final_output and not self._is_stopped:
                 final_output = "응답이 생성되지 않았습니다."
 
@@ -1135,13 +1188,20 @@ class AgentExecutionWorker(QThread):
 # 사고 과정 (Thought Log) 실시간/접이식 아코디언 위젯
 # -------------------------------------------------------------
 class ThoughtLogToggleWidget(QWidget):
-    def __init__(self, logs: list = None, is_live: bool = False, parent=None):
+    def __init__(self, logs: list = None, is_live: bool = False, active_node_label: str = "", parent=None):
         super().__init__(parent)
         self.logs = list(logs or [])
+        self.active_node_label = active_node_label
         self.is_expanded = is_live
         self.is_finalized = not is_live
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.init_ui()
+
+    def _format_pending_text(self) -> str:
+        dots_str = "." * getattr(self, "dot_count", 1)
+        if self.active_node_label:
+            return f"{self.active_node_label} 실행 중 {dots_str}"
+        return f"실행 중 {dots_str}"
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -1185,13 +1245,13 @@ class ThoughtLogToggleWidget(QWidget):
         for log in self.logs:
             self._add_log_item_ui(log)
 
-        self.lbl_pending_dots = QLabel("다음 노드 실행 대기 중 .")
+        self.dot_count = 1
+        self.lbl_pending_dots = QLabel(self._format_pending_text())
         self.lbl_pending_dots.setObjectName("ThoughtPendingDots")
         self.lbl_pending_dots.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.lbl_pending_dots.setVisible(not self.is_finalized)
         self.live_layout.addWidget(self.lbl_pending_dots)
 
-        self.dot_count = 1
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_dots)
         if not self.is_finalized and self.is_expanded:
@@ -1233,8 +1293,13 @@ class ThoughtLogToggleWidget(QWidget):
 
     def update_dots(self):
         self.dot_count = (self.dot_count % 3) + 1
-        dots_str = "." * self.dot_count
-        self.lbl_pending_dots.setText(f"다음 노드 실행 대기 중 {dots_str}")
+        self.lbl_pending_dots.setText(self._format_pending_text())
+
+    def set_active_node(self, node_label: str):
+        self.active_node_label = node_label
+        if not self.is_finalized:
+            self.lbl_pending_dots.setText(self._format_pending_text())
+            self._adjust_live_scroll_height()
 
     def append_log(self, log_text: str):
         self.logs.append(log_text)
@@ -2464,8 +2529,9 @@ class AgentRuntimeMainWindow(QMainWindow):
             if exec_state.get("is_running", False):
                 self.set_executing_state(True)
                 active_logs = exec_state.get("logs", [])
-                if active_logs:
-                    self._create_live_bubble(active_logs)
+                active_node = exec_state.get("active_node", "")
+                if active_logs or active_node:
+                    self._create_live_bubble(active_logs, active_node_label=active_node)
                 else:
                     self.loading_bubble = PureDotsAnimationWidget()
                     idx = max(0, self.chat_messages_layout.count() - 1)
@@ -2608,6 +2674,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         self.active_executions[target_sid] = {
             "is_running": True,
             "logs": [],
+            "active_node": "",
             "user_text": text
         }
 
@@ -2620,6 +2687,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             workflow_dict=self.workflow_dict
         )
         self.current_worker.step_log_signal.connect(self.on_agent_step_log)
+        self.current_worker.active_node_signal.connect(self.on_agent_active_node)
         self.current_worker.finished_signal.connect(self.on_agent_finished)
         self.current_worker.error_signal.connect(self.on_agent_error)
         self.current_worker.start()
@@ -2637,7 +2705,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.txt_input.setEnabled(True)
             self.txt_input.setFocus()
 
-    def _create_live_bubble(self, initial_logs: list):
+    def _create_live_bubble(self, initial_logs: list, active_node_label: str = ""):
         row_widget = QWidget()
         row_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         row_layout = QHBoxLayout(row_widget)
@@ -2654,7 +2722,11 @@ class AgentRuntimeMainWindow(QMainWindow):
         b_layout.setContentsMargins(16, 12, 16, 12)
         b_layout.setSpacing(6)
 
-        self.live_thought_widget = ThoughtLogToggleWidget(initial_logs, is_live=True)
+        self.live_thought_widget = ThoughtLogToggleWidget(
+            initial_logs,
+            is_live=True,
+            active_node_label=active_node_label
+        )
         b_layout.addWidget(self.live_thought_widget)
 
         self.live_response_label = QLabel("")
@@ -2669,6 +2741,30 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         idx = max(0, self.chat_messages_layout.count() - 1)
         self.chat_messages_layout.insertWidget(idx, row_widget)
+
+    @Slot(str, str)
+    def on_agent_active_node(self, session_id: str, node_label: str):
+        if session_id in self.active_executions:
+            self.active_executions[session_id]["active_node"] = node_label
+
+        if self.current_session_id != session_id:
+            return
+
+        if self.loading_bubble:
+            self.loading_bubble.stop()
+            self.loading_bubble.deleteLater()
+            self.loading_bubble = None
+
+        if not self.live_thought_widget:
+            accum_logs = self.active_executions.get(session_id, {}).get("logs", [])
+            self._create_live_bubble(accum_logs, active_node_label=node_label)
+        else:
+            self.live_thought_widget.set_active_node(node_label)
+
+        QApplication.processEvents()
+        self.chat_scroll.verticalScrollBar().setValue(
+            self.chat_scroll.verticalScrollBar().maximum()
+        )
 
     @Slot(str, str, str)
     def on_agent_step_log(self, session_id: str, node_name: str, log_message: str):
@@ -2688,7 +2784,8 @@ class AgentRuntimeMainWindow(QMainWindow):
 
         if not self.live_thought_widget:
             accum_logs = self.active_executions.get(session_id, {}).get("logs", [log_message])
-            self._create_live_bubble(accum_logs)
+            active_node = self.active_executions.get(session_id, {}).get("active_node", "")
+            self._create_live_bubble(accum_logs, active_node_label=active_node)
         else:
             self.live_thought_widget.append_log(log_message)
 

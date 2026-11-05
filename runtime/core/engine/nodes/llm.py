@@ -157,6 +157,7 @@ class LLMNode(BaseNode):
                     f"{system_prompt}\n\n"
                     "[도구 사용 지침]\n"
                     "- 웹 검색 시 'site:'나 복잡한 따옴표 문법 대신 자연스러운 핵심 키워드로 검색하세요.\n"
+                    "- 순차적으로 처리해야 하는 작업은 한 번에 여러 도구를 동시에 호출하지 말고, 반드시 한 번에 하나씩 순서대로 호출하세요.\n"
                     "- 검색 결과를 확인한 후에는 추가 도구 호출 없이 최종 요약 답변을 한국어로 작성하세요."
                 )
                 node_messages[0] = SystemMessage(content=system_with_tools)
