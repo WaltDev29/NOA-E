@@ -65,6 +65,7 @@ def get_runtime_llm(custom_config: Optional[Dict[str, Any]] = None):
                 model=model,
                 api_key=api_key,
                 temperature=temperature,
+                use_responses_api=False,
             )
         else:
             # 커스텀 Base URL (OpenAI 호환 프록시, Groq, vLLM, 로컬 커스텀 Ollama 등)
@@ -74,6 +75,7 @@ def get_runtime_llm(custom_config: Optional[Dict[str, Any]] = None):
                 api_key=api_key or "custom-key",
                 default_headers=default_headers,
                 temperature=temperature,
+                use_responses_api=False,
             )
 
     # 2. 기본값: 웹 페이지(백엔드 게이트웨이)를 경유하여 웹 페이지에 설정된 LLM API 호출
@@ -84,4 +86,5 @@ def get_runtime_llm(custom_config: Optional[Dict[str, Any]] = None):
         api_key="noa-e-runtime",
         default_headers=default_headers,
         temperature=temperature,
+        use_responses_api=False,
     )

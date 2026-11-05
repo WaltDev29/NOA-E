@@ -235,6 +235,37 @@ def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = No
         "last_used_at": now_iso
     }
 
+def delete_registered_agent(agent_id: str, file_path: Optional[str] = None) -> bool:
+    """
+    왜: 사용자가 에이전트 목록에서 우클릭으로 에이전트를 삭제할 때
+    .storage/agents 내의 워크플로우 파일과 해당 에이전트의 대화 기록 파일을 함께 정리합니다.
+    """
+    ensure_storage_dirs()
+    deleted = False
+    try:
+        candidates = set()
+        if file_path:
+            abs_fp = os.path.abspath(file_path)
+            abs_agents_dir = os.path.abspath(AGENTS_DIR)
+            # 원본 사용자 파일 보호를 위해 .storage/agents 내부 파일만 직접 삭제
+            if abs_fp.startswith(abs_agents_dir):
+                candidates.add(abs_fp)
+        if agent_id:
+            candidates.add(os.path.abspath(os.path.join(AGENTS_DIR, _safe_agent_filename(agent_id))))
+
+        for target in candidates:
+            if os.path.exists(target):
+                os.remove(target)
+                deleted = True
+
+        if agent_id:
+            chat_file = _get_agent_chat_file(agent_id)
+            if os.path.exists(chat_file):
+                os.remove(chat_file)
+    except Exception as e:
+        print(f"Failed to delete registered agent (id={agent_id}, path={file_path}): {e}")
+    return deleted
+
 # -------------------------------------------------------------
 # 에이전트별 세션 및 대화 내역 독립 관리 ({agent_id}.json)
 # -------------------------------------------------------------

@@ -65,6 +65,7 @@ def get_available_models():
 
 
 @router.post("/llm/v1/chat/completions", summary="로컬 런타임용 웹 경유 LLM 프록시 (OpenAI 호환)")
+@router.post("/llm/v1/responses", summary="로컬 런타임용 웹 경유 LLM Responses API 프록시")
 def proxy_llm_chat_completions(payload: Dict[str, Any] = Body(...)):
     """
     왜: 로컬 런타임에서 외부 커스텀 API를 설정하지 않은 경우,
@@ -85,9 +86,12 @@ def proxy_llm_chat_completions(payload: Dict[str, Any] = Body(...)):
         upstream_payload = dict(payload)
         upstream_payload["model"] = target_model
 
+        is_responses_api = "input" in upstream_payload and "messages" not in upstream_payload
+        endpoint_suffix = "responses" if is_responses_api else "chat/completions"
+
         if is_reasoning_model:
             upstream_payload.pop("temperature", None)
-        elif final_base_url != "https://api.openai.com/v1":
+        elif final_base_url != "https://api.openai.com/v1" and not is_responses_api:
             upstream_payload.setdefault("reasoning_effort", "none")
 
         headers = {
@@ -97,7 +101,7 @@ def proxy_llm_chat_completions(payload: Dict[str, Any] = Body(...)):
         }
 
         def _send_upstream(base_url: str, body: Dict[str, Any], is_stream: bool):
-            url = f"{base_url.rstrip('/')}/chat/completions"
+            url = f"{base_url.rstrip('/')}/{endpoint_suffix}"
             try:
                 return requests.post(url, json=body, headers=headers, stream=is_stream, timeout=300)
             except requests.exceptions.ConnectionError:

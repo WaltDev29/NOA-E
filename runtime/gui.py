@@ -10,9 +10,9 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QTextEdit, QSlider, QScrollArea, QFrame,
     QDialog, QFileDialog, QMessageBox, QCheckBox, QGroupBox, QSizePolicy,
     QTabWidget, QListWidget, QListWidgetItem, QAbstractItemView,
-    QRadioButton, QButtonGroup
+    QRadioButton, QButtonGroup, QMenu
 )
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSize
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSize, QPoint
 from PySide6.QtGui import QFont, QCursor, QIcon, QPixmap
 
 # Windows 작업표시줄 아이콘 분리 표시를 위한 AppUserModelID 설정
@@ -35,7 +35,8 @@ try:
     from runtime.storage import (
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
-        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
+        load_agents_registry, register_agent, delete_registered_agent,
+        get_last_agent_path, set_last_agent_path,
         get_app_theme, set_app_theme, get_youtube_api_key, set_youtube_api_key, get_asset_path
     )
     from runtime.config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
@@ -44,7 +45,8 @@ except ModuleNotFoundError:
     from storage import (
         load_sessions, save_sessions, create_new_session, delete_session,
         update_session_messages, extract_llm_nodes, update_llm_configs_in_workflow,
-        load_agents_registry, register_agent, get_last_agent_path, set_last_agent_path,
+        load_agents_registry, register_agent, delete_registered_agent,
+        get_last_agent_path, set_last_agent_path,
         get_app_theme, set_app_theme, get_youtube_api_key, set_youtube_api_key, get_asset_path
     )
     from config import DEFAULT_SERVER_OLLAMA_URL, DEFAULT_MODEL
@@ -535,6 +537,24 @@ QFrame#NodeSectionDivider {{
     background: transparent;
     border: none;
 }}
+
+QMenu {{
+    background-color: #161d2a;
+    border: 1px solid #2e3d52;
+    border-radius: 6px;
+    padding: 4px;
+    color: #e6edf3;
+}}
+QMenu::item {{
+    padding: 7px 18px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QMenu::item:selected {{
+    background-color: #ba1a1a;
+    color: #ffffff;
+}}
 """
 
 LIGHT_STYLESHEET = f"""
@@ -1021,6 +1041,24 @@ QFrame#NodeSectionDivider {{
     background: transparent;
     border: none;
 }}
+
+QMenu {{
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px;
+    color: #0f172a;
+}}
+QMenu::item {{
+    padding: 7px 18px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QMenu::item:selected {{
+    background-color: #dc2626;
+    color: #ffffff;
+}}
 """
 
 
@@ -1117,12 +1155,14 @@ class AgentExecutionWorker(QThread):
 
             accumulated_logs = []
             final_output = ""
+            last_emitted_active_node = ""
 
             # 시작 시 Input 노드 직후에 실행될 첫 번째 AI 노드 라벨을 먼저 통지
             for nid, meta in self.node_map.items():
                 if meta.get("type") in ("input", "inputNode"):
                     first_label = self._resolve_next_node_label(nid, {})
                     if first_label:
+                        last_emitted_active_node = first_label
                         self.active_node_signal.emit(self.session_id, first_label)
                     break
 
@@ -1151,7 +1191,8 @@ class AgentExecutionWorker(QThread):
 
                     # 왜: Input/Output 노드는 채팅 말풍선(사용자 질문/최종 답변)과 중복되므로 사고 과정 로그에서 제외합니다.
                     if node_type in ("input", "inputNode", "output", "outputNode"):
-                        if next_label:
+                        if next_label and next_label != last_emitted_active_node:
+                            last_emitted_active_node = next_label
                             self.active_node_signal.emit(self.session_id, next_label)
                         continue
 
@@ -1172,6 +1213,7 @@ class AgentExecutionWorker(QThread):
                         self.step_log_signal.emit(self.session_id, node_name, out_log)
 
                     if next_label:
+                        last_emitted_active_node = next_label
                         self.active_node_signal.emit(self.session_id, next_label)
 
             if not final_output and not self._is_stopped:
@@ -1265,10 +1307,16 @@ class ThoughtLogToggleWidget(QWidget):
 
     def _adjust_live_scroll_height(self):
         if not self.is_finalized:
-            QApplication.processEvents()
+            self.live_layout.activate()
+            self.live_content_widget.adjustSize()
             hint_h = self.live_layout.sizeHint().height() + 6
             target_h = min(200, max(36, hint_h))
             self.live_scroll_area.setFixedHeight(target_h)
+
+    def _scroll_live_to_bottom(self):
+        sb = self.live_scroll_area.verticalScrollBar()
+        if sb:
+            sb.setValue(sb.maximum())
 
     def _create_log_item_frame(self, log_text: str) -> QFrame:
         item_frame = QFrame()
@@ -1305,10 +1353,7 @@ class ThoughtLogToggleWidget(QWidget):
         self.logs.append(log_text)
         self._add_log_item_ui(log_text)
         self._adjust_live_scroll_height()
-        QApplication.processEvents()
-        self.live_scroll_area.verticalScrollBar().setValue(
-            self.live_scroll_area.verticalScrollBar().maximum()
-        )
+        QTimer.singleShot(0, self._scroll_live_to_bottom)
 
     def finalize(self):
         self.timer.stop()
@@ -1340,10 +1385,7 @@ class ThoughtLogToggleWidget(QWidget):
                 if not self.timer.isActive():
                     self.timer.start(350)
                 self._adjust_live_scroll_height()
-                QApplication.processEvents()
-                self.live_scroll_area.verticalScrollBar().setValue(
-                    self.live_scroll_area.verticalScrollBar().maximum()
-                )
+                QTimer.singleShot(0, self._scroll_live_to_bottom)
         else:
             self.btn_toggle.setText("사고 과정 보기")
             if self.timer.isActive():
@@ -1513,7 +1555,9 @@ class SettingsDialog(QDialog):
         self.agent_list_widget = QListWidget()
         self.agent_list_widget.setObjectName("AgentListWidget")
         self.agent_list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.agent_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.agent_list_widget.itemClicked.connect(self.on_agent_item_clicked)
+        self.agent_list_widget.customContextMenuRequested.connect(self.on_agent_context_menu)
         t_agents_layout.addWidget(self.agent_list_widget)
 
         self.refresh_agents_list_ui()
@@ -1785,6 +1829,58 @@ class SettingsDialog(QDialog):
                 QMessageBox.warning(self, "파일 열기 실패", f"에이전트 파일을 읽을 수 없습니다:\n{e}")
         else:
             QMessageBox.warning(self, "경로 오류", f"해당 에이전트 파일이 존재하지 않습니다:\n{file_path}")
+
+    def on_agent_context_menu(self, pos: QPoint):
+        item = self.agent_list_widget.itemAt(pos)
+        if not item:
+            return
+        agent_data = item.data(Qt.UserRole)
+        if not agent_data:
+            return
+
+        menu = QMenu(self)
+        act_delete = menu.addAction("에이전트 삭제")
+        chosen = menu.exec(self.agent_list_widget.mapToGlobal(pos))
+        if chosen == act_delete:
+            target_id = agent_data.get("id", "")
+            target_path = agent_data.get("path", "")
+            was_selected = bool(
+                self.selected_agent_path
+                and (self.selected_agent_path == target_path or self.selected_agent_path == target_id)
+            )
+
+            delete_registered_agent(target_id, target_path)
+
+            if was_selected:
+                remaining = load_agents_registry()
+                if remaining:
+                    next_agent = remaining[0]
+                    next_path = next_agent.get("path", "")
+                    if next_path and os.path.exists(next_path):
+                        try:
+                            with open(next_path, "r", encoding="utf-8") as f:
+                                self.workflow_dict = json.load(f)
+                            self.workflow_path = next_path
+                            self.selected_agent_path = next_path
+                            self.txt_selected_file.setText(next_path)
+                        except Exception:
+                            self.workflow_dict = None
+                            self.workflow_path = None
+                            self.selected_agent_path = None
+                            self.txt_selected_file.clear()
+                    else:
+                        self.workflow_dict = None
+                        self.workflow_path = None
+                        self.selected_agent_path = None
+                        self.txt_selected_file.clear()
+                else:
+                    self.workflow_dict = None
+                    self.workflow_path = None
+                    self.selected_agent_path = None
+                    self.txt_selected_file.clear()
+
+            self.refresh_agents_list_ui()
+            self.refresh_llm_nodes_ui()
 
     def on_browse_and_load_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -2468,6 +2564,20 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.refresh_sessions_list_ui()
             self.render_current_session_messages()
 
+    def _clear_current_agent_state(self):
+        self.workflow_dict = None
+        self.workflow_path = None
+        self.compiled_graph = None
+        self.current_agent_id = None
+        self.current_agent_name = "에이전트 미로드"
+        self.sessions = []
+        self.current_session_id = None
+        self.is_new_chat_mode = False
+        self.lbl_agent_name.setText("에이전트 미로드")
+        self.lbl_agent_desc.setText("하단 설정에서 에이전트를 불러와주세요.")
+        self.refresh_sessions_list_ui()
+        self.render_current_session_messages()
+
     def on_open_settings(self):
         dialog = SettingsDialog(self, self.workflow_dict, self.workflow_path)
         if dialog.exec() == QDialog.Accepted:
@@ -2482,6 +2592,23 @@ class AgentRuntimeMainWindow(QMainWindow):
                 success, err = self.compile_and_update_agent(self.workflow_dict, self.workflow_path)
                 if not success:
                     QMessageBox.critical(self, "컴파일 오류", f"에이전트 컴파일에 실패했습니다:\n{err}")
+            else:
+                self._clear_current_agent_state()
+        else:
+            # 닫기(취소)를 눌렀더라도 현재 로드된 에이전트가 삭제되었다면 남은 에이전트 또는 초기 상태로 갱신
+            if self.workflow_path and not os.path.exists(self.workflow_path):
+                fallback_path = get_last_agent_path()
+                if fallback_path and os.path.exists(fallback_path):
+                    try:
+                        with open(fallback_path, "r", encoding="utf-8") as f:
+                            content = json.load(f)
+                        self.workflow_dict = content
+                        self.workflow_path = fallback_path
+                        self.compile_and_update_agent(content, fallback_path)
+                    except Exception:
+                        self._clear_current_agent_state()
+                else:
+                    self._clear_current_agent_state()
 
     def render_current_session_messages(self):
         while self.chat_messages_layout.count() > 1:
@@ -2705,7 +2832,17 @@ class AgentRuntimeMainWindow(QMainWindow):
             self.txt_input.setEnabled(True)
             self.txt_input.setFocus()
 
+    def _scroll_chat_to_bottom(self):
+        sb = self.chat_scroll.verticalScrollBar()
+        if sb:
+            sb.setValue(sb.maximum())
+
     def _create_live_bubble(self, initial_logs: list, active_node_label: str = ""):
+        if self.live_thought_widget is not None:
+            if active_node_label:
+                self.live_thought_widget.set_active_node(active_node_label)
+            return
+
         row_widget = QWidget()
         row_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         row_layout = QHBoxLayout(row_widget)
@@ -2761,10 +2898,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         else:
             self.live_thought_widget.set_active_node(node_label)
 
-        QApplication.processEvents()
-        self.chat_scroll.verticalScrollBar().setValue(
-            self.chat_scroll.verticalScrollBar().maximum()
-        )
+        QTimer.singleShot(0, self._scroll_chat_to_bottom)
 
     @Slot(str, str, str)
     def on_agent_step_log(self, session_id: str, node_name: str, log_message: str):
@@ -2789,10 +2923,7 @@ class AgentRuntimeMainWindow(QMainWindow):
         else:
             self.live_thought_widget.append_log(log_message)
 
-        QApplication.processEvents()
-        self.chat_scroll.verticalScrollBar().setValue(
-            self.chat_scroll.verticalScrollBar().maximum()
-        )
+        QTimer.singleShot(0, self._scroll_chat_to_bottom)
 
     @Slot(str, str, list)
     def on_agent_finished(self, session_id: str, output: str, logs: list):
@@ -2834,10 +2965,7 @@ class AgentRuntimeMainWindow(QMainWindow):
             else:
                 self.add_message_bubble("assistant", output, logs)
 
-            QApplication.processEvents()
-            self.chat_scroll.verticalScrollBar().setValue(
-                self.chat_scroll.verticalScrollBar().maximum()
-            )
+            QTimer.singleShot(0, self._scroll_chat_to_bottom)
 
         self.set_executing_state(False)
 
