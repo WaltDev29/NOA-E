@@ -229,18 +229,13 @@ export const StudioQuestGuide: React.FC = () => {
     };
   }, [activeGuide]);
 
-  // 1. 에이전트 제작 가이드 진입 시 캔버스 빈 상태로 초기화
-  const hasInitializedCanvas = useRef(false);
+  // 1. 에이전트 제작 가이드 진입 시 캔버스 빈 상태로 초기화 (Step 1은 노드 배치 전 소개 단계)
   useEffect(() => {
-    if (activeGuide === 'studio_quest' && studioQuestStep === 1 && !hasInitializedCanvas.current) {
-      hasInitializedCanvas.current = true;
+    if (activeGuide === 'studio_quest' && studioQuestStep === 1) {
       setNodes([]);
       setEdges([]);
       setSelectedNode(null);
       clearLogs();
-    }
-    if (activeGuide !== 'studio_quest') {
-      hasInitializedCanvas.current = false;
     }
   }, [activeGuide, studioQuestStep, setNodes, setEdges, setSelectedNode, clearLogs]);
 

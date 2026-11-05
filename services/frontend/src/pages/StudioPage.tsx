@@ -9,6 +9,7 @@ import { NodeInfoModal } from '../components/editor/NodeInfoModal';
 import { OutputResultModal } from '../components/editor/OutputResultModal';
 import { ExportModal } from '../components/panel/ExportModal';
 import { StudioQuestGuide } from '../components/onboarding/StudioQuestGuide';
+import { useOnboarding } from '../context/OnboardingContext';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
@@ -19,6 +20,7 @@ import { TEMPLATES_DATA, convertTemplateToReactFlow } from './TemplatesPage';
 export const StudioPage: React.FC = () => {
   const { user } = useAuth();
   const { showAlert } = useModal();
+  const { activeGuide } = useOnboarding();
   const { search } = useLocation();
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(undefined);
   const [agentName, setAgentName] = useState('새로운 에이전트');
@@ -57,6 +59,7 @@ export const StudioPage: React.FC = () => {
   const setNodes = useWorkflowStore((state) => state.setNodes);
   const setEdges = useWorkflowStore((state) => state.setEdges);
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
+  const setSelectedNode = useWorkflowStore((state) => state.setSelectedNode);
   const isExecuting = useWorkflowStore((state) => state.isExecuting);
   const nodeResults = useWorkflowStore((state) => state.nodeResults);
   const clearMessages = useWorkflowStore((state) => state.clearMessages);
@@ -114,32 +117,54 @@ export const StudioPage: React.FC = () => {
         setAgentName('새로운 에이전트');
       }
     } else {
-      // 신규 에이전트 모드: 이전 작업 중이던 캔버스 상태(노드/엣지/로그)를 기본값으로 초기화
+      // 신규 에이전트 모드
       setCurrentWorkflowId(undefined);
-      resetWorkflow();
 
-      // 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
-      if (user?.id) {
-        workflowApi.getMyWorkflows(user.id).then((myList) => {
-          const titles = new Set(myList.map((w) => w.title));
-          const baseName = '새로운 에이전트';
-          if (!titles.has(baseName)) {
-            setAgentName(baseName);
-          } else {
-            let num = 1;
-            while (titles.has(`${baseName} ${num}`)) {
-              num++;
-            }
-            setAgentName(`${baseName} ${num}`);
-          }
-        }).catch(() => {
-          setAgentName('새로운 에이전트');
-        });
+      if (activeGuide === 'studio_quest') {
+        // 에이전트 제작 가이드 진행 중에는 기본 노드를 자동 배치하지 않고 빈 캔버스 유지
+        setNodes([]);
+        setEdges([]);
+        setSelectedNode(null);
+        clearLogs();
+        setAgentName('에이전트 제작 가이드');
       } else {
-        setAgentName('새로운 에이전트');
+        // 이전 작업 중이던 캔버스 상태(노드/엣지/로그)를 기본값으로 초기화
+        resetWorkflow();
+
+        // 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
+        if (user?.id) {
+          workflowApi.getMyWorkflows(user.id).then((myList) => {
+            const titles = new Set(myList.map((w) => w.title));
+            const baseName = '새로운 에이전트';
+            if (!titles.has(baseName)) {
+              setAgentName(baseName);
+            } else {
+              let num = 1;
+              while (titles.has(`${baseName} ${num}`)) {
+                num++;
+              }
+              setAgentName(`${baseName} ${num}`);
+            }
+          }).catch(() => {
+            setAgentName('새로운 에이전트');
+          });
+        } else {
+          setAgentName('새로운 에이전트');
+        }
       }
     }
-  }, [search, user?.id, setNodes, setEdges, addLog, resetWorkflow]);
+  }, [search, user?.id, setNodes, setEdges, addLog, resetWorkflow, activeGuide, setSelectedNode, clearLogs]);
+
+  // 스튜디오 퀘스트 가이드 시작 시 즉시 캔버스 비우기
+  useEffect(() => {
+    if (activeGuide === 'studio_quest') {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNode(null);
+      clearLogs();
+      setAgentName('에이전트 제작 가이드');
+    }
+  }, [activeGuide, setNodes, setEdges, setSelectedNode, clearLogs]);
 
   // 컴포넌트 마운트 시: 백엔드 환경 변수 기반 모델 기능(capabilities) 로드
   useEffect(() => {
