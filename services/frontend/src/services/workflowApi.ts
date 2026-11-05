@@ -38,7 +38,7 @@ export interface WorkflowSavePayload {
 }
 
 const apiClient = axios.create({
-  baseURL: '/api/workflow',
+  baseURL: '/noa-e/api/workflow',
   headers: {
     'Content-Type': 'application/json',
   },

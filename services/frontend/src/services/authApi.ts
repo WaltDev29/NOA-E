@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { User, LoginCredentials, RegisterData } from '../types/auth';
 
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: '/noa-e/api',
   headers: {
     'Content-Type': 'application/json',
   },

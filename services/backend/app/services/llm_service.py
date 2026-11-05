@@ -87,6 +87,8 @@ def resolve_model_endpoint_config(custom_config: Optional[Dict[str, Any]] = None
 
     # 1. 사용할 모델명 결정 (노드 config > 환경설정 LLM_MODEL > 기본값)
     target_model = custom_config.get("model") or default_model
+    if models_config and target_model not in models_config and not custom_config.get("base_url"):
+        target_model = default_model
 
     # 2. 모델별 사전 정의 설정 확인
     matched_model_config = models_config.get(target_model, {})

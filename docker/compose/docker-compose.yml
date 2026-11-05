@@ -1,41 +1,14 @@
 name: noa-e
 
 services:
-  nginx:
-    container_name: noa-e-nginx
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ../../services/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-      - backend
-
-  ollama:
-    container_name: noa-e-ollama
-    image: ollama/ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
-  ollama-init:
-    container_name: noa-e-ollama-init
-    image: ollama/ollama
-    depends_on:
-      - ollama
-    command: ["pull", "gemma2:2b"]
-    environment:
-      - OLLAMA_HOST=ollama:11434
-
   frontend:
     container_name: noa-e-frontend
-    build: 
+    build:
       context: ../../services/frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "5174:3000"
     volumes:
       - ../../services/frontend:/app
       - /app/node_modules
@@ -49,8 +22,9 @@ services:
     build:
       context: ../../services/backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8006:8000"
     volumes:
       - ../../services/backend:/app
       - ../../runtime/installer_output:/app/installer_output:ro
@@ -64,10 +38,9 @@ services:
   db:
     container_name: noa-e-db
     image: postgres:15-alpine
+    restart: unless-stopped
     env_file:
       - ../env/.env.db
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -78,4 +51,3 @@ services:
 
 volumes:
   postgres_data:
-  ollama_data:

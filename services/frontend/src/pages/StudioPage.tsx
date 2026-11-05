@@ -603,7 +603,7 @@ const HiddenRunTrigger: React.FC = () => {
     let previousOutput = (inputNodes[0]?.data as any)?.config?.input_text || '';
 
     try {
-      const response = await fetch('/api/workflow/run', {
+      const response = await fetch('/noa-e/api/workflow/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodes, edges, messages }),

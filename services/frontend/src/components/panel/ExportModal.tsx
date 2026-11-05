@@ -123,7 +123,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, agent
   // 로컬 실행기 설치 파일(.exe) 다운로드 트리거
   const handleDownloadRunner = () => {
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', '/api/workflow/runtime/download');
+    downloadAnchor.setAttribute('href', '/noa-e/api/workflow/runtime/download');
     downloadAnchor.setAttribute('download', 'NOA-E_Desktop_Setup_v1.0.0.exe');
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
