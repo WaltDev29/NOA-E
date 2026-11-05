@@ -100,46 +100,120 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
       },
     ],
   },
-  agent: {
-    id: 'agent',
-    name: '자율 에이전트 (Autonomous Agent)',
-    subtitle: '스스로 판단하고 도구를 자율 실행하는 독립 에이전트',
+  planner: {
+    id: 'planner',
+    name: '플래너 (Planner)',
+    subtitle: '다단계 작업 계획 수립',
     category: 'LLM',
-    badgeType: 'Agentic',
-    icon: 'smart_toy',
-    accentColor: 'secondary',
-    tagList: ['자율 추론', 'ReAct 아키텍처', '목표 지향', '자동 도구 호출'],
+    badgeType: 'Planning',
+    icon: 'assignment',
+    accentColor: 'primary',
+    tagList: ['계획 수립', 'Task 분해', '전략 플래닝', '복합 질의'],
     description:
-      '자율 에이전트 노드는 주어진 목표(Goal)를 달성하기 위해 필요한 도구(웹 검색, 계산 등)를 스스로 판단하여 단계별로 실행하고, 최종 답변을 종합해내는 고도화된 에이전트 노드입니다.',
+      '플래너 노드는 사용자 요청을 달성하기 위해, 어떤 순서로 어떤 작업(Task)들을 수행해야 하는지 구체적인 실행 계획 목록을 수립합니다.',
     features: [
       {
-        title: 'ReAct (Reason + Act) 자율 사이클',
-        desc: '생각(Thought) -> 행동(Action) -> 관찰(Observation) 사이클을 스스로 반복 수행',
+        title: '다단계 작업 분해',
+        desc: '사용자 요청을 달성하기 위한 개별 태스크들을 순차 목록(Task List)으로 명확히 분할',
       },
       {
-        title: '자율 도구 오케스트레이션',
-        desc: '질문 해결에 필요한 도구를 에이전트가 직접 선택하고 파라미터를 구성해 호출',
+        title: '전략적 플래닝',
+        desc: '어떤 도구나 지능이 필요한지 파악하여 후속 라우터 노드가 분배할 수 있도록 구조화',
       },
       {
-        title: '원스톱 파이프라인 구성',
-        desc: '복잡한 다중 분기 연결 없이 단일 노드로 자율 추론과 작업 완결 지원',
+        title: '유연한 파이프라인 연계',
+        desc: '라우터 없이 LLM 노드나 Output에 바로 연결하여 단독 계획 수립기로도 활용 가능',
       },
     ],
     modelsOrConfigs: [
-      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '추론 모델', context: '로컬 ReAct 에이전트' },
-      { name: 'system_prompt', org: 'System Instruction', badge: '에이전트 지침', context: '자율 행동 규칙 설정' },
+      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '추론 모델', context: '로컬 계획 수립기' },
+      { name: 'system_prompt', org: 'Planner Instructions', badge: '지침', context: '계획 수립 가이드' },
     ],
     examples: [
       {
-        title: '복합 목표 자율 해결 예시',
-        prompt: 'Goal: "2026년 최신 파이썬 버전을 검색하고, 그 버전 번호의 제곱근을 계산해줘."',
-        resultJson: '{\n  "thought": "최신 파이썬 버전 정보를 검색한 후 수학 계산 도구를 실행해야 합니다.",\n  "actions": ["search_web", "calculator"],\n  "final_answer": "최신 파이썬 버전 정보를 바탕으로 연산된 결과입니다."\n}',
+        title: '복합 질의 계획 수립 예시',
+        prompt: 'Input: "2026년 전기차 시장 트렌드를 조사하고 가격 변동성을 분석해줘."',
+        resultJson: '{\n  "plan": [\n    "1. 2026년 전기차 시장 최신 동향 및 주요 모델 검색",\n    "2. 주요 제조사별 배터리 및 차량 가격 변동 데이터 수집",\n    "3. 수집된 데이터를 바탕으로 종합 분석 보고서 작성"\n  ]\n}',
+      },
+    ],
+  },
+  router: {
+    id: 'router',
+    name: '라우터 (Router)',
+    subtitle: '지능형 작업 분기 및 루프 제어',
+    category: 'LLM',
+    badgeType: 'Routing',
+    icon: 'alt_route',
+    accentColor: 'secondary',
+    tagList: ['작업 분기', '루프 제어', '시맨틱 라우팅', '시스템 프롬프트'],
+    description:
+      '라우터 노드는 시스템 지침(System Instructions)과 현재 작업 내용을 분석하여 연결된 Worker 노드 중 가장 알맞은 노드로 작업을 분배하고, 작업 완료 후 루프를 통제합니다.',
+    features: [
+      {
+        title: '자연어 라우팅 지침 제어',
+        desc: '시스템 프롬프트를 통해 자연어로 작업 분기 기준(조건)을 직관적으로 설정',
+      },
+      {
+        title: '제어된 루프 (Controlled Loop)',
+        desc: 'Worker의 작업 완료 후 복귀선(loop-return)을 받아 다음 작업을 순차적으로 배분',
+      },
+      {
+        title: '최대 루프 상한 안전장치',
+        desc: '설정된 최대 루프 횟수(기본 5회) 도달 시 무한 루프 없이 안전하게 종료 경로로 탈출',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'max_loops', org: '1~10회 (기본: 5)', badge: '루프 한도', context: '무한 루프 방지 상한선' },
+      { name: 'system_prompt', org: 'Routing Instructions', badge: '라우팅 지침', context: '자연어 분기 규칙' },
+    ],
+    examples: [
+      {
+        title: '자연어 기반 분기 예시',
+        prompt: 'System: 수학 계산이면 계산기로, 최신 정보면 검색기로 보내세요.\nTask: "2026년 파이썬 출시일 조사하기"',
+        resultJson: '{\n  "selected_worker": "search-1",\n  "reason": "최신 인터넷 정보 조사가 필요한 작업입니다."\n}',
+      },
+    ],
+  },
+  aggregator: {
+    id: 'aggregator',
+    name: '어그리게이터 (Aggregator)',
+    subtitle: '중간 산출물 종합 및 최종 합성',
+    category: 'LLM',
+    badgeType: 'Synthesis',
+    icon: 'auto_awesome',
+    accentColor: 'tertiary',
+    tagList: ['결과 종합', '보고서 합성', '중복 정리', '최종 완성'],
+    description:
+      '어그리게이터 노드는 여러 단계에서 Worker 노드들이 수집하고 처리한 중간 결과들을 취합하여, 논리적이고 깔끔한 단일 최종 답변으로 합성합니다.',
+    features: [
+      {
+        title: '다중 산출물 자동 종합',
+        desc: '여러 Worker 노드가 거쳐간 중간 실행 단계(intermediate_steps)를 한눈에 수집',
+      },
+      {
+        title: '완성도 높은 답변 합성',
+        desc: '중복 내용을 제거하고 핵심 통찰을 정리하여 마크다운 서식으로 최종 답변 작성',
+      },
+      {
+        title: '독립 모듈러 지원',
+        desc: '루프 파이프라인의 종결점뿐만 아니라 다중 노드의 병렬 취합기로도 유연하게 활용',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'gemma2:2b', org: 'Google / Ollama', badge: '합성 모델', context: '최종 보고서 작성' },
+      { name: 'system_prompt', org: 'Aggregator Instructions', badge: '지침', context: '종합 서식 가이드' },
+    ],
+    examples: [
+      {
+        title: '다단계 결과 종합 예시',
+        prompt: 'Inputs: [검색 결과 요약, 수식 계산 결과]\nQuery: "기술 분석 및 비용 계산"',
+        resultJson: '{\n  "final_answer": "## 2026년 기술 동향 분석 및 비용 산출 보고서\n\n1. 최신 기술 분석: ...\n2. 예상 비용 계산: 총 14,250원\n\n### 결론: ...",\n  "status": "completed"\n}',
       },
     ],
   },
   'web-search': {
     id: 'web-search',
-    name: '웹 검색 도구 (Web Search)',
+    name: '검색 Tool',
     subtitle: '실시간 인터넷 정보 검색 및 요약 수집',
     category: '도구',
     badgeType: 'Tool',
@@ -174,40 +248,77 @@ const NODE_CATALOG: Record<string, NodeDetail> = {
       },
     ],
   },
-  calculator: {
-    id: 'calculator',
-    name: '계산기 도구 (Calculator)',
-    subtitle: '수학 수식 및 정밀 산술 연산 도구',
+  weather: {
+    id: 'weather',
+    name: '날씨 Tool',
+    subtitle: 'Open-Meteo 기반 현재 날씨 및 일별 예보 조회',
     category: '도구',
     badgeType: 'Tool',
-    icon: 'calculate',
+    icon: 'partly_cloudy_day',
     accentColor: 'tertiary',
-    tagList: ['도구 노드', '정밀 계산', '사칙연산', '오차 방지'],
+    tagList: ['도구 노드', 'Open-Meteo', '실시간 기상', '일별 예보'],
     description:
-      '계산기 노드는 언어 모델이 계산 실수나 환각을 일으키기 쉬운 복잡한 수학 연산과 수식을 정확하고 안전하게 계산해주는 도구 노드입니다.',
+      '날씨 Tool 노드는 별도의 API Key 없이 Open-Meteo 기상 데이터를 활용하여 전 세계 도시의 현재 기온, 체감 온도, 습도, 풍속 및 최대 7일간의 일별 예보를 조회하는 도구 노드입니다.',
     features: [
       {
-        title: '정밀 산술 연산 지원',
-        desc: '사칙연산(+, -, *, /) 및 괄호 수식을 오차 없이 안전하고 정확하게 계산',
+        title: '전 세계 도시 자동 좌표 변환',
+        desc: '한국어/영문 도시명을 입력하면 Geocoding API로 위·경도를 자동 탐색',
       },
       {
-        title: 'LLM 도구 포트 연동',
-        desc: 'LLM 노드의 상단 도구 포트에 결합되어 수식 계산 필요 시 즉시 호출',
+        title: '현재 기상 및 일별 예보 제공',
+        desc: '현재 기온·습도·풍속과 함께 일별 최저/최고 기온 및 강수 확률 반환',
       },
       {
-        title: '안전한 샌드박스 연산',
-        desc: '안전한 수식 파서를 적용하여 유효한 수학식만 정밀 계산 후 결과 반환',
+        title: 'API Key 불필요',
+        desc: 'Open-Meteo 공개 API 기반으로 별도 인증 키 설정 없이 즉시 사용 가능',
       },
     ],
     modelsOrConfigs: [
-      { name: 'engine', org: 'Math Evaluator', badge: '연산 엔진', context: '정밀 수식 연산기' },
-      { name: 'operators', org: '+, -, *, /, ()', badge: '지원 연산', context: '표준 사칙연산 수식' },
+      { name: 'provider', org: 'Open-Meteo', badge: '기상 API', context: '무료 실시간 기상 조회' },
+      { name: 'forecast_days', org: '기본 3일 (최대 7일)', badge: '예보 범위', context: '일별 기상 예보' },
     ],
     examples: [
       {
-        title: '복합 수식 계산 예시',
-        prompt: 'Expression: "(15000 * 0.85) + 3000 / 2"',
-        resultJson: '{\n  "expression": "(15000 * 0.85) + 3000 / 2",\n  "result": 14250.0,\n  "status": "success"\n}',
+        title: '도시 날씨 조회 예시',
+        prompt: 'location: "서울", days: 3',
+        resultJson: '{\n  "location": "서울, 대한민국",\n  "current": "맑음, 18.2°C (습도 45%)",\n  "daily": ["내일: 구름 조금 11~20°C (강수확률 10%)"]\n}',
+      },
+    ],
+  },
+  youtube: {
+    id: 'youtube',
+    name: 'YouTube Tool',
+    subtitle: 'YouTube Data API v3 기반 영상 검색',
+    category: '도구',
+    badgeType: 'Tool',
+    icon: 'smart_display',
+    accentColor: 'secondary',
+    tagList: ['도구 노드', 'YouTube API', '영상 검색', '채널/링크 수집'],
+    description:
+      'YouTube Tool 노드는 YouTube Data API v3를 사용하여 검색어와 관련된 최신·인기 YouTube 영상의 제목, 채널명, 게시일, 시청 링크를 조회하여 LLM에 전달하는 도구 노드입니다.',
+    features: [
+      {
+        title: '정확한 공식 API 검색',
+        desc: 'YouTube Data API v3를 통해 영상 제목, 채널명, 게시일, 설명 및 직링크 추출',
+      },
+      {
+        title: 'LLM 상단 도구 포트 연동',
+        desc: 'LLM 노드의 상단 포트에 연결되어 영상 자료나 레퍼런스 요청 시 자동 호출',
+      },
+      {
+        title: '환경변수 기반 안전한 키 관리',
+        desc: '.env.backend의 YOUTUBE_API_KEY를 통해 API 키를 안전하게 주입 및 마스킹',
+      },
+    ],
+    modelsOrConfigs: [
+      { name: 'YOUTUBE_API_KEY', org: 'Google Cloud Console', badge: '필수 환경변수', context: '.env.backend에 설정' },
+      { name: 'max_results', org: '기본 5개 (1~10개)', badge: '결과 수량', context: '반환 영상 개수' },
+    ],
+    examples: [
+      {
+        title: 'YouTube 영상 검색 예시',
+        prompt: 'query: "파이썬 LangGraph 강의", max_results: 3',
+        resultJson: '{\n  "query": "파이썬 LangGraph 강의",\n  "videos": [\n    {"title": "LangGraph 완벽 입문", "url": "https://www.youtube.com/watch?v=..."}\n  ]\n}',
       },
     ],
   },
@@ -405,10 +516,13 @@ export const NodeInstructionPage: React.FC = () => {
                         onClick={() => {
                           const nodeTypeMap: Record<string, string> = {
                             input: 'inputNode',
+                            planner: 'plannerNode',
+                            router: 'routerNode',
                             llm: 'llmNode',
-                            agent: 'agentNode',
+                            aggregator: 'aggregatorNode',
                             'web-search': 'searchNode',
-                            calculator: 'calculatorNode',
+                            weather: 'weatherNode',
+                            youtube: 'youtubeNode',
                             output: 'outputNode',
                           };
                           const targetType = nodeTypeMap[current.id] || 'llmNode';
@@ -426,17 +540,10 @@ export const NodeInstructionPage: React.FC = () => {
                   {/* Hero Right 3D Visual Cube Indicator */}
                   <div className="relative z-10 shrink-0 w-44 h-44 sm:w-52 sm:h-52 rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-space-md flex flex-col items-center justify-center shadow-[0_0_35px_rgba(139,92,246,0.3)]">
                     <div className="absolute inset-3 rounded-xl bg-gradient-to-tr from-secondary-container/30 via-primary/10 to-transparent animate-pulse pointer-events-none" />
-                    <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-br from-[#702ff6] via-[#4d2db7] to-[#1e1548] flex flex-col items-center justify-center shadow-[0_0_25px_rgba(112,47,246,0.6)]">
-                      <span className="material-symbols-outlined text-white text-[38px] drop-shadow-[0_2px_10px_rgba(255,255,255,0.7)]">
+                    <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-br from-[#702ff6] via-[#4d2db7] to-[#1e1548] flex items-center justify-center shadow-[0_0_25px_rgba(112,47,246,0.6)]">
+                      <span className="material-symbols-outlined text-white text-[44px] drop-shadow-[0_2px_10px_rgba(255,255,255,0.7)]">
                         {current.icon}
                       </span>
-                      <span className="font-headline-sm text-headline-sm font-extrabold tracking-widest text-white mt-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
-                        {current.id.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="mt-space-sm flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-high/80 text-tertiary font-label-badge text-label-badge">
-                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping" />
-                      <span>온라인 엔진 활성</span>
                     </div>
                   </div>
                 </section>
@@ -573,7 +680,7 @@ export const NodeInstructionPage: React.FC = () => {
                           <span className="font-label-code text-label-code text-secondary mb-2">
                             OUTPUT STATE (JSON)
                           </span>
-                          <pre className="font-label-code text-label-code text-secondary-fixed-dim whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                          <pre className="font-label-code text-label-code text-secondary whitespace-pre-wrap leading-relaxed overflow-x-auto">
                             {ex.resultJson}
                           </pre>
                         </div>

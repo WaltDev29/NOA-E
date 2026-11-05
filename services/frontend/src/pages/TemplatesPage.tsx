@@ -1,9 +1,26 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import type { Node, Edge } from '@xyflow/react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Link, useNavigate, useParams } from '../router/Router';
 import { useOnboarding } from '../context/OnboardingContext';
 import { SpotlightTour } from '../components/onboarding/SpotlightTour';
+
+export interface TemplateWorkflowNode {
+  id: string;
+  type: string;
+  label: string;
+  position: { x: number; y: number };
+  config: Record<string, any>;
+}
+
+export interface TemplateWorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+}
 
 export interface AgentTemplate {
   id: string;
@@ -18,7 +35,59 @@ export interface AgentTemplate {
   themeColor: string;
   dotColor: string;
   graphSvg: React.ReactNode;
+  workflow: {
+    schema_version: string;
+    metadata: {
+      agent_id: string;
+      agent_name: string;
+      description: string;
+      exported_at: string;
+    };
+    nodes: TemplateWorkflowNode[];
+    edges: TemplateWorkflowEdge[];
+  };
 }
+
+// 내보내기된 템플릿 JSON의 백엔드 노드 타입을 스튜디오(ReactFlow) 노드 타입으로 매핑하기 위한 변환 테이블
+const BACKEND_TO_REACTFLOW_NODE_TYPE: Record<string, string> = {
+  input: 'inputNode',
+  output: 'outputNode',
+  llm: 'llmNode',
+  planner: 'plannerNode',
+  router: 'routerNode',
+  aggregator: 'aggregatorNode',
+  search: 'searchNode',
+  weather: 'weatherNode',
+  youtube: 'youtubeNode',
+  agent: 'agentNode',
+};
+
+// 템플릿 선택 시 스튜디오 캔버스에 즉시 렌더링할 수 있도록 ReactFlow 규격의 Node/Edge 배열로 변환
+export const convertTemplateToReactFlow = (
+  template: AgentTemplate
+): { nodes: Node[]; edges: Edge[] } => {
+  const nodes: Node[] = template.workflow.nodes.map((n) => ({
+    id: n.id,
+    type: BACKEND_TO_REACTFLOW_NODE_TYPE[n.type] || n.type,
+    position: { x: n.position.x, y: n.position.y },
+    data: {
+      label: n.label,
+      config: { ...n.config },
+    },
+  }));
+
+  const edges: Edge[] = template.workflow.edges.map((e) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    ...(e.sourceHandle ? { sourceHandle: e.sourceHandle } : {}),
+    ...(e.targetHandle ? { targetHandle: e.targetHandle } : {}),
+    type: 'custom',
+    animated: true,
+  }));
+
+  return { nodes, edges };
+};
 
 export interface CategoryInfo {
   id: string;
@@ -75,319 +144,459 @@ const CATEGORIES: CategoryInfo[] = [
 
 export const TEMPLATES_DATA: AgentTemplate[] = [
   {
-    id: 'template-chat-tutor',
-    name: '스마트 영어 회화 튜터',
-    category: 'chat',
-    categoryLabel: '대화 & 챗봇',
-    difficulty: '기초',
-    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
-    description: '사용자의 영어 문장을 교정해주고 상황별 자연스러운 회화를 이끌어주는 1:1 AI 튜터 템플릿입니다.',
-    tags: ['사용자 입력', 'LLM', '시스템 프롬프트', '출력'],
-    nodeCount: 3,
-    themeColor: 'border-primary/40 hover:border-primary',
-    dotColor: '#4d8eff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 C 85 60, 95 40, 130 40" stroke="#4d8eff" strokeWidth="2" strokeDasharray="3 3" />
-        <path d="M 130 40 C 165 40, 175 60, 215 60" stroke="#4d8eff" strokeWidth="2" />
-        <rect x="15" y="44" width="38" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="34" y="64" fill="#adc6ff" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="monospace">USER</text>
-        <rect x="108" y="24" width="52" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="134" y="44" fill="#d0bcff" fontSize="10" fontWeight="bold" textAnchor="middle">TUTOR</text>
-        <rect x="202" y="44" width="42" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="223" y="64" fill="#4cd7f6" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="monospace">FEEDBACK</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-chat-support',
-    name: '고객 문의 24/7 자동 응답봇',
-    category: 'chat',
-    categoryLabel: '대화 & 챗봇',
-    difficulty: '중급',
-    difficultyColor: 'bg-secondary/20 text-secondary border-secondary/30',
-    description: 'FAQ 데이터와 시스템 규칙을 기반으로 고객 문의를 정중하고 정확하게 처리하는 챗봇입니다.',
-    tags: ['사용자 입력', 'LLM', '조건 분기', '출력'],
-    nodeCount: 4,
-    themeColor: 'border-secondary/40 hover:border-secondary',
-    dotColor: '#c4abff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 40 60 L 85 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 125 45 L 175 30" stroke="#c4abff" strokeWidth="2" />
-        <path d="M 125 75 L 175 90" stroke="#4cd7f6" strokeWidth="2" />
-        <rect x="10" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="85" y="44" width="44" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="107" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">ROUTER</text>
-        <rect x="175" y="14" width="48" height="30" rx="8" fill="#171f33" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="199" y="33" fill="#adc6ff" fontSize="8" textAnchor="middle">FAQ BOT</text>
-        <rect x="175" y="76" width="48" height="30" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="199" y="95" fill="#4cd7f6" fontSize="8" textAnchor="middle">HUMAN</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-chat-mentor',
-    name: '친절한 청소년 코딩 멘토',
-    category: 'chat',
-    categoryLabel: '대화 & 챗봇',
-    difficulty: '기초',
-    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
-    description: '정답을 바로 주지 않고 알기 쉬운 일상 비유와 힌트로 코딩 개념을 가르쳐주는 맞춤형 멘토입니다.',
-    tags: ['사용자 입력', 'LLM', '페르소나', '출력'],
-    nodeCount: 3,
-    themeColor: 'border-primary/40 hover:border-primary',
-    dotColor: '#4d8eff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 C 85 60, 95 60, 125 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 165 60 C 185 60, 195 60, 215 60" stroke="#4d8eff" strokeWidth="2" />
-        <rect x="15" y="44" width="36" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="33" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">STUDENT</text>
-        <rect x="125" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="148" y="64" fill="#d0bcff" fontSize="10" fontWeight="bold" textAnchor="middle">MENTOR</text>
-        <rect x="215" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="232" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">HINT</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-search-news',
-    name: '실시간 뉴스 심층 리서처',
+    id: 'agent-1793841708633',
+    name: '날씨 조회 에이전트',
     category: 'search',
     categoryLabel: '리서치 & 검색',
-    difficulty: '중급',
-    difficultyColor: 'bg-tertiary/20 text-tertiary border-tertiary/30',
-    description: '구글/네이버에서 최신 이슈를 검색하고 다양한 언론사 기사를 교차 검증하여 3줄로 요약합니다.',
-    tags: ['사용자 입력', '웹 검색 도구', 'LLM 요약', '출력'],
+    difficulty: '기초',
+    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
+    description: '날씨 Tool을 활용하여 날씨 조회가 가능한 에이전트입니다.',
+    tags: ['Input', 'LLM', '날씨 Tool', 'Output'],
     nodeCount: 4,
     themeColor: 'border-tertiary/40 hover:border-tertiary',
     dotColor: '#4cd7f6',
     graphSvg: (
       <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 40 60 L 85 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 135 60 L 175 60" stroke="#4cd7f6" strokeWidth="2" />
-        <path d="M 220 60 L 235 60" stroke="#c4abff" strokeWidth="2" />
-        <rect x="10" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <rect x="85" y="44" width="50" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="110" y="64" fill="#4cd7f6" fontSize="8" fontWeight="bold" textAnchor="middle">WEB SEARCH</text>
-        <rect x="175" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="198" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">LLM</text>
+        <path d="M 52 76 L 104 76" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 130 40 L 130 60" stroke="#4cd7f6" strokeWidth="2" strokeDasharray="3 3" />
+        <path d="M 156 76 L 204 76" stroke="#c4abff" strokeWidth="2" />
+        <rect x="14" y="60" width="38" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="33" y="80" fill="#4cd7f6" fontSize="8.5" fontWeight="bold" textAnchor="middle" fontFamily="monospace">INPUT</text>
+        <rect x="98" y="10" width="64" height="28" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="130" y="28" fill="#4cd7f6" fontSize="8" fontWeight="bold" textAnchor="middle">날씨 TOOL</text>
+        <rect x="104" y="60" width="52" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="130" y="80" fill="#d0bcff" fontSize="9.5" fontWeight="bold" textAnchor="middle">LLM</text>
+        <rect x="204" y="60" width="42" height="32" rx="8" fill="#171f33" stroke="#ff5449" strokeWidth="1.5" />
+        <text x="225" y="80" fill="#ffb4ab" fontSize="8" fontWeight="bold" textAnchor="middle" fontFamily="monospace">OUTPUT</text>
       </svg>
     ),
+    workflow: {
+      schema_version: '1.0',
+      metadata: {
+        agent_id: 'agent-1793841708633',
+        agent_name: '날씨 조회 에이전트',
+        description: '날씨 Tool을 활용하여 날씨 조회가 가능한 에이전트입니다.',
+        exported_at: '2026-11-05T01:21:48.633Z',
+      },
+      nodes: [
+        {
+          id: 'input-1',
+          type: 'input',
+          label: 'Input',
+          position: {
+            x: -208.23529411764707,
+            y: 69.41176470588238,
+          },
+          config: {
+            input_text: '내일 서울 날씨 알려줘',
+          },
+        },
+        {
+          id: 'output-1',
+          type: 'output',
+          label: 'Output',
+          position: {
+            x: 405.8923654568209,
+            y: 86.17759699624534,
+          },
+          config: {},
+        },
+        {
+          id: 'llm-1',
+          type: 'llm',
+          label: 'LLM',
+          position: {
+            x: 98.8285356695869,
+            y: 69.42866082603254,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt: '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
+            react_loop: true,
+            max_tool_iterations: 3,
+            tool_instruction: '',
+          },
+        },
+        {
+          id: 'weather-1',
+          type: 'weather',
+          label: '날씨 Tool',
+          position: {
+            x: 98.82853566958693,
+            y: -141.32878598247805,
+          },
+          config: {},
+        },
+      ],
+      edges: [
+        {
+          id: 'xy-edge__llm-1right-output-1',
+          source: 'llm-1',
+          target: 'output-1',
+          sourceHandle: 'right',
+        },
+        {
+          id: 'xy-edge__input-1-llm-1left',
+          source: 'input-1',
+          target: 'llm-1',
+          targetHandle: 'left',
+        },
+        {
+          id: 'xy-edge__weather-1-llm-1tools',
+          source: 'weather-1',
+          target: 'llm-1',
+          targetHandle: 'tools',
+        },
+      ],
+    },
   },
   {
-    id: 'template-search-market',
-    name: '시장 트렌드 & 경쟁사 분석봇',
+    id: 'agent-1793842038153',
+    name: '검색 에이전트',
+    category: 'search',
+    categoryLabel: '리서치 & 검색',
+    difficulty: '기초',
+    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
+    description: '검색 Tool을 활용하여 검색이 가능한 에이전트입니다.',
+    tags: ['Input', 'LLM', '검색 Tool', 'Output'],
+    nodeCount: 4,
+    themeColor: 'border-primary/40 hover:border-primary',
+    dotColor: '#4d8eff',
+    graphSvg: (
+      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
+        <path d="M 52 76 L 104 76" stroke="#4d8eff" strokeWidth="2" />
+        <path d="M 130 40 L 130 60" stroke="#4d8eff" strokeWidth="2" strokeDasharray="3 3" />
+        <path d="M 156 76 L 204 76" stroke="#c4abff" strokeWidth="2" />
+        <rect x="14" y="60" width="38" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
+        <text x="33" y="80" fill="#4cd7f6" fontSize="8.5" fontWeight="bold" textAnchor="middle" fontFamily="monospace">INPUT</text>
+        <rect x="98" y="10" width="64" height="28" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
+        <text x="130" y="28" fill="#adc6ff" fontSize="8" fontWeight="bold" textAnchor="middle">검색 TOOL</text>
+        <rect x="104" y="60" width="52" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
+        <text x="130" y="80" fill="#d0bcff" fontSize="9.5" fontWeight="bold" textAnchor="middle">LLM</text>
+        <rect x="204" y="60" width="42" height="32" rx="8" fill="#171f33" stroke="#ff5449" strokeWidth="1.5" />
+        <text x="225" y="80" fill="#ffb4ab" fontSize="8" fontWeight="bold" textAnchor="middle" fontFamily="monospace">OUTPUT</text>
+      </svg>
+    ),
+    workflow: {
+      schema_version: '1.0',
+      metadata: {
+        agent_id: 'agent-1793842038153',
+        agent_name: '검색 에이전트',
+        description: '검색 Tool을 활용하여 검색이 가능한 에이전트입니다.',
+        exported_at: '2026-11-05T01:27:18.153Z',
+      },
+      nodes: [
+        {
+          id: 'input-1',
+          type: 'input',
+          label: 'Input',
+          position: {
+            x: 100,
+            y: 100,
+          },
+          config: {
+            input_text: '부캉이에 대해 조사해줘',
+          },
+        },
+        {
+          id: 'llm-1',
+          type: 'llm',
+          label: 'LLM',
+          position: {
+            x: 400,
+            y: 100,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt:
+              '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.\n모르는 지식은 검색 Tool을 사용하여 답변하시오.\n모르는 내용을 임의로 대답하지 마시오.',
+            react_loop: true,
+            max_tool_iterations: 3,
+            tool_instruction: '',
+          },
+        },
+        {
+          id: 'output-1',
+          type: 'output',
+          label: 'Output',
+          position: {
+            x: 701.1764705882352,
+            y: 117.64705882352942,
+          },
+          config: {},
+        },
+        {
+          id: 'search-1',
+          type: 'search',
+          label: '검색 Tool',
+          position: {
+            x: 399.5294117647058,
+            y: -111,
+          },
+          config: {},
+        },
+      ],
+      edges: [
+        {
+          id: 'e1-2',
+          source: 'input-1',
+          target: 'llm-1',
+          targetHandle: 'left',
+        },
+        {
+          id: 'e2-3',
+          source: 'llm-1',
+          target: 'output-1',
+          sourceHandle: 'right',
+        },
+        {
+          id: 'xy-edge__search-1-llm-1tools',
+          source: 'search-1',
+          target: 'llm-1',
+          targetHandle: 'tools',
+        },
+      ],
+    },
+  },
+  {
+    id: 'agent-1793843600225',
+    name: '검색 + YouTube 에이전트',
     category: 'search',
     categoryLabel: '리서치 & 검색',
     difficulty: '고급',
     difficultyColor: 'bg-error/20 text-error border-error/30',
-    description: '특정 산업 분야의 최신 동향과 경쟁사 발표 자료를 자동으로 수집하여 종합 분석 보고서를 만듭니다.',
-    tags: ['입력', '검색 도구', '파이썬 코드', 'LLM'],
-    nodeCount: 5,
-    themeColor: 'border-error/40 hover:border-error',
-    dotColor: '#ff5449',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 35 60 L 75 40" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 35 60 L 75 80" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 125 40 L 165 60" stroke="#4cd7f6" strokeWidth="2" />
-        <path d="M 125 80 L 165 60" stroke="#ff5449" strokeWidth="2" />
-        <path d="M 210 60 L 235 60" stroke="#c4abff" strokeWidth="2" />
-        <rect x="75" y="24" width="50" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="100" y="44" fill="#4cd7f6" fontSize="8" textAnchor="middle">SEARCH A</text>
-        <rect x="75" y="64" width="50" height="32" rx="8" fill="#171f33" stroke="#ff5449" strokeWidth="1.5" />
-        <text x="100" y="84" fill="#ff5449" fontSize="8" textAnchor="middle">SEARCH B</text>
-        <rect x="165" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="188" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">SYNTH</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-doc-rag',
-    name: 'PDF 교재 & 매뉴얼 Q&A 봇 (RAG)',
-    category: 'document',
-    categoryLabel: '문서 & 지식 (RAG)',
-    difficulty: '고급',
-    difficultyColor: 'bg-error/20 text-error border-error/30',
-    description: '업로드한 PDF 문서나 학교 교재를 벡터 DB에 저장하여 출처와 함께 정확한 답변을 제공합니다.',
-    tags: ['문서 입력', '벡터 임베딩', 'Vector DB', 'LLM'],
-    nodeCount: 5,
+    description: 'Planner-Router-Worker-Aggregator 구조로 구성된 유튜브 및 웹 검색 에이전트',
+    tags: ['Planner', 'Router', 'Aggregator', '검색 Tool', 'YouTube Tool'],
+    nodeCount: 9,
     themeColor: 'border-secondary/40 hover:border-secondary',
     dotColor: '#c4abff',
     graphSvg: (
       <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 40 40 L 90 40" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 40 80 L 90 80" stroke="#c4abff" strokeWidth="2" />
-        <path d="M 140 40 C 160 40, 160 60, 180 60" stroke="#4cd7f6" strokeWidth="2" />
-        <path d="M 140 80 C 160 80, 160 60, 180 60" stroke="#4cd7f6" strokeWidth="2" />
-        <rect x="10" y="24" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="27" y="44" fill="#adc6ff" fontSize="8" textAnchor="middle">QUERY</text>
-        <rect x="10" y="64" width="34" height="32" rx="8" fill="#171f33" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="27" y="84" fill="#d0bcff" fontSize="8" textAnchor="middle">PDF</text>
-        <rect x="90" y="24" width="50" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="115" y="44" fill="#4cd7f6" fontSize="8" fontWeight="bold" textAnchor="middle">VECTOR DB</text>
-        <rect x="180" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="203" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">RAG LLM</text>
+        <path d="M 34 60 L 56 60" stroke="#4cd7f6" strokeWidth="1.8" />
+        <path d="M 96 60 L 116 60" stroke="#4d8eff" strokeWidth="1.8" />
+        <path d="M 152 60 L 172 26" stroke="#c4abff" strokeWidth="1.6" />
+        <path d="M 152 60 L 172 60" stroke="#4cd7f6" strokeWidth="1.8" />
+        <path d="M 152 60 L 172 94" stroke="#c4abff" strokeWidth="1.6" />
+        <path d="M 212 60 L 226 60" stroke="#4cd7f6" strokeWidth="1.8" />
+        <rect x="6" y="46" width="28" height="28" rx="6" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.4" />
+        <text x="20" y="63" fill="#4cd7f6" fontSize="6.5" fontWeight="bold" textAnchor="middle">IN</text>
+        <rect x="56" y="46" width="40" height="28" rx="6" fill="#171f33" stroke="#4d8eff" strokeWidth="1.4" />
+        <text x="76" y="63" fill="#adc6ff" fontSize="7" fontWeight="bold" textAnchor="middle">PLAN</text>
+        <rect x="116" y="46" width="36" height="28" rx="6" fill="#222a3d" stroke="#c4abff" strokeWidth="1.4" />
+        <text x="134" y="63" fill="#d0bcff" fontSize="6.5" fontWeight="bold" textAnchor="middle">ROUTE</text>
+        <rect x="172" y="12" width="40" height="26" rx="6" fill="#171f33" stroke="#4d8eff" strokeWidth="1.4" />
+        <text x="192" y="28" fill="#adc6ff" fontSize="6.5" fontWeight="bold" textAnchor="middle">검색</text>
+        <rect x="172" y="46" width="40" height="28" rx="6" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.4" />
+        <text x="192" y="63" fill="#4cd7f6" fontSize="6.5" fontWeight="bold" textAnchor="middle">AGG</text>
+        <rect x="172" y="82" width="40" height="26" rx="6" fill="#222a3d" stroke="#c4abff" strokeWidth="1.4" />
+        <text x="192" y="98" fill="#d0bcff" fontSize="6.5" fontWeight="bold" textAnchor="middle">YT</text>
+        <rect x="226" y="46" width="28" height="28" rx="6" fill="#171f33" stroke="#ff5449" strokeWidth="1.4" />
+        <text x="240" y="63" fill="#ffb4ab" fontSize="6.5" fontWeight="bold" textAnchor="middle">OUT</text>
       </svg>
     ),
-  },
-  {
-    id: 'template-doc-summary',
-    name: '긴 회의록 & 보고서 3줄 핵심 요약기',
-    category: 'document',
-    categoryLabel: '문서 & 지식 (RAG)',
-    difficulty: '기초',
-    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
-    description: '수십 장 분량의 긴 회의록에서 결정 사항과 액션 아이템(To-Do)만 쏙쏙 뽑아 정리합니다.',
-    tags: ['텍스트 입력', '청킹', 'LLM 요약', 'JSON 출력'],
-    nodeCount: 3,
-    themeColor: 'border-secondary/40 hover:border-secondary',
-    dotColor: '#c4abff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 145 60 L 185 60" stroke="#c4abff" strokeWidth="2" />
-        <rect x="15" y="44" width="36" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="33" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">DOC</text>
-        <rect x="95" y="44" width="50" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="120" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">SUMMARY</text>
-        <rect x="185" y="44" width="42" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="206" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">BULLETS</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-coding-debugger',
-    name: '파이썬 코드 오류 분석 & 디버깅 봇',
-    category: 'coding',
-    categoryLabel: '코딩 & 개발 도구',
-    difficulty: '중급',
-    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
-    description: '에러 로그와 소스 코드를 입력하면 원인을 분석하고 수정된 코드와 해결 설명을 함께 제시합니다.',
-    tags: ['코드 입력', 'LLM 추론', '파이썬 실행', '출력'],
-    nodeCount: 4,
-    themeColor: 'border-primary/40 hover:border-primary',
-    dotColor: '#4d8eff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 90 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 135 60 L 175 60" stroke="#4cd7f6" strokeWidth="2" />
-        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="32" y="64" fill="#adc6ff" fontSize="9" fontFamily="monospace" textAnchor="middle">&lt;BUG&gt;</text>
-        <rect x="90" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="113" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">DEBUG</text>
-        <rect x="175" y="44" width="48" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="199" y="64" fill="#4cd7f6" fontSize="9" fontFamily="monospace" textAnchor="middle">FIXED</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-coding-sql',
-    name: '자연어 to SQL 쿼리 생성기',
-    category: 'coding',
-    categoryLabel: '코딩 & 개발 도구',
-    difficulty: '중급',
-    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
-    description: '"지난달 구매액 10만원 이상 회원 찾아줘"라고 말하면 완벽한 SQL 쿼리문을 작성해줍니다.',
-    tags: ['자연어 질문', '테이블 스키마', 'LLM', 'SQL 출력'],
-    nodeCount: 3,
-    themeColor: 'border-primary/40 hover:border-primary',
-    dotColor: '#4d8eff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 140 60 L 185 60" stroke="#4d8eff" strokeWidth="2" />
-        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="32" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">KOR</text>
-        <rect x="95" y="44" width="46" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="118" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">SQL GEN</text>
-        <rect x="185" y="44" width="44" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="207" y="64" fill="#4cd7f6" fontSize="9" fontFamily="monospace" textAnchor="middle">SELECT</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-media-image',
-    name: 'AI 아트 프롬프트 인핸서 & 생성기',
-    category: 'media',
-    categoryLabel: '멀티모달 & 미디어',
-    difficulty: '기초',
-    difficultyColor: 'bg-secondary/20 text-secondary border-secondary/30',
-    description: '단순한 단어를 입력하면 화풍, 조명, 구도가 포함된 고화질 이미지 생성 프롬프트로 확장합니다.',
-    tags: ['키워드 입력', '프롬프트 확장', '이미지 모델', '갤러리'],
-    nodeCount: 3,
-    themeColor: 'border-secondary/40 hover:border-secondary',
-    dotColor: '#c4abff',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 45 60 L 95 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 145 60 L 185 60" stroke="#c4abff" strokeWidth="2" />
-        <rect x="15" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="32" y="64" fill="#adc6ff" fontSize="9" textAnchor="middle">IDEA</text>
-        <rect x="95" y="44" width="50" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="120" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">PROMPT+</text>
-        <rect x="185" y="44" width="44" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="207" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">IMAGE</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-auto-email',
-    name: '비즈니스 이메일 자동 분류 & 답장 초안',
-    category: 'automation',
-    categoryLabel: '자동화 & 워크플로우',
-    difficulty: '중급',
-    difficultyColor: 'bg-tertiary/20 text-tertiary border-tertiary/30',
-    description: '수신된 이메일의 긴급도와 주제를 판단하여 카테고리별로 분류하고 맞춤형 답장 초안을 작성합니다.',
-    tags: ['웹훅 트리거', '조건 분기', 'LLM 작성', 'HITL 승인'],
-    nodeCount: 4,
-    themeColor: 'border-tertiary/40 hover:border-tertiary',
-    dotColor: '#4cd7f6',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 40 60 L 85 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 125 45 L 170 30" stroke="#4cd7f6" strokeWidth="2" />
-        <path d="M 125 75 L 170 90" stroke="#c4abff" strokeWidth="2" />
-        <rect x="10" y="44" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="27" y="64" fill="#adc6ff" fontSize="8" textAnchor="middle">MAIL</text>
-        <rect x="85" y="44" width="42" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="106" y="64" fill="#4cd7f6" fontSize="8" textAnchor="middle">CLASSIFY</text>
-        <rect x="170" y="14" width="50" height="30" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="195" y="33" fill="#d0bcff" fontSize="8" fontWeight="bold" textAnchor="middle">URGENT</text>
-        <rect x="170" y="76" width="50" height="30" rx="8" fill="#171f33" stroke="#adc6ff" strokeWidth="1.5" />
-        <text x="195" y="95" fill="#adc6ff" fontSize="8" textAnchor="middle">NORMAL</text>
-      </svg>
-    ),
-  },
-  {
-    id: 'template-auto-weather',
-    name: '매일 아침 날씨 & 캘린더 브리핑 봇',
-    category: 'automation',
-    categoryLabel: '자동화 & 워크플로우',
-    difficulty: '기초',
-    difficultyColor: 'bg-primary/20 text-primary border-primary/30',
-    description: '매일 아침 오늘 날씨와 구글 캘린더 일정을 조회하여 읽기 쉬운 카드 뉴스로 텔레그램에 전송합니다.',
-    tags: ['스케줄 트리거', '날씨 API', '캘린더 도구', '메시지 전송'],
-    nodeCount: 4,
-    themeColor: 'border-tertiary/40 hover:border-tertiary',
-    dotColor: '#4cd7f6',
-    graphSvg: (
-      <svg className="w-full h-full p-4 relative z-10" viewBox="0 0 260 120" fill="none">
-        <path d="M 40 40 L 90 60" stroke="#4d8eff" strokeWidth="2" />
-        <path d="M 40 80 L 90 60" stroke="#4cd7f6" strokeWidth="2" />
-        <path d="M 140 60 L 180 60" stroke="#c4abff" strokeWidth="2" />
-        <rect x="10" y="24" width="34" height="32" rx="8" fill="#171f33" stroke="#4d8eff" strokeWidth="1.5" />
-        <text x="27" y="44" fill="#adc6ff" fontSize="8" textAnchor="middle">TIME</text>
-        <rect x="10" y="64" width="34" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="27" y="84" fill="#4cd7f6" fontSize="8" textAnchor="middle">WEATHER</text>
-        <rect x="90" y="44" width="50" height="32" rx="8" fill="#222a3d" stroke="#c4abff" strokeWidth="1.5" />
-        <text x="115" y="64" fill="#d0bcff" fontSize="9" fontWeight="bold" textAnchor="middle">BRIEFING</text>
-        <rect x="180" y="44" width="46" height="32" rx="8" fill="#171f33" stroke="#4cd7f6" strokeWidth="1.5" />
-        <text x="203" y="64" fill="#4cd7f6" fontSize="9" textAnchor="middle">TELEGRAM</text>
-      </svg>
-    ),
+    workflow: {
+      schema_version: '1.0',
+      metadata: {
+        agent_id: 'agent-1793843600225',
+        agent_name: '검색 + YouTube 에이전트',
+        description: 'Planner-Router-Worker-Aggregator 구조로 구성된 유튜브 및 웹 검색 에이전트',
+        exported_at: '2026-11-05T01:53:20.225Z',
+      },
+      nodes: [
+        {
+          id: 'input-1',
+          type: 'input',
+          label: 'Input',
+          position: {
+            x: -208.23529411764707,
+            y: 69.41176470588238,
+          },
+          config: {
+            input_text: 'OpenAI 최신 소식 검색해줘.\n그리고 해당 소식 관련 유튜브 영상을 찾아줘.',
+          },
+        },
+        {
+          id: 'llm-1',
+          type: 'llm',
+          label: 'YouTube LLM',
+          position: {
+            x: 568.235294117647,
+            y: 450.5882352941176,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt: '랜덤 숫자를 출력해야 하는 경우 4를 출력하시오. 별도의 설명, 텍스트 없이 숫자 4만 출력합니다.',
+            react_loop: true,
+            max_tool_iterations: 3,
+            tool_instruction: '',
+          },
+        },
+        {
+          id: 'output-1',
+          type: 'output',
+          label: 'Output',
+          position: {
+            x: 911.7647058823528,
+            y: 98.8235294117647,
+          },
+          config: {},
+        },
+        {
+          id: 'llm-2',
+          type: 'llm',
+          label: '검색 LLM',
+          position: {
+            x: 573.6470588235294,
+            y: -140.41176470588232,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt: '사용자의 수학 질문의 정답과 풀이 과정을 간단하게 설명하시오.\n',
+            react_loop: true,
+            max_tool_iterations: 3,
+            tool_instruction: '',
+          },
+        },
+        {
+          id: 'planner-1',
+          type: 'planner',
+          label: 'Planner',
+          position: {
+            x: 51.29411764705878,
+            y: 76.05882352941178,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt:
+              '당신은 전략적 AI 플래너입니다. 사용자의 복합 질문을 분석하여 목표를 달성하기 위한 구체적인 단계별 실행 계획을 세우세요.',
+          },
+        },
+        {
+          id: 'aggregator-1',
+          type: 'aggregator',
+          label: 'Aggregator',
+          position: {
+            x: 572.4705882352943,
+            y: 77.23529411764704,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt:
+              '당신은 분석 종합 전문가입니다. 다양한 단계에서 수집되고 처리된 정보들을 바탕으로 논리적이고 친절한 최종 답변을 작성하세요.',
+          },
+        },
+        {
+          id: 'router-1',
+          type: 'router',
+          label: 'Router',
+          position: {
+            x: 304.235294117647,
+            y: 77.23529411764707,
+          },
+          config: {
+            model: 'gpt-6-luna',
+            temperature: 0.7,
+            system_prompt:
+              '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
+            max_loops: 5,
+          },
+        },
+        {
+          id: 'search-1',
+          type: 'search',
+          label: '검색 Tool',
+          position: {
+            x: 574.828535669587,
+            y: -339.89968710888604,
+          },
+          config: {},
+        },
+        {
+          id: 'youtube-1',
+          type: 'youtube',
+          label: 'YouTube Tool',
+          position: {
+            x: 568.9461827284106,
+            y: 278.92384230287865,
+          },
+          config: {},
+        },
+      ],
+      edges: [
+        {
+          id: 'xy-edge__aggregator-1right-output-1',
+          source: 'aggregator-1',
+          target: 'output-1',
+          sourceHandle: 'right',
+        },
+        {
+          id: 'xy-edge__router-1right-aggregator-1left',
+          source: 'router-1',
+          target: 'aggregator-1',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+        },
+        {
+          id: 'e-router-1-llm-1',
+          source: 'router-1',
+          target: 'llm-1',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+        },
+        {
+          id: 'e-llm-1-router-1-loop',
+          source: 'llm-1',
+          target: 'router-1',
+          sourceHandle: 'right',
+          targetHandle: 'loop-return',
+        },
+        {
+          id: 'e-router-1-llm-2',
+          source: 'router-1',
+          target: 'llm-2',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+        },
+        {
+          id: 'e-llm-2-router-1-loop',
+          source: 'llm-2',
+          target: 'router-1',
+          sourceHandle: 'right',
+          targetHandle: 'loop-return',
+        },
+        {
+          id: 'xy-edge__planner-1right-router-1left',
+          source: 'planner-1',
+          target: 'router-1',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+        },
+        {
+          id: 'xy-edge__input-1-planner-1left',
+          source: 'input-1',
+          target: 'planner-1',
+          targetHandle: 'left',
+        },
+        {
+          id: 'xy-edge__search-1-llm-2tools',
+          source: 'search-1',
+          target: 'llm-2',
+          targetHandle: 'tools',
+        },
+        {
+          id: 'xy-edge__youtube-1-llm-1tools',
+          source: 'youtube-1',
+          target: 'llm-1',
+          targetHandle: 'tools',
+        },
+      ],
+    },
   },
 ];
 

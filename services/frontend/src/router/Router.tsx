@@ -2,12 +2,14 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface RouterContextType {
   path: string;
+  search: string;
   navigate: (to: string) => void;
   params: Record<string, string>;
 }
 
 const RouterContext = createContext<RouterContextType>({
   path: window.location.pathname || '/noa-e',
+  search: window.location.search || '',
   navigate: () => {},
   params: {},
 });
@@ -20,8 +22,8 @@ export const useNavigate = () => {
 };
 
 export const useLocation = () => {
-  const { path } = useRouter();
-  return { pathname: path };
+  const { path, search } = useRouter();
+  return { pathname: path, search };
 };
 
 export const useParams = () => {
@@ -54,10 +56,12 @@ export const Link: React.FC<LinkProps> = ({ to, children, className, onClick, ..
 
 export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [path, setPath] = useState<string>(window.location.pathname || '/');
+  const [search, setSearch] = useState<string>(window.location.search || '');
 
   useEffect(() => {
     const handlePopState = () => {
       setPath(window.location.pathname || '/');
+      setSearch(window.location.search || '');
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -65,9 +69,12 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const navigate = (to: string) => {
-    if (window.location.pathname !== to) {
+    const currentFull = window.location.pathname + window.location.search;
+    if (currentFull !== to) {
       window.history.pushState({}, '', to);
-      setPath(to);
+      const [newPath, newQuery] = to.split('?');
+      setPath(newPath || '/');
+      setSearch(newQuery ? `?${newQuery}` : '');
       window.scrollTo(0, 0);
     }
   };
@@ -94,7 +101,7 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   return (
-    <RouterContext.Provider value={{ path, navigate, params }}>
+    <RouterContext.Provider value={{ path, search, navigate, params }}>
       {children}
     </RouterContext.Provider>
   );

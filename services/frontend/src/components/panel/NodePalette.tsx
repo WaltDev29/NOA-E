@@ -24,35 +24,59 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     color: 'tertiary',
   },
   {
+    type: 'plannerNode',
+    name: 'Planner',
+    subtitle: '다단계 계획 수립',
+    icon: 'assignment',
+    category: 'LLM',
+    color: 'primary',
+  },
+  {
+    type: 'routerNode',
+    name: 'Router',
+    subtitle: '작업 분기 및 루프 제어',
+    icon: 'alt_route',
+    category: 'LLM',
+    color: 'secondary',
+  },
+  {
     type: 'llmNode',
-    name: 'LLM',
-    subtitle: '대화형 AI 모델',
+    name: 'LLM (Worker)',
+    subtitle: '대화 및 작업 수행',
     icon: 'neurology',
     category: 'LLM',
     color: 'secondary',
   },
   {
+    type: 'aggregatorNode',
+    name: 'Aggregator',
+    subtitle: '결과 종합 및 최종 합성',
+    icon: 'auto_awesome',
+    category: 'LLM',
+    color: 'tertiary',
+  },
+  {
     type: 'searchNode',
-    name: '웹 검색',
+    name: '검색 Tool',
     subtitle: '웹에서 정보 검색',
     icon: 'travel_explore',
     category: '도구',
     color: 'primary',
   },
   {
-    type: 'calculatorNode',
-    name: '계산기 도구',
-    subtitle: '정밀 수학 연산',
-    icon: 'calculate',
+    type: 'weatherNode',
+    name: '날씨 Tool',
+    subtitle: '현재 날씨 및 일별 예보 조회',
+    icon: 'partly_cloudy_day',
     category: '도구',
     color: 'tertiary',
   },
   {
-    type: 'agentNode',
-    name: 'Autonomous Agent',
-    subtitle: '자율 에이전트',
-    icon: 'smart_toy',
-    category: 'LLM',
+    type: 'youtubeNode',
+    name: 'YouTube Tool',
+    subtitle: 'YouTube 영상 검색',
+    icon: 'smart_display',
+    category: '도구',
     color: 'secondary',
   },
   {
@@ -98,13 +122,31 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
             className="w-7 h-7 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors"
             type="button"
           >
-            <span className="material-symbols-outlined text-[16px]">close</span>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         )}
       </div>
 
-      {/* Palette Search Input */}
-      <div className="px-space-md pb-space-xs">
+      {/* Category Tabs */}
+      <div className="px-space-md py-space-xs flex items-center gap-1 border-b border-outline-variant/20 overflow-x-auto no-scrollbar">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              selectedCategory === cat
+                ? 'bg-primary/20 text-primary shadow-[0_0_12px_rgba(77,142,255,0.3)]'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+            }`}
+            type="button"
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Search Input */}
+      <div className="p-space-md pb-space-xs">
         <div className="relative flex items-center">
           <span className="material-symbols-outlined absolute left-2.5 text-outline text-[18px] pointer-events-none">
             search
@@ -114,80 +156,44 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onClose }) => {
             placeholder="노드 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-8 pl-8 pr-3 bg-surface-container border border-outline-variant/30 rounded-lg text-xs text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-lg pl-8 pr-3 py-1.5 text-xs text-on-surface placeholder:text-outline/70 focus:outline-none focus:border-primary/60 transition-colors"
           />
         </div>
       </div>
 
-      {/* Filter Chips */}
-      <div className="px-space-md pb-space-sm flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-        {CATEGORIES.map((cat) => {
-          const isActive = selectedCategory === cat;
-          return (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${isActive
-                  ? 'bg-primary-container/25 text-primary border border-primary/40'
-                  : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
-                }`}
-              type="button"
-            >
-              {cat}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Node List */}
-      <div className="flex-1 overflow-y-auto px-space-md py-space-xs space-y-2">
-        {filteredItems.map((item) => {
-          const tourKey =
-            item.type === 'inputNode'
-              ? 'palette-input-node'
-              : item.type === 'llmNode'
-              ? 'palette-llm-node'
-              : item.type === 'outputNode'
-              ? 'palette-output-node'
-              : undefined;
-
-          return (
+      {/* Node List Items */}
+      <div className="flex-1 overflow-y-auto p-space-md flex flex-col gap-2">
+        {filteredItems.map((item) => (
+          <div
+            key={item.type}
+            draggable
+            onDragStart={(e) => onDragStart(e, item.type)}
+            className="group p-2.5 rounded-xl bg-surface-container/40 hover:bg-surface-container border border-outline-variant/30 hover:border-outline-variant/60 cursor-grab active:cursor-grabbing transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex items-center gap-3 select-none"
+          >
             <div
-              key={item.type}
-              data-tour={tourKey}
-              onDragStart={(e) => onDragStart(e, item.type)}
-              draggable
-              className="group flex items-center gap-space-sm p-2.5 rounded-xl bg-surface-container-low/70 hover:bg-surface-container hover:translate-x-1 cursor-grab active:cursor-grabbing transition-all border border-outline-variant/20 hover:border-outline-variant/50 shadow-sm"
+              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                item.color === 'primary'
+                  ? 'bg-primary-container/20 text-primary'
+                  : item.color === 'secondary'
+                  ? 'bg-secondary-container/40 text-secondary'
+                  : item.color === 'tertiary'
+                  ? 'bg-tertiary-container/30 text-tertiary'
+                  : 'bg-error-container/40 text-error'
+              }`}
             >
-              <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${item.color === 'secondary'
-                    ? 'bg-secondary-container/30 text-secondary shadow-[0_0_12px_rgba(208,188,255,0.25)]'
-                    : item.color === 'tertiary'
-                      ? 'bg-tertiary-container/30 text-tertiary shadow-[0_0_12px_rgba(76,215,246,0.25)]'
-                      : item.color === 'error'
-                        ? 'bg-error-container/30 text-error shadow-[0_0_12px_rgba(255,180,171,0.25)]'
-                        : 'bg-primary-container/20 text-primary shadow-[0_0_12px_rgba(77,142,255,0.25)]'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-display text-xs font-semibold text-on-surface truncate">
-                  {item.name}
-                </p>
-                <p className="text-[11px] text-outline truncate">{item.subtitle}</p>
-              </div>
-              <span className="material-symbols-outlined text-outline group-hover:text-primary text-[18px]">
-                drag_indicator
-              </span>
+              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Node Helper Footnote */}
-      <div className="p-space-sm bg-surface-container-lowest text-center border-t border-outline-variant/20">
-        <span className="text-[11px] text-outline">캔버스로 드래그하여 노드를 추가하세요</span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="font-display text-xs font-bold text-on-surface group-hover:text-primary transition-colors truncate">
+                {item.name}
+              </span>
+              <span className="text-[11px] text-outline truncate">{item.subtitle}</span>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-outline/50 group-hover:text-primary transition-colors">
+              drag_indicator
+            </span>
+          </div>
+        ))}
       </div>
     </aside>
   );

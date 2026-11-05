@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 import ReactMarkdown from 'react-markdown';
+import { linkifyBareUrls, markdownComponents } from '../../utils/markdown';
 
 export const OutputResultModal: React.FC = () => {
   const { outputResultModal, closeOutputModal, executionResult } = useWorkflowStore();
@@ -56,7 +57,11 @@ export const OutputResultModal: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto min-h-[220px] bg-surface-container-lowest/90 p-5 rounded-xl border border-outline-variant/30 text-sm text-on-surface leading-relaxed select-text font-sans">
           {executionResult ? (
-            <ReactMarkdown>{executionResult}</ReactMarkdown>
+            <div className="prose prose-invert prose-sm max-w-none [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_code]:bg-surface-container [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-surface-container-high [&_pre]:p-3 [&_pre]:rounded-lg [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-3 [&_strong]:text-primary">
+              <ReactMarkdown components={markdownComponents}>
+                {linkifyBareUrls(typeof executionResult === 'string' ? executionResult : JSON.stringify(executionResult, null, 2))}
+              </ReactMarkdown>
+            </div>
           ) : (
             <div className="h-full flex items-center justify-center text-outline italic text-xs">
               아직 실행 결과가 없습니다. 상단의 '실행하기'를 먼저 눌러주세요.

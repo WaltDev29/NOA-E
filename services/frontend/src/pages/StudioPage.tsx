@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from '../components/layout/Header';
 import { WorkflowEditor } from '../components/editor/WorkflowEditor';
 import { NodePalette } from '../components/panel/NodePalette';
@@ -12,11 +12,14 @@ import { StudioQuestGuide } from '../components/onboarding/StudioQuestGuide';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { useLocation } from '../router/Router';
 import { workflowApi } from '../services/workflowApi';
+import { TEMPLATES_DATA, convertTemplateToReactFlow } from './TemplatesPage';
 
 export const StudioPage: React.FC = () => {
   const { user } = useAuth();
   const { showAlert } = useModal();
+  const { search } = useLocation();
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(undefined);
   const [agentName, setAgentName] = useState('새로운 에이전트');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -25,6 +28,26 @@ export const StudioPage: React.FC = () => {
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'results'>('properties');
   const [savedNotice, setSavedNotice] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState<{ visible: boolean; fading: boolean; message: string }>({
+    visible: false,
+    fading: false,
+    message: '',
+  });
+  const saveToastTimerRef = useRef<{ hold?: any; fade?: any }>({});
+
+  const showSaveToast = (message: string) => {
+    if (saveToastTimerRef.current.hold) clearTimeout(saveToastTimerRef.current.hold);
+    if (saveToastTimerRef.current.fade) clearTimeout(saveToastTimerRef.current.fade);
+
+    setSaveToast({ visible: true, fading: false, message });
+
+    saveToastTimerRef.current.hold = setTimeout(() => {
+      setSaveToast((prev) => ({ ...prev, fading: true }));
+      saveToastTimerRef.current.fade = setTimeout(() => {
+        setSaveToast({ visible: false, fading: false, message: '' });
+      }, 500);
+    }, 1000);
+  };
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
@@ -41,12 +64,14 @@ export const StudioPage: React.FC = () => {
   const clearNodeResults = useWorkflowStore((state) => state.clearNodeResults);
   const addLog = useWorkflowStore((state) => state.addLog);
   const saveToLocalStorage = useWorkflowStore((state) => state.saveToLocalStorage);
+  const resetWorkflow = useWorkflowStore((state) => state.resetWorkflow);
   const [resetNotice, setResetNotice] = useState(false);
 
-  // 컴포넌트 마운트 시: URL 쿼리 파라미터(?id=...)가 있으면 DB에서 로드, 없으면 신규 에이전트 기본 이름 생성
+  // 컴포넌트 마운트 및 쿼리 파라미터 변경 시: URL 쿼리 파라미터(?id=... 또는 ?template=...)가 있으면 로드, 없으면 신규 에이전트 초기화
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(search || window.location.search);
     const workflowId = searchParams.get('id');
+    const templateId = searchParams.get('template');
 
     if (workflowId) {
       setCurrentWorkflowId(workflowId);
@@ -60,14 +85,40 @@ export const StudioPage: React.FC = () => {
           if (data.graph_data?.edges) {
             setEdges(data.graph_data.edges);
           }
-          addLog(`에이전트 [${data.title}]을(를) 성공적으로 불러왔습니다.`);
+          showAlert(`에이전트 [${data.title}]을(를) 성공적으로 불러왔습니다.`, {
+            type: 'success',
+            title: '에이전트 불러오기',
+          });
         })
         .catch((err) => {
           console.error('Failed to load workflow by id:', err);
-          addLog('[오류] 에이전트를 불러오지 못했습니다.');
+          showAlert('에이전트를 불러오지 못했습니다.', {
+            type: 'error',
+            title: '불러오기 오류',
+          });
         });
+    } else if (templateId) {
+      const matchedTemplate = TEMPLATES_DATA.find((t) => t.id === templateId);
+      if (matchedTemplate) {
+        // 템플릿 로드 시 기존 실행 상태 및 메모리를 먼저 초기화한 뒤 템플릿 그래프를 주입
+        setCurrentWorkflowId(undefined);
+        resetWorkflow();
+        const { nodes: tplNodes, edges: tplEdges } = convertTemplateToReactFlow(matchedTemplate);
+        setNodes(tplNodes);
+        setEdges(tplEdges);
+        setAgentName(matchedTemplate.name);
+        showSaveToast(`템플릿 [${matchedTemplate.name}]을(를) 불러왔습니다.`);
+      } else {
+        setCurrentWorkflowId(undefined);
+        resetWorkflow();
+        setAgentName('새로운 에이전트');
+      }
     } else {
-      // 신규 생성 모드: 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
+      // 신규 에이전트 모드: 이전 작업 중이던 캔버스 상태(노드/엣지/로그)를 기본값으로 초기화
+      setCurrentWorkflowId(undefined);
+      resetWorkflow();
+
+      // 사용자의 기존 에이전트 목록을 조회하여 이름 중복 시 번호 부여
       if (user?.id) {
         workflowApi.getMyWorkflows(user.id).then((myList) => {
           const titles = new Set(myList.map((w) => w.title));
@@ -88,7 +139,12 @@ export const StudioPage: React.FC = () => {
         setAgentName('새로운 에이전트');
       }
     }
-  }, [user?.id, setNodes, setEdges, addLog]);
+  }, [search, user?.id, setNodes, setEdges, addLog, resetWorkflow]);
+
+  // 컴포넌트 마운트 시: 백엔드 환경 변수 기반 모델 기능(capabilities) 로드
+  useEffect(() => {
+    useWorkflowStore.getState().fetchModelCapabilities();
+  }, []);
 
   // 컴포넌트 마운트 시: Nodes 페이지 등 외부에서 넘어온 노드 추가 요청(?addNode=...) 처리
   useEffect(() => {
@@ -163,19 +219,18 @@ export const StudioPage: React.FC = () => {
         });
         setCurrentWorkflowId(result.id);
         setSavedNotice(true);
-        addLog(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
+        showSaveToast(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
       } catch (err: any) {
         console.error('Failed to save workflow to DB:', err);
         const detail = err.response?.data?.detail || 'DB 저장에 실패했습니다.';
         showAlert(`저장 실패: ${detail}`, { type: 'error', title: '저장 오류' });
-        addLog(`[오류] ${detail}`);
       } finally {
         setIsSaving(false);
         setTimeout(() => setSavedNotice(false), 2500);
       }
     } else {
       setSavedNotice(true);
-      addLog(`현재 에이전트 [${agentName}]의 상태가 로컬 브라우저에 저장되었습니다.`);
+      showSaveToast(`에이전트 [${agentName}]가 성공적으로 저장되었습니다.`);
       setTimeout(() => setSavedNotice(false), 2000);
     }
   };
@@ -270,6 +325,18 @@ export const StudioPage: React.FC = () => {
                   download
                 </span>
               </button>
+
+              {/* 저장 완료 알림 토스트 (다운로드 버튼 옆에 1초간 표시 후 서서히 페이드아웃) */}
+              {saveToast.visible && (
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-tertiary-container/40 border border-tertiary/50 text-tertiary text-xs font-semibold shadow-sm transition-all duration-500 ease-out select-none ${
+                    saveToast.fading ? 'opacity-0 -translate-x-1 scale-95' : 'opacity-100 translate-x-0 scale-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                  <span>{saveToast.message}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-space-sm">
@@ -531,7 +598,7 @@ const HiddenRunTrigger: React.FC = () => {
     setIsExecuting(true);
     clearLogs();
     setActiveNodeId(inputNodes[0].id);
-    addLog('파이프라인 실행 시작...');
+    addLog('파이프라인 시작');
 
     let previousOutput = (inputNodes[0]?.data as any)?.config?.input_text || '';
 
@@ -567,32 +634,49 @@ const HiddenRunTrigger: React.FC = () => {
             if (dataStr.trim() === '[DONE]') {
               setIsExecuting(false);
               setActiveNodeId(null);
-              addLog('파이프라인 실행 완료.');
+              addLog('파이프라인 종료');
               return;
             }
 
             try {
               const parsed = JSON.parse(dataStr);
               if (parsed.error) {
-                addLog(`에러 발생: ${parsed.error}`);
+                addLog(`❌ [시스템 오류] ${parsed.error}`);
+                setIsExecuting(false);
+                setActiveNodeId(null);
               } else {
                 const nodeName = Object.keys(parsed)[0];
                 const stateUpdates = parsed[nodeName];
-
-                addLog(`[${nodeName}] 노드 처리 완료`);
 
                 const targetNode = nodes.find((n) => n.id === nodeName);
                 const nodeInput =
                   targetNode?.type === 'inputNode'
                     ? (targetNode.data as any)?.config?.input_text || stateUpdates.input_text || ''
                     : previousOutput;
-                const nodeOutput = stateUpdates.current_output || '';
+                let nodeOutput = stateUpdates.current_output || '';
+                if (targetNode?.type === 'routerNode') {
+                  if (stateUpdates.routing_result) {
+                    nodeOutput = stateUpdates.routing_result;
+                  } else if (stateUpdates.next_worker) {
+                    const nextNode = nodes.find((n) => n.id === stateUpdates.next_worker);
+                    const nextLabel = (nextNode?.data as any)?.label || stateUpdates.next_worker;
+                    nodeOutput = `'${nextLabel}' 노드로 분기합니다.`;
+                  } else if (Array.isArray(stateUpdates.logs)) {
+                    const branchLog = stateUpdates.logs.find((l: string) => l.includes('노드로 분기합니다'));
+                    if (branchLog) {
+                      nodeOutput = branchLog.replace(/^\[.*?\]\s*/, '');
+                    }
+                  }
+                }
+
+                const safeNodeInput = typeof nodeInput === 'string' ? nodeInput : JSON.stringify(nodeInput, null, 2);
+                const safeNodeOutput = typeof nodeOutput === 'string' ? nodeOutput : JSON.stringify(nodeOutput, null, 2);
 
                 appendNodeStep(
                   nodeName,
                   {
-                    input: nodeInput,
-                    output: nodeOutput,
+                    input: safeNodeInput,
+                    output: safeNodeOutput,
                     logs: stateUpdates.logs,
                   },
                   {
@@ -602,10 +686,32 @@ const HiddenRunTrigger: React.FC = () => {
                   }
                 );
 
-                previousOutput = nodeOutput || previousOutput;
+                // Router 노드의 경우 다음 Worker 노드로 전달할 실제 작업 내용(current_output)을 유지
+                previousOutput =
+                  (targetNode?.type === 'routerNode' ? stateUpdates.current_output : nodeOutput) ||
+                  previousOutput;
 
+                const nodeLabel = (targetNode?.data as any)?.label || nodeName;
+
+                // 도구 호출, 라우터 분기 등 세부 로그가 있을 경우 먼저 표시 (노드 라벨 적용)
                 if (stateUpdates.logs && Array.isArray(stateUpdates.logs)) {
-                  addLog(`  -> ${stateUpdates.logs[stateUpdates.logs.length - 1]}`);
+                  for (const logItem of stateUpdates.logs) {
+                    if (
+                      logItem.includes('도구 호출:') ||
+                      logItem.includes('도구 실행 결과:') ||
+                      logItem.includes('배정 작업:') ||
+                      logItem.includes('노드로 분기합니다')
+                    ) {
+                      const formattedLog = logItem.replace(`[${nodeName}]`, `[${nodeLabel}]`);
+                      addLog(formattedLog);
+                    }
+                  }
+                }
+
+                // 사용자가 지정한 노드 라벨([LLM] 등)을 붙여서 출력 결과 표시
+                // 단, Router 노드는 제어 흐름 노드이므로 입력을 그대로 출력(current_output)하지 않음
+                if (nodeOutput && targetNode?.type !== 'routerNode') {
+                  addLog(`[${nodeLabel}] ${nodeOutput}`);
                 }
 
                 if (stateUpdates.current_output) {
@@ -619,11 +725,24 @@ const HiddenRunTrigger: React.FC = () => {
                   setMessages([...useWorkflowStore.getState().messages, ...stateUpdates.messages]);
                 }
 
-                const nextEdge = edges.find((e) => e.source === nodeName);
-                if (nextEdge) {
-                  setActiveNodeId(nextEdge.target);
+                // 다음 활성 노드(activeNodeId) 결정:
+                // 1) Router 등에서 명시적으로 다음 Worker/타겟 노드를 지정한 경우 (next_worker)
+                // 2) Worker 노드에서 Router로 돌아가는 루프 엣지
+                // 3) 일반 단일 연결 엣지
+                if (stateUpdates.next_worker) {
+                  setActiveNodeId(stateUpdates.next_worker);
                 } else {
-                  setActiveNodeId(null);
+                  const outgoingEdges = edges.filter((e) => e.source === nodeName);
+                  if (outgoingEdges.length > 0) {
+                    const loopEdge = outgoingEdges.find(
+                      (e) =>
+                        e.targetHandle === 'loop-return' ||
+                        nodes.find((n) => n.id === e.target)?.type === 'routerNode'
+                    );
+                    setActiveNodeId(loopEdge ? loopEdge.target : outgoingEdges[0].target);
+                  } else {
+                    setActiveNodeId(null);
+                  }
                 }
               }
             } catch (e) {

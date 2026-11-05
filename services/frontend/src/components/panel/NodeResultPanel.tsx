@@ -1,6 +1,33 @@
 import React, { useState } from 'react';
 import { useWorkflowStore, type ExecutionStep } from '../../store/useWorkflowStore';
 import ReactMarkdown from 'react-markdown';
+import { linkifyBareUrls, markdownComponents, renderTextWithLinks } from '../../utils/markdown';
+
+
+const toSafeString = (val: any): string => {
+  if (val === null || val === undefined) return '';
+  if (Array.isArray(val)) {
+    const texts = val
+      .map((item) => (typeof item === 'object' && item?.text ? item.text : typeof item === 'string' ? item : ''))
+      .filter(Boolean);
+    if (texts.length > 0) return texts.join('\n\n');
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.startsWith('[') && (trimmed.includes("'text':") || trimmed.includes('"text":'))) {
+      const match = trimmed.match(/['"]text['"]\s*:\s*(['"])(.*?)\1(?=\s*,|\s*\})/s);
+      if (match && match[2]) {
+        return match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      }
+    }
+    return val;
+  }
+  try {
+    return typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+  } catch {
+    return String(val);
+  }
+};
 
 export const NodeResultPanel: React.FC = () => {
   const {
@@ -63,10 +90,14 @@ export const NodeResultPanel: React.FC = () => {
     if (!node) return '노드';
     const labels: Record<string, string> = {
       inputNode: 'Input',
+      plannerNode: 'Planner',
+      routerNode: 'Router',
       llmNode: 'LLM',
+      aggregatorNode: 'Aggregator',
       agentNode: 'Autonomous Agent',
-      searchNode: '웹 검색',
-      calculatorNode: '계산기',
+      searchNode: '검색 Tool',
+      weatherNode: '날씨 Tool',
+      youtubeNode: 'YouTube Tool',
       outputNode: 'Output',
     };
     return node.data?.label || labels[node.type] || node.id;
@@ -76,14 +107,22 @@ export const NodeResultPanel: React.FC = () => {
     switch (nodeType) {
       case 'inputNode':
         return 'login';
+      case 'plannerNode':
+        return 'assignment';
+      case 'routerNode':
+        return 'alt_route';
       case 'llmNode':
         return 'neurology';
+      case 'aggregatorNode':
+        return 'auto_awesome';
       case 'agentNode':
         return 'smart_toy';
       case 'searchNode':
         return 'travel_explore';
-      case 'calculatorNode':
-        return 'calculate';
+      case 'weatherNode':
+        return 'partly_cloudy_day';
+      case 'youtubeNode':
+        return 'smart_display';
       case 'outputNode':
         return 'output';
       default:
@@ -148,7 +187,7 @@ export const NodeResultPanel: React.FC = () => {
             return (
               <div
                 key={step.stepIndex}
-                className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 overflow-hidden shadow-sm flex flex-col transition-all"
+                className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 overflow-hidden shadow-sm flex flex-col shrink-0 transition-all"
               >
                 {/* Step Set Toggle Header */}
                 <button
@@ -213,38 +252,40 @@ export const NodeResultPanel: React.FC = () => {
                         <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-primary" />
                           <span className="material-symbols-outlined text-[16px] text-primary">
-                            output
+                            {type === 'routerNode' ? 'alt_route' : 'output'}
                           </span>
-                          Output 내용
+                          {type === 'routerNode' ? '분기 결정 (Routing Decision)' : 'Output 내용'}
                         </label>
 
                         <div className="flex items-center gap-2">
-                          <div className="relative inline-flex items-center">
-                            <select
-                              value={format}
-                              onChange={(e) =>
-                                setOutputFormats((prev) => ({
-                                  ...prev,
-                                  [step.stepIndex]: e.target.value as any,
-                                }))
-                              }
-                              className="appearance-none bg-surface-container h-6 pl-2 pr-6 rounded-md text-[11px] text-on-surface font-body-sm focus:outline-none cursor-pointer border border-outline-variant/30"
-                            >
-                              <option value="markdown">마크다운</option>
-                              <option value="text">텍스트</option>
-                              <option value="json">JSON</option>
-                            </select>
-                            <span className="material-symbols-outlined absolute right-1 text-outline text-[14px] pointer-events-none">
-                              expand_more
-                            </span>
-                          </div>
+                          {type !== 'routerNode' && (
+                            <div className="relative inline-flex items-center">
+                              <select
+                                value={format}
+                                onChange={(e) =>
+                                  setOutputFormats((prev) => ({
+                                    ...prev,
+                                    [step.stepIndex]: e.target.value as any,
+                                  }))
+                                }
+                                className="appearance-none bg-surface-container h-6 pl-2 pr-6 rounded-md text-[11px] text-on-surface font-body-sm focus:outline-none cursor-pointer border border-outline-variant/30"
+                              >
+                                <option value="markdown">마크다운</option>
+                                <option value="text">텍스트</option>
+                                <option value="json">JSON</option>
+                              </select>
+                              <span className="material-symbols-outlined absolute right-1 text-outline text-[14px] pointer-events-none">
+                                expand_more
+                              </span>
+                            </div>
+                          )}
 
                           {step.output && (
                             <button
                               onClick={() => handleCopyOutput(step.stepIndex, step.output)}
                               className="text-[11px] text-outline hover:text-primary flex items-center gap-1 transition-colors"
                               type="button"
-                              title="Output 내용 복사"
+                              title="복사"
                             >
                               <span className="material-symbols-outlined text-[14px]">
                                 {isOutputCopied ? 'check' : 'content_copy'}
@@ -255,21 +296,50 @@ export const NodeResultPanel: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="min-h-[100px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
-                        {step.output ? (
-                          format === 'markdown' ? (
-                            <div className="prose prose-invert prose-xs max-w-none space-y-1.5">
-                              <ReactMarkdown>{step.output}</ReactMarkdown>
+                      {(() => {
+                        const safeOutput = toSafeString(step.output);
+                        if (type === 'routerNode') {
+                          return (
+                            <div className="py-2.5 px-3 rounded-xl bg-surface-container-high/90 border border-secondary/30 text-xs text-on-surface flex flex-col gap-1.5 select-text shadow-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-secondary text-[18px] shrink-0">
+                                  alt_route
+                                </span>
+                                <span className="font-bold text-secondary">
+                                  {(safeOutput || '분기 대기 중').split('\n')[0]}
+                                </span>
+                              </div>
+                              {safeOutput && safeOutput.includes('\n') && (
+                                <div className="ml-6.5 text-[11px] text-on-surface font-mono bg-surface-container/70 px-2.5 py-1.5 rounded-lg border border-outline-variant/30 flex items-center gap-1.5 whitespace-pre-wrap">
+                                  <span className="material-symbols-outlined text-tertiary text-[14px] shrink-0">
+                                    task_alt
+                                  </span>
+                                  <span>{safeOutput.split('\n').slice(1).join('\n')}</span>
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <pre className="font-mono whitespace-pre-wrap">{step.output}</pre>
-                          )
-                        ) : (
-                          <div className="text-outline italic py-3 text-center">
-                            출력 결과가 비어있습니다.
+                          );
+                        }
+                        return (
+                          <div className="min-h-[90px] max-h-[300px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-on-surface leading-relaxed overflow-y-auto select-text shadow-sm">
+                            {safeOutput ? (
+                              format === 'markdown' ? (
+                                <div className="prose prose-invert prose-xs max-w-none space-y-1.5 [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_code]:bg-surface-container [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-surface-container-high [&_pre]:p-2 [&_pre]:rounded-lg [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-2 [&_strong]:text-primary">
+                                  <ReactMarkdown components={markdownComponents}>
+                                    {linkifyBareUrls(safeOutput)}
+                                  </ReactMarkdown>
+                                </div>
+                              ) : (
+                                <pre className="font-mono whitespace-pre-wrap">{renderTextWithLinks(safeOutput)}</pre>
+                              )
+                            ) : (
+                              <div className="text-outline italic py-3 text-center">
+                                출력 결과가 비어있습니다.
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -310,8 +380,10 @@ export const NodeResultPanel: React.FC = () => {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="material-symbols-outlined text-[16px] text-primary">output</span>
-                  Output 내용
+                  <span className="material-symbols-outlined text-[16px] text-primary">
+                    {type === 'routerNode' ? 'alt_route' : 'output'}
+                  </span>
+                  {type === 'routerNode' ? '분기 결정 (Routing Decision)' : 'Output 내용'}
                 </label>
                 <div className="min-h-[100px] p-3 rounded-xl bg-surface-container-high/90 border border-outline-variant/30 text-xs text-outline italic leading-relaxed flex items-center justify-center text-center">
                   {isCurrentRunning ? (

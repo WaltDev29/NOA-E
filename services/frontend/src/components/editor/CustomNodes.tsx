@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import React, { memo, useEffect } from 'react';
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 
 interface NodeWrapperProps {
@@ -164,14 +164,34 @@ export const InputNode = memo(({ id, data, selected }: any) => {
 });
 
 export const LLMNode = memo(({ id, data, selected }: any) => {
+  const reactLoop = data.config?.react_loop ?? true;
+  const maxToolIterations = data.config?.max_tool_iterations || 3;
+  const modelName = data.config?.model || 'gemma2:2b';
+  const modelCapabilities = useWorkflowStore((state) => state.modelCapabilities);
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  // .env.backend의 MODELS_CONFIG에서 tool: true인 모델만 상단 Tool 연결 포트 활성화
+  // 초기 마운트 시점(modelCapabilities 로드 전)에도 도구 연결 엣지가 누락되지 않도록 기본값 보완
+  const supportsTool =
+    Object.keys(modelCapabilities).length === 0
+      ? modelName !== 'gemma2:2b'
+      : Boolean(modelCapabilities[modelName]?.tool);
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, supportsTool, updateNodeInternals]);
+
   return (
     <>
-      <Handle
-        type="target"
-        id="tools"
-        position={Position.Top}
-        className="!bg-secondary"
-      />
+      {supportsTool && (
+        <Handle
+          type="target"
+          id="tools"
+          position={Position.Top}
+          className="!bg-secondary !w-3 !h-3"
+          title="도구(Tool) 연결 포트"
+        />
+      )}
       <Handle
         type="target"
         id="left"
@@ -182,7 +202,7 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
         id={id}
         selected={selected}
         title={data?.label || "LLM"}
-        badge="LLM"
+        badge="Worker"
         icon="neurology"
         colorType="secondary"
         nodeType="llmNode"
@@ -191,10 +211,21 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
           <div className="flex justify-between items-center">
             <span className="text-outline">모델:</span>
             <span className="font-mono font-medium text-secondary-fixed-dim">
-              {data.config?.model || 'gemma2:2b'}
+              {modelName}
             </span>
           </div>
-          <span className="text-[10px] text-outline mt-0.5">상단에 Tool 연결 가능</span>
+          {supportsTool ? (
+            reactLoop ? (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">
+                <span className="material-symbols-outlined text-[12px]">sync</span>
+                <span>ReAct 루프 활성 (최대 {maxToolIterations}회)</span>
+              </div>
+            ) : (
+              <span className="text-[10px] text-outline mt-0.5">Tool 연결 시 1회만 사용 (반복 없음)</span>
+            )
+          ) : (
+            <span className="text-[10px] text-outline/70 mt-0.5">도구(Tool) 미지원 모델</span>
+          )}
         </div>
       </NodeWrapper>
       <Handle
@@ -207,37 +238,121 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
   );
 });
 
-export const AgentNode = memo(({ id, data, selected }: any) => {
+export const PlannerNode = memo(({ id, data, selected }: any) => {
   return (
     <>
       <Handle
         type="target"
+        id="left"
         position={Position.Left}
         className="!bg-primary"
       />
       <NodeWrapper
         id={id}
         selected={selected}
-        title={data?.label || "Autonomous Agent"}
-        badge="Agent"
-        icon="smart_toy"
-        colorType="secondary"
-        nodeType="agentNode"
+        title={data?.label || "Planner"}
+        badge="Plan"
+        icon="assignment"
+        colorType="primary"
+        nodeType="plannerNode"
       >
         <div className="flex flex-col gap-1 text-[11px]">
-          <div className="flex justify-between items-center">
-            <span className="text-outline">모델:</span>
-            <span className="font-mono font-medium text-secondary-fixed-dim">
-              {data.config?.model || 'gemma2:2b'}
-            </span>
-          </div>
-          <span className="text-[10px] text-outline mt-0.5">자율 의사결정 파이프라인</span>
+          <span className="text-outline">사용자 질문 분석 & 작업 계획 수립</span>
+          <span className="text-[10px] text-primary font-medium mt-0.5">다단계 Task 목록 생성</span>
         </div>
       </NodeWrapper>
       <Handle
         type="source"
+        id="right"
+        position={Position.Right}
+        className="!bg-primary"
+      />
+    </>
+  );
+});
+
+export const RouterNode = memo(({ id, data, selected }: any) => {
+  const maxLoops = data.config?.max_loops || 5;
+
+  return (
+    <>
+      <Handle
+        type="target"
+        id="left"
+        position={Position.Left}
+        className="!bg-primary"
+        title="기본 입력"
+      />
+      {/* 하단 루프 연결 포트: Worker 노드와 양방향 드래그 연결 지원 */}
+      <Handle
+        type="target"
+        id="loop-return"
+        position={Position.Bottom}
+        className="!bg-secondary !w-3.5 !h-3.5 shadow-[0_0_8px_rgba(208,188,255,0.8)] cursor-pointer hover:scale-125 transition-transform"
+        title="🔄 Worker 작업 루프 연결 포트 (Worker 노드로 드래그하여 루프 연결)"
+      />
+      <Handle
+        type="source"
+        id="loop-return"
+        position={Position.Bottom}
+        className="!bg-transparent !w-3.5 !h-3.5 pointer-events-auto cursor-pointer"
+        title="🔄 Worker 작업 루프 연결 포트 (Worker 노드로 드래그하여 루프 연결)"
+      />
+      <NodeWrapper
+        id={id}
+        selected={selected}
+        title={data?.label || "Router"}
+        badge="Route"
+        icon="alt_route"
+        colorType="secondary"
+        nodeType="routerNode"
+      >
+        <div className="flex flex-col gap-1 text-[11px]">
+          <div className="flex justify-between items-center">
+            <span className="text-outline">최대 루프:</span>
+            <span className="font-mono font-bold text-secondary">{maxLoops}회</span>
+          </div>
+          <span className="text-[10px] text-secondary-fixed-dim mt-0.5">시스템 지침 기반 작업 분기 / 제어 루프</span>
+        </div>
+      </NodeWrapper>
+      <Handle
+        type="source"
+        id="right"
         position={Position.Right}
         className="!bg-secondary"
+      />
+    </>
+  );
+});
+
+export const AggregatorNode = memo(({ id, data, selected }: any) => {
+  return (
+    <>
+      <Handle
+        type="target"
+        id="left"
+        position={Position.Left}
+        className="!bg-primary"
+      />
+      <NodeWrapper
+        id={id}
+        selected={selected}
+        title={data?.label || "Aggregator"}
+        badge="Aggregate"
+        icon="auto_awesome"
+        colorType="tertiary"
+        nodeType="aggregatorNode"
+      >
+        <div className="flex flex-col gap-1 text-[11px]">
+          <span className="text-outline">중간 작업 결과 종합 & 보고서 생성</span>
+          <span className="text-[10px] text-tertiary font-medium mt-0.5">최종 단일 답변으로 합성</span>
+        </div>
+      </NodeWrapper>
+      <Handle
+        type="source"
+        id="right"
+        position={Position.Right}
+        className="!bg-tertiary"
       />
     </>
   );
@@ -249,7 +364,7 @@ export const SearchNode = memo(({ id, data, selected }: any) => {
       <NodeWrapper
         id={id}
         selected={selected}
-        title={data?.label || "웹 검색"}
+        title={data?.label || "검색 Tool"}
         badge="Search"
         icon="travel_explore"
         colorType="primary"
@@ -266,24 +381,47 @@ export const SearchNode = memo(({ id, data, selected }: any) => {
   );
 });
 
-export const CalculatorNode = memo(({ id, data, selected }: any) => {
+export const WeatherNode = memo(({ id, data, selected }: any) => {
   return (
     <>
       <NodeWrapper
         id={id}
         selected={selected}
-        title={data?.label || "계산기 도구"}
-        badge="Calculator"
-        icon="calculate"
+        title={data?.label || "날씨 Tool"}
+        badge="Weather"
+        icon="partly_cloudy_day"
         colorType="tertiary"
-        nodeType="calculatorNode"
+        nodeType="weatherNode"
       >
-        <span className="text-[11px] text-outline">정밀 수학 수식 계산 실행</span>
+        <span className="text-[11px] text-outline">현재 날씨 및 일별 예보 조회</span>
       </NodeWrapper>
       <Handle
         type="source"
         position={Position.Bottom}
         className="!bg-tertiary"
+      />
+    </>
+  );
+});
+
+export const YoutubeNode = memo(({ id, data, selected }: any) => {
+  return (
+    <>
+      <NodeWrapper
+        id={id}
+        selected={selected}
+        title={data?.label || "YouTube Tool"}
+        badge="YouTube"
+        icon="smart_display"
+        colorType="secondary"
+        nodeType="youtubeNode"
+      >
+        <span className="text-[11px] text-outline">YouTube 영상 및 채널 검색</span>
+      </NodeWrapper>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!bg-secondary"
       />
     </>
   );

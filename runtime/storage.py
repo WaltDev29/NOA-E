@@ -48,7 +48,7 @@ def ensure_storage_dirs():
     os.makedirs(CHATS_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
-# 전역 환경 설정 관리 (테마 등)
+# 전역 환경 설정 관리 (테마, YouTube API Key 등)
 # -------------------------------------------------------------
 def get_app_settings() -> Dict[str, Any]:
     ensure_storage_dirs()
@@ -79,6 +79,19 @@ def set_app_theme(theme: str):
     settings = get_app_settings()
     settings["theme"] = theme
     save_app_settings(settings)
+
+def get_youtube_api_key() -> str:
+    settings = get_app_settings()
+    return settings.get("youtube_api_key", "")
+
+def set_youtube_api_key(api_key: str):
+    settings = get_app_settings()
+    settings["youtube_api_key"] = api_key
+    save_app_settings(settings)
+    if api_key:
+        os.environ["YOUTUBE_API_KEY"] = api_key
+    elif "YOUTUBE_API_KEY" in os.environ:
+        del os.environ["YOUTUBE_API_KEY"]
 
 # -------------------------------------------------------------
 # 에이전트 개별 파일(.storage/agents/{agent_id}.json) 관리
@@ -222,6 +235,37 @@ def register_agent(agent_id: str, agent_name: str, file_path: Optional[str] = No
         "last_used_at": now_iso
     }
 
+def delete_registered_agent(agent_id: str, file_path: Optional[str] = None) -> bool:
+    """
+    왜: 사용자가 에이전트 목록에서 우클릭으로 에이전트를 삭제할 때
+    .storage/agents 내의 워크플로우 파일과 해당 에이전트의 대화 기록 파일을 함께 정리합니다.
+    """
+    ensure_storage_dirs()
+    deleted = False
+    try:
+        candidates = set()
+        if file_path:
+            abs_fp = os.path.abspath(file_path)
+            abs_agents_dir = os.path.abspath(AGENTS_DIR)
+            # 원본 사용자 파일 보호를 위해 .storage/agents 내부 파일만 직접 삭제
+            if abs_fp.startswith(abs_agents_dir):
+                candidates.add(abs_fp)
+        if agent_id:
+            candidates.add(os.path.abspath(os.path.join(AGENTS_DIR, _safe_agent_filename(agent_id))))
+
+        for target in candidates:
+            if os.path.exists(target):
+                os.remove(target)
+                deleted = True
+
+        if agent_id:
+            chat_file = _get_agent_chat_file(agent_id)
+            if os.path.exists(chat_file):
+                os.remove(chat_file)
+    except Exception as e:
+        print(f"Failed to delete registered agent (id={agent_id}, path={file_path}): {e}")
+    return deleted
+
 # -------------------------------------------------------------
 # 에이전트별 세션 및 대화 내역 독립 관리 ({agent_id}.json)
 # -------------------------------------------------------------
@@ -323,34 +367,59 @@ def update_session_messages(agent_id: str, session_id: str, messages: list, logs
 # -------------------------------------------------------------
 # Workflow & LLM Nodes 관리 (Workflow & Node Configs)
 # -------------------------------------------------------------
+CONFIGURABLE_NODE_TYPES = (
+    "llm", "agent", "planner", "router", "aggregator",
+    "llmNode", "agentNode", "plannerNode", "routerNode", "aggregatorNode"
+)
+
+def _normalize_node_type(raw_type: str) -> str:
+    t = (raw_type or "").strip()
+    if t.endswith("Node"):
+        t = t[:-4]
+    return t.lower()
+
 def extract_llm_nodes(workflow_json: dict) -> List[Dict[str, Any]]:
     """
-    Workflow JSON에서 LLM 및 Agent 노드들을 추출합니다.
+    Workflow JSON에서 설정 가능한 노드들(LLM, Planner, Router, Aggregator, Agent)을 추출합니다.
+    (Input, Output 등은 제외)
     """
     nodes = workflow_json.get("nodes", [])
     llm_nodes = []
     
+    default_prompts = {
+        "llm": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
+        "planner": "사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.",
+        "router": "당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.",
+        "aggregator": "각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.",
+        "agent": "당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.",
+    }
+
     for n in nodes:
         node_type = n.get("type", "")
-        if node_type in ("llm", "agent", "llmNode", "agentNode"):
+        if node_type in CONFIGURABLE_NODE_TYPES:
+            norm_type = _normalize_node_type(node_type)
             config = n.get("config", {}) or n.get("data", {}).get("config", {})
-            label = n.get("label") or n.get("data", {}).get("label") or f"{node_type.upper()} ({n.get('id')})"
+            label = n.get("label") or n.get("data", {}).get("label") or f"{norm_type.upper()} ({n.get('id')})"
             llm_nodes.append({
                 "id": n.get("id"),
-                "type": node_type,
+                "type": norm_type,
                 "label": label,
                 "model": config.get("model", "gemma2:2b"),
                 "base_url": config.get("base_url", ""),
                 "api_key": config.get("api_key", ""),
                 "is_custom": config.get("is_custom", False) or bool(config.get("base_url") or config.get("api_key")),
-                "temperature": config.get("temperature", 0.7),
-                "system_prompt": config.get("system_prompt", ""),
+                "temperature": float(config.get("temperature", 0.7)),
+                "system_prompt": config.get("system_prompt") or default_prompts.get(norm_type, ""),
+                "max_loops": int(config.get("max_loops", 5)),
+                "react_loop": bool(config.get("react_loop", True)),
+                "max_tool_iterations": int(config.get("max_tool_iterations", 3)),
+                "tool_instruction": config.get("tool_instruction", ""),
             })
     return llm_nodes
 
 def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[str, Dict[str, Any]], file_path: Optional[str] = None) -> dict:
     """
-    사용자가 GUI에서 설정한 LLM 노드별 설정을 workflow_json에 반영하고,
+    사용자가 GUI에서 설정한 노드별 설정을 workflow_json에 반영하고,
     file_path가 제공된 경우 해당 파일에도 영구 저장합니다.
     """
     nodes = workflow_json.get("nodes", [])
@@ -367,6 +436,14 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
             }
             if "system_prompt" in cfg:
                 updated_dict["system_prompt"] = cfg["system_prompt"]
+            if "max_loops" in cfg:
+                updated_dict["max_loops"] = int(cfg["max_loops"])
+            if "react_loop" in cfg:
+                updated_dict["react_loop"] = bool(cfg["react_loop"])
+            if "max_tool_iterations" in cfg:
+                updated_dict["max_tool_iterations"] = int(cfg["max_tool_iterations"])
+            if "tool_instruction" in cfg:
+                updated_dict["tool_instruction"] = cfg["tool_instruction"]
 
             if "config" not in n or not isinstance(n["config"], dict):
                 n["config"] = {}

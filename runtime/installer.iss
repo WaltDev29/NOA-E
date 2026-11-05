@@ -3,7 +3,7 @@
 ; =====================================================================
 ; 요구사항: Inno Setup 6.x / 7.x 이상 (https://jrsoftware.org/isdl.php)
 ; 사용법:
-;   1. python build_exe.py 실행 (dist/NOA-E_Desktop 생성)
+;   1. python build_exe.py 실행 (dist/noa-e 생성)
 ;   2. Inno Setup Compiler로 본 스크립트(installer.iss)를 열어 빌드 (F9)
 ;      또는 ISCC.exe installer.iss 명령어로 CLI 빌드
 ; =====================================================================
@@ -39,9 +39,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 Name: "envpath"; Description: "환경 변수(PATH)에 noa-e 명령어 경로 추가 (터미널에서 noa-e 바로 실행 가능)"; GroupDescription: "고급 옵션:"
 
+[InstallDelete]
+; 덮어쓰기 재설치 시 이전 빌드의 충돌 DLL(icu*.dll 등)이 남아있지 않도록 _internal 폴더 정리
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Files]
 ; PyInstaller --onedir 출력 디렉터리의 모든 파일 및 하위 폴더 포함
-Source: "dist\noa-e\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\noa-e\*"; DestDir: "{app}"; Excludes: "*.old_locked"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -72,7 +76,7 @@ end;
 // 삭제 시 PATH에서 설치 디렉터리 제거
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  AppDir, OrigPath, NewPath: string;
+  AppDir, OrigPath: string;
   P, L: Integer;
 begin
   if CurUninstallStep = usUninstall then

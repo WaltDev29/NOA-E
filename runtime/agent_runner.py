@@ -9,17 +9,46 @@ for p in [current_dir, parent_dir]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
-try:
-    from runtime.core.engine.compiler import WorkflowCompiler
-    from runtime.storage import extract_llm_nodes, update_llm_configs_in_workflow
-except ModuleNotFoundError:
+
+def _setup_win32_dll_paths():
+    """
+    왜: PyInstaller(_internal) 패키징 환경에서 Conda 구버전 DLL이나 PATH 탐색 누락으로 인해
+    PySide6(Qt6Core/Qt6Widgets)가 '지정된 프로시저를 찾을 수 없습니다' 오류를 내는 것을 방지합니다.
+    """
+    if sys.platform != "win32":
+        return
+    base_dir = getattr(sys, "_MEIPASS", current_dir)
+    pyside_dir = os.path.join(base_dir, "PySide6")
+    shiboken_dir = os.path.join(base_dir, "shiboken6")
+
+    prepend_paths = []
+    for d in (pyside_dir, shiboken_dir, base_dir):
+        if os.path.isdir(d):
+            prepend_paths.append(d)
+            if hasattr(os, "add_dll_directory"):
+                try:
+                    os.add_dll_directory(d)
+                except Exception:
+                    pass
+    if prepend_paths:
+        os.environ["PATH"] = os.pathsep.join(prepend_paths) + os.pathsep + os.environ.get("PATH", "")
+
+
+_setup_win32_dll_paths()
+
+if os.path.isdir(os.path.join(current_dir, "core")):
     from core.engine.compiler import WorkflowCompiler
-    from storage import extract_llm_nodes, update_llm_configs_in_workflow
+    from storage import extract_llm_nodes, update_llm_configs_in_workflow, get_youtube_api_key
+else:
+    from runtime.core.engine.compiler import WorkflowCompiler
+    from runtime.storage import extract_llm_nodes, update_llm_configs_in_workflow, get_youtube_api_key
+
 
 def run_cli_chat(workflow_path: str):
     """
     터미널(CLI) 기반 인터랙티브 에이전트 대화 루프
     """
+    get_youtube_api_key()
     try:
         from colorama import init, Fore, Style
         init(autoreset=True)
@@ -45,18 +74,23 @@ def run_cli_chat(workflow_path: str):
     print(f"{Fore.YELLOW}• 워크플로우 경로: {workflow_path}")
 
     llm_nodes = extract_llm_nodes(workflow_json)
-    print(f"{Fore.YELLOW}• 감지된 LLM/Agent 노드: {len(llm_nodes)}개")
+    print(f"{Fore.YELLOW}• 감지된 설정 가능 노드: {len(llm_nodes)}개")
     for n in llm_nodes:
         mode_str = "커스텀 API" if n["is_custom"] else "기본 서버 Ollama"
-        print(f"   - [{n['id']}] {n['label']} (Model: {n['model']}, 모드: {mode_str})")
+        print(f"   - [{n['id']}] {n['label']} (Type: {n['type']}, Model: {n['model']}, 모드: {mode_str})")
 
     print(f"\n{Fore.CYAN}[컴파일 중...] LangGraph StateGraph 구축 중...")
     try:
         type_map = {
             "inputNode": "input",
             "llmNode": "llm",
+            "plannerNode": "planner",
+            "routerNode": "router",
+            "aggregatorNode": "aggregator",
             "outputNode": "output",
             "searchNode": "search",
+            "weatherNode": "weather",
+            "youtubeNode": "youtube",
             "calculatorNode": "calculator",
             "agentNode": "agent"
         }
@@ -65,12 +99,21 @@ def run_cli_chat(workflow_path: str):
                 {
                     "id": n.get("id"),
                     "type": type_map.get(n.get("type"), n.get("type")),
-                    "config": n.get("config", {}) or n.get("data", {}).get("config", {})
+                    "label": n.get("label") or n.get("data", {}).get("label"),
+                    "config": {
+                        **(n.get("config", {}) or n.get("data", {}).get("config", {})),
+                        "label": n.get("label") or n.get("data", {}).get("label") or n.get("type"),
+                    }
                 }
                 for n in workflow_json.get("nodes", [])
             ],
             "edges": [
-                {"source": e.get("source"), "target": e.get("target")}
+                {
+                    "source": e.get("source"),
+                    "target": e.get("target"),
+                    "sourceHandle": e.get("sourceHandle"),
+                    "targetHandle": e.get("targetHandle"),
+                }
                 for e in workflow_json.get("edges", [])
             ]
         }
@@ -81,35 +124,32 @@ def run_cli_chat(workflow_path: str):
         print(f"{Fore.RED}❌ 컴파일 실패: {e}{Style.RESET_ALL}")
         return
 
-    print(f"\n{Fore.WHITE}대화를 시작합니다. ('exit', 'quit' 입력 시 종료, 'clear' 입력 시 메모리 초기화)")
-    print(f"{Fore.CYAN}------------------------------------------------------{Style.RESET_ALL}\n")
-
     conversation_messages = []
-    
+
     while True:
         try:
-            user_input = input(f"{Fore.GREEN}User > {Style.RESET_ALL}").strip()
+            user_input = input(f"{Fore.GREEN}You > {Style.RESET_ALL}").strip()
             if not user_input:
                 continue
-                
             if user_input.lower() in ("exit", "quit", "q"):
-                print(f"\n{Fore.YELLOW}에이전트를 종료합니다. 안녕히 가세요!{Style.RESET_ALL}")
+                print(f"\n{Fore.YELLOW}에이전트 실행을 종료합니다.{Style.RESET_ALL}")
                 break
-                
-            if user_input.lower() == "clear":
-                conversation_messages = []
-                print(f"{Fore.YELLOW}[알림] 대화 메모리가 초기화되었습니다.{Style.RESET_ALL}\n")
-                continue
 
             initial_state = {
+                "messages": list(conversation_messages),
                 "input_text": user_input,
                 "current_output": "",
-                "messages": conversation_messages,
-                "logs": []
+                "logs": [],
+                "plan": [],
+                "current_step": 0,
+                "intermediate_steps": [],
+                "loop_count": 0,
+                "next_worker": None,
+                "routing_result": None,
             }
 
             print(f"\n{Fore.MAGENTA}🤖 Agent 생각 중...{Style.RESET_ALL}")
-            result = graph.invoke(initial_state)
+            result = graph.invoke(initial_state, config={"recursion_limit": 40})
             
             output = result.get("current_output", "")
             logs = result.get("logs", [])
@@ -129,15 +169,17 @@ def run_cli_chat(workflow_path: str):
         except Exception as e:
             print(f"\n{Fore.RED}오류 발생: {e}{Style.RESET_ALL}\n")
 
+
 def run_pyside_gui():
     """
     PySide6 네이티브 GUI 앱 실행
     """
-    try:
-        from runtime.gui import launch_gui
-    except ModuleNotFoundError:
+    if os.path.isfile(os.path.join(current_dir, "gui.py")):
         from gui import launch_gui
+    else:
+        from runtime.gui import launch_gui
     launch_gui()
+
 
 def _attach_console():
     """Windows 환경에서 GUI 앱으로 패키징되었을 때 터미널 호출 시 표준 입출력을 콘솔에 연결"""
@@ -151,6 +193,7 @@ def _attach_console():
         except Exception:
             pass
 
+
 def main():
     _attach_console()
     parser = argparse.ArgumentParser(description="NOA-E Desktop Runner (PySide6 GUI / CLI)")
@@ -163,8 +206,8 @@ def main():
     if args.cli and args.workflow:
         run_cli_chat(args.workflow)
     else:
-        # 기본값: PySide6 GUI 실행
         run_pyside_gui()
+
 
 if __name__ == "__main__":
     main()
