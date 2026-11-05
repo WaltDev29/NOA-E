@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { useLocation } from '../router/Router';
 import { workflowApi } from '../services/workflowApi';
+import { TEMPLATES_DATA, convertTemplateToReactFlow } from './TemplatesPage';
 
 export const StudioPage: React.FC = () => {
   const { user } = useAuth();
@@ -66,10 +67,11 @@ export const StudioPage: React.FC = () => {
   const resetWorkflow = useWorkflowStore((state) => state.resetWorkflow);
   const [resetNotice, setResetNotice] = useState(false);
 
-  // 컴포넌트 마운트 및 쿼리 파라미터 변경 시: URL 쿼리 파라미터(?id=...)가 있으면 DB에서 로드, 없으면 신규 에이전트 초기화
+  // 컴포넌트 마운트 및 쿼리 파라미터 변경 시: URL 쿼리 파라미터(?id=... 또는 ?template=...)가 있으면 로드, 없으면 신규 에이전트 초기화
   useEffect(() => {
     const searchParams = new URLSearchParams(search || window.location.search);
     const workflowId = searchParams.get('id');
+    const templateId = searchParams.get('template');
 
     if (workflowId) {
       setCurrentWorkflowId(workflowId);
@@ -95,6 +97,22 @@ export const StudioPage: React.FC = () => {
             title: '불러오기 오류',
           });
         });
+    } else if (templateId) {
+      const matchedTemplate = TEMPLATES_DATA.find((t) => t.id === templateId);
+      if (matchedTemplate) {
+        // 템플릿 로드 시 기존 실행 상태 및 메모리를 먼저 초기화한 뒤 템플릿 그래프를 주입
+        setCurrentWorkflowId(undefined);
+        resetWorkflow();
+        const { nodes: tplNodes, edges: tplEdges } = convertTemplateToReactFlow(matchedTemplate);
+        setNodes(tplNodes);
+        setEdges(tplEdges);
+        setAgentName(matchedTemplate.name);
+        showSaveToast(`템플릿 [${matchedTemplate.name}]을(를) 불러왔습니다.`);
+      } else {
+        setCurrentWorkflowId(undefined);
+        resetWorkflow();
+        setAgentName('새로운 에이전트');
+      }
     } else {
       // 신규 에이전트 모드: 이전 작업 중이던 캔버스 상태(노드/엣지/로그)를 기본값으로 초기화
       setCurrentWorkflowId(undefined);

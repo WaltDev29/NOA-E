@@ -171,7 +171,11 @@ export const LLMNode = memo(({ id, data, selected }: any) => {
   const updateNodeInternals = useUpdateNodeInternals();
 
   // .env.backend의 MODELS_CONFIG에서 tool: true인 모델만 상단 Tool 연결 포트 활성화
-  const supportsTool = Boolean(modelCapabilities[modelName]?.tool);
+  // 초기 마운트 시점(modelCapabilities 로드 전)에도 도구 연결 엣지가 누락되지 않도록 기본값 보완
+  const supportsTool =
+    Object.keys(modelCapabilities).length === 0
+      ? modelName !== 'gemma2:2b'
+      : Boolean(modelCapabilities[modelName]?.tool);
 
   useEffect(() => {
     updateNodeInternals(id);
