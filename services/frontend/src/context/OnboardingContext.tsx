@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { PAGE_TOUR_STEPS, type TourPageKey, type TourStep } from '../components/onboarding/tourSteps';
+import { useWorkflowStore } from '../store/useWorkflowStore';
 
 export type ActiveGuideType = 'none' | 'overview' | 'page_tour' | 'studio_quest';
 
@@ -89,6 +90,13 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
   }, []);
 
   const startStudioQuest = useCallback(() => {
+    // 가이드 시작 시 캔버스를 완전히 비운 상태로 초기화
+    const store = useWorkflowStore.getState();
+    store.setNodes([]);
+    store.setEdges([]);
+    store.setSelectedNode(null);
+    store.clearLogs();
+
     setStudioQuestStep(1);
     setActiveGuide('studio_quest');
   }, []);
