@@ -25,6 +25,14 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     color: 'tertiary',
   },
   {
+    type: 'outputNode',
+    name: 'Output',
+    subtitle: '최종 결과 렌더링',
+    icon: 'output',
+    category: '기본',
+    color: 'error',
+  },
+  {
     type: 'plannerNode',
     name: 'Planner',
     subtitle: '다단계 계획 수립',
@@ -79,14 +87,6 @@ const PALETTE_ITEMS: PaletteNodeItem[] = [
     icon: 'smart_display',
     category: '도구',
     color: 'secondary',
-  },
-  {
-    type: 'outputNode',
-    name: 'Output',
-    subtitle: '최종 결과 렌더링',
-    icon: 'output',
-    category: '기본',
-    color: 'error',
   },
 ];
 
