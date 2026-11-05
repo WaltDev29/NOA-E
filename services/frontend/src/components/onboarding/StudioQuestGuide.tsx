@@ -521,6 +521,16 @@ export const StudioQuestGuide: React.FC = () => {
         ) {
           isAllowed = true;
         }
+      } else if (studioQuestStep === 4 || studioQuestStep === 6 || studioQuestStep === 8) {
+        // Step 4, 6, 8: 노드 설정 패널 안내 단계이므로 우측 설정 패널 및 캔버스 조작 허용
+        const propEl = document.querySelector('[data-tour="studio-properties"]');
+        const canvasEl = document.querySelector('[data-tour="studio-canvas"]');
+        if (
+          (propEl && propEl.contains(e.target as Node)) ||
+          (canvasEl && canvasEl.contains(e.target as Node))
+        ) {
+          isAllowed = true;
+        }
       } else if (studioQuestStep === 9) {
         // Step 9: 캔버스 내부에서의 선 연결 및 노드 이동만 허용 (우측 패널 조작/노드 삭제 차단)
         const canvasEl = document.querySelector('[data-tour="studio-canvas"]');
