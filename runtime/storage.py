@@ -404,7 +404,7 @@ def extract_llm_nodes(workflow_json: dict) -> List[Dict[str, Any]]:
                 "id": n.get("id"),
                 "type": norm_type,
                 "label": label,
-                "model": config.get("model", "gemma2:2b"),
+                "model": config.get("model", "gpt-6-luna"),
                 "base_url": config.get("base_url", ""),
                 "api_key": config.get("api_key", ""),
                 "is_custom": config.get("is_custom", False) or bool(config.get("base_url") or config.get("api_key")),
@@ -428,7 +428,7 @@ def update_llm_configs_in_workflow(workflow_json: dict, updated_configs: Dict[st
         if node_id in updated_configs:
             cfg = updated_configs[node_id]
             updated_dict = {
-                "model": cfg.get("model", "gemma2:2b"),
+                "model": cfg.get("model", "gpt-6-luna"),
                 "base_url": cfg.get("base_url", ""),
                 "api_key": cfg.get("api_key", ""),
                 "is_custom": cfg.get("is_custom", False),

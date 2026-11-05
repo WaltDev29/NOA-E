@@ -4,10 +4,10 @@ from typing import Optional, Dict, Any
 from langchain_openai import ChatOpenAI
 
 # 웹 페이지(Nginx/Backend) 경유 LLM 프록시 엔드포인트 및 로컬 Ollama 폴백 엔드포인트
-DEFAULT_WEB_LLM_PROXY_URL = os.getenv("SERVER_WEB_LLM_URL", "http://localhost/api/workflow/llm/v1")
+DEFAULT_WEB_LLM_PROXY_URL = os.getenv("SERVER_WEB_LLM_URL", "https://waltdev29.aikopo.net/noa-e/api/workflow/llm/v1")
 DEFAULT_BACKEND_LLM_PROXY_URL = os.getenv("SERVER_BACKEND_LLM_URL", "http://localhost:8000/api/workflow/llm/v1")
 DEFAULT_SERVER_OLLAMA_URL = os.getenv("SERVER_OLLAMA_URL", "http://localhost:11434/v1")
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemma2:2b")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-6-luna")
 
 
 def _is_local_port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.25) -> bool:
@@ -21,16 +21,16 @@ def _is_local_port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.2
 
 def _resolve_default_gateway_url() -> str:
     """
-    왜: 외부 커스텀 API를 설정하지 않은 경우 '로컬 런타임 -> 웹 페이지 -> 웹 페이지의 LLM API' 순서로
-    호출하도록 웹 페이지(포트 80) -> 백엔드(포트 8000) -> 로컬 Ollama(포트 11434) 순으로 엔드포인트를 결정합니다.
+    왜: 외부 커스텀 API를 설정하지 않은 경우 '로컬 런타임 -> 배포 서버(Nginx) -> 백엔드 LLM API' 순서로
+    호출하도록 구성하며, 로컬 개발 환경(포트 8000)이 켜져 있을 때만 로컬 백엔드를 우선 호출합니다.
     """
     if os.getenv("SERVER_WEB_LLM_URL"):
         return os.getenv("SERVER_WEB_LLM_URL", DEFAULT_WEB_LLM_PROXY_URL)
-    if _is_local_port_open(80):
-        return DEFAULT_WEB_LLM_PROXY_URL
+    # 1. 로컬 백엔드(localhost:8000)가 켜져 있으면 로컬 개발 백엔드 우선 호출
     if _is_local_port_open(8000):
         return DEFAULT_BACKEND_LLM_PROXY_URL
-    return DEFAULT_SERVER_OLLAMA_URL
+    # 2. 그 외 일반 사용자 환경에서는 배포 서버(Nginx 서브패스) 프록시 호출
+    return DEFAULT_WEB_LLM_PROXY_URL
 
 
 def get_runtime_llm(custom_config: Optional[Dict[str, Any]] = None):
