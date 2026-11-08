@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgLearn" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e0f1e"/>
+      <stop offset="100%" stop-color="#14182b"/>
+    </linearGradient>
+    <linearGradient id="learnAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="600" height="320" fill="url(#bgLearn)"/>
+
+  <!-- Left: Tutorial Book / Guide Layout -->
+  <g transform="translate(100, 50)">
+    <!-- Book Cover/Page -->
+    <rect width="220" height="220" rx="14" fill="#1E293B" stroke="#6366F1" stroke-width="2"/>
+    <rect width="220" height="40" rx="14" fill="#312E81" opacity="0.4"/>
+    <circle cx="25" cy="20" r="4" fill="#EF4444"/>
+    <circle cx="40" cy="20" r="4" fill="#F59E0B"/>
+    <circle cx="55" cy="20" r="4" fill="#10B981"/>
+    
+    <text x="25" y="68" fill="#A5B4FC" font-size="13" font-weight="bold" font-family="sans-serif">📖 기초부터 배우는 AI 에이전트</text>
+    
+    <!-- Checklist items -->
+    <g transform="translate(25, 90)">
+      <circle cx="8" cy="8" r="7" fill="#6366F1"/>
+      <path d="M 5 8 L 7 10 L 11 6" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="24" y="12" fill="#E2E8F0" font-size="11" font-family="sans-serif">1단계: 노드 연결 기본 규칙</text>
+    </g>
+
+    <g transform="translate(25, 125)">
+      <circle cx="8" cy="8" r="7" fill="#6366F1"/>
+      <path d="M 5 8 L 7 10 L 11 6" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="24" y="12" fill="#E2E8F0" font-size="11" font-family="sans-serif">2단계: 고성능 시스템 프롬프트 작성법</text>
+    </g>
+
+    <g transform="translate(25, 160)">
+      <circle cx="8" cy="8" r="7" fill="#6366F1"/>
+      <path d="M 5 8 L 7 10 L 11 6" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="24" y="12" fill="#E2E8F0" font-size="11" font-family="sans-serif">3단계: Tool 및 외부 API 연동</text>
+    </g>
+  </g>
+
+  <!-- Right: Floating Lightbulb / Knowledge Sparkle -->
+  <g transform="translate(370, 75)">
+    <circle cx="70" cy="85" r="55" fill="#4338CA" opacity="0.25"/>
+    <circle cx="70" cy="85" r="40" fill="#1E1B4B" stroke="url(#learnAccent)" stroke-width="2"/>
+    <!-- Lightbulb -->
+    <path d="M 60 70 C 55 75, 55 83, 62 88 L 62 93 L 78 93 L 78 88 C 85 83, 85 75, 80 70 C 75 65, 65 65, 60 70 Z" fill="#FDE047"/>
+    <line x1="65" y1="97" x2="75" y2="97" stroke="#CBD5E1" stroke-width="2"/>
+    <text x="70" y="150" fill="#C7D2FE" font-size="13" font-weight="bold" font-family="sans-serif" text-anchor="middle">실전 노하우 습득</text>
+  </g>
+</svg>

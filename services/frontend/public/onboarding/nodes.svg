@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgNodes" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c111d"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="600" height="320" fill="url(#bgNodes)"/>
+
+  <!-- Category Grid of Node Cards -->
+  <!-- Row 1 -->
+  <!-- Card 1: Input -->
+  <g transform="translate(60, 50)">
+    <rect width="140" height="95" rx="12" fill="#1E293B" stroke="#3B82F6" stroke-width="1.5"/>
+    <circle cx="32" cy="35" r="14" fill="#3B82F6" opacity="0.2"/>
+    <text x="32" y="40" fill="#60A5FA" font-size="14" font-family="sans-serif" text-anchor="middle">📥</text>
+    <text x="56" y="38" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">Input Node</text>
+    <text x="20" y="70" fill="#94A3B8" font-size="10" font-family="sans-serif">사용자 질문 &amp; 데이터 입력</text>
+  </g>
+
+  <!-- Card 2: LLM Agent -->
+  <g transform="translate(230, 50)">
+    <rect width="140" height="95" rx="12" fill="#1E293B" stroke="#8B5CF6" stroke-width="2"/>
+    <circle cx="32" cy="35" r="14" fill="#8B5CF6" opacity="0.2"/>
+    <text x="32" y="40" fill="#C084FC" font-size="14" font-family="sans-serif" text-anchor="middle">🤖</text>
+    <text x="56" y="38" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">LLM Agent</text>
+    <text x="20" y="70" fill="#94A3B8" font-size="10" font-family="sans-serif">GPT / Claude 지능 추론</text>
+  </g>
+
+  <!-- Card 3: Web Search Tool -->
+  <g transform="translate(400, 50)">
+    <rect width="140" height="95" rx="12" fill="#1E293B" stroke="#06B6D4" stroke-width="1.5"/>
+    <circle cx="32" cy="35" r="14" fill="#06B6D4" opacity="0.2"/>
+    <text x="32" y="40" fill="#22D3EE" font-size="14" font-family="sans-serif" text-anchor="middle">🌐</text>
+    <text x="56" y="38" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">Web Search</text>
+    <text x="20" y="70" fill="#94A3B8" font-size="10" font-family="sans-serif">실시간 인터넷 웹 검색</text>
+  </g>
+
+  <!-- Row 2 -->
+  <!-- Card 4: Code Node -->
+  <g transform="translate(60, 175)">
+    <rect width="140" height="95" rx="12" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5"/>
+    <circle cx="32" cy="35" r="14" fill="#F59E0B" opacity="0.2"/>
+    <text x="32" y="40" fill="#FBBF24" font-size="14" font-family="sans-serif" text-anchor="middle">⚡</text>
+    <text x="56" y="38" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">Python Code</text>
+    <text x="20" y="70" fill="#94A3B8" font-size="10" font-family="sans-serif">커스텀 스크립트 실행</text>
+  </g>
+
+  <!-- Card 5: Knowledge RAG -->
+  <g transform="translate(230, 175)">
+    <rect width="140" height="95" rx="12" fill="#1E293B" stroke="#EC4899" stroke-width="1.5"/>
+    <circle cx="32" cy="35" r="14" fill="#EC4899" opacity="0.2"/>
+    <text x="32" y="40" fill="#F472B6" font-size="14" font-family="sans-serif" text-anchor="middle">📚</text>
+    <text x="56" y="38" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">Vector DB</text>
+    <text x="20" y="70" fill="#94A3B8" font-size="10" font-family="sans-serif">문서 기반 RAG 지식 검색</text>
+  </g>
+
+  <!-- Card 6: Output Node -->
+  <g transform="translate(400, 175)">
+    <rect width="140" height="95" rx="12" fill="#1E293B" stroke="#10B981" stroke-width="1.5"/>
+    <circle cx="32" cy="35" r="14" fill="#10B981" opacity="0.2"/>
+    <text x="32" y="40" fill="#34D399" font-size="14" font-family="sans-serif" text-anchor="middle">📤</text>
+    <text x="56" y="38" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">Output Node</text>
+    <text x="20" y="70" fill="#94A3B8" font-size="10" font-family="sans-serif">최종 결과 전달 및 포맷팅</text>
+  </g>
+</svg>

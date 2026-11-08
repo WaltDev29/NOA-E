@@ -1,23 +1,41 @@
-import { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow,
   Controls,
   Background,
-  Panel,
+  BackgroundVariant,
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { useWorkflowStore } from '../../store/useWorkflowStore';
-import { InputNode, LLMNode, OutputNode, AgentNode, SearchNode, CalculatorNode } from './CustomNodes';
+import { useTheme } from '../../context/ThemeContext';
+import { useModal } from '../../context/ModalContext';
+import { useOnboarding } from '../../context/OnboardingContext';
+import {
+  InputNode,
+  LLMNode,
+  SearchNode,
+  WeatherNode,
+  YoutubeNode,
+  OutputNode,
+  PlannerNode,
+  RouterNode,
+  AggregatorNode,
+} from './CustomNodes';
+import { ConnectionMode } from '@xyflow/react';
+import type { Connection, Edge } from '@xyflow/react';
 import CustomEdge from './CustomEdge';
 
 const nodeTypes = {
   inputNode: InputNode,
   llmNode: LLMNode,
-  agentNode: AgentNode,
+  plannerNode: PlannerNode,
+  routerNode: RouterNode,
+  aggregatorNode: AggregatorNode,
   searchNode: SearchNode,
-  calculatorNode: CalculatorNode,
+  weatherNode: WeatherNode,
+  youtubeNode: YoutubeNode,
   outputNode: OutputNode,
 };
 
@@ -25,151 +43,302 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
-let idCounters: Record<string, number> = { 
-  inputNode: 1, 
-  llmNode: 1, 
-  outputNode: 1,
-  agentNode: 1,
-  searchNode: 1,
-  calculatorNode: 1
-};
-const getId = (type: string) => {
+const getUniqueId = (type: string, currentNodes: any[]) => {
   const prefix = type.replace('Node', '');
-  if (!idCounters[type]) idCounters[type] = 1;
-  return `${prefix}-${idCounters[type]++}`;
+  // Find highest existing numerical suffix
+  let maxSuffix = 0;
+  currentNodes.forEach((node) => {
+    if (node.id.startsWith(`${prefix}-`)) {
+      const num = parseInt(node.id.replace(`${prefix}-`, ''), 10);
+      if (!isNaN(num) && num > maxSuffix) {
+        maxSuffix = num;
+      }
+    }
+  });
+
+  return `${prefix}-${maxSuffix + 1}`;
 };
 
-const Editor = () => {
-  const reactFlowWrapper = useRef(null);
+const EditorInner: React.FC = () => {
+  const { theme } = useTheme();
+  const { activeGuide } = useOnboarding();
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
-  
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useWorkflowStore();
+  const { showAlert } = useModal();
 
-  const onDragOver = useCallback((event: any) => {
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, modelCapabilities } = useWorkflowStore();
+
+  const isValidConnection = useCallback((connection: Edge | Connection) => {
+    if (connection.source === connection.target) return false;
+
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    const targetNode = nodes.find((n) => n.id === connection.target);
+    const toolNodeTypes = ['searchNode', 'weatherNode', 'youtubeNode'];
+
+    // Output 노드로부터 나가는 연결 금지
+    if (sourceNode?.type === 'outputNode') return false;
+
+    const isSourceTool = toolNodeTypes.includes(sourceNode?.type || '');
+    const isTargetTool = toolNodeTypes.includes(targetNode?.type || '');
+
+    // Tool 노드는 오직 Tool 기능을 지원하는 LLM 노드의 상단 'tools' 포트로만 연결 가능
+    if (isSourceTool || isTargetTool || connection.targetHandle === 'tools' || connection.sourceHandle === 'tools') {
+      if (!isSourceTool || targetNode?.type !== 'llmNode' || connection.targetHandle !== 'tools') {
+        return false;
+      }
+      const llmModel = (targetNode.data as any)?.config?.model || 'gemma2:2b';
+      if (!modelCapabilities[llmModel]?.tool) {
+        return false;
+      }
+      return true;
+    }
+
+    // Router의 루프 포트(loop-return) 연결 검증:
+    // 드래그 방향에 상관없이(targetHandle 또는 sourceHandle이 loop-return인 경우)
+    const isLoopTarget = connection.targetHandle === 'loop-return';
+    const isLoopSource = connection.sourceHandle === 'loop-return';
+
+    if (isLoopTarget || isLoopSource) {
+      const otherNode = isLoopTarget ? sourceNode : targetNode;
+      if (otherNode?.type === 'inputNode' || otherNode?.type === 'plannerNode') {
+        showAlert('루프 포트는 Worker 노드(LLM, 도구 등)와의 작업 순환 연결 전용입니다.', { type: 'warning' });
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  }, [nodes, modelCapabilities, showAlert]);
+
+  // 에이전트 가이드 시 캔버스가 노드 1개 크기로 과도하게 줌인되지 않도록 넉넉한 뷰포트(zoom 0.8) 유지
+  useEffect(() => {
+    if (activeGuide === 'studio_quest' && reactFlowInstance) {
+      reactFlowInstance.setViewport({ x: 60, y: 80, zoom: 0.8 }, { duration: 250 });
+    }
+  }, [activeGuide, reactFlowInstance]);
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
   const onDrop = useCallback(
-    (event: any) => {
+    (event: React.DragEvent) => {
       event.preventDefault();
 
       const type = event.dataTransfer.getData('application/reactflow');
-      if (typeof type === 'undefined' || !type) return;
+      if (!type) return;
 
       const currentNodes = useWorkflowStore.getState().nodes;
-      
-      if (type === 'inputNode' && currentNodes.some(n => n.type === 'inputNode')) {
-        alert('경고: Input 노드는 하나만 생성할 수 있습니다.');
+
+      if (type === 'inputNode' && currentNodes.some((n) => n.type === 'inputNode')) {
+        showAlert('경고: Input 노드는 하나만 생성할 수 있습니다.', { type: 'warning' });
         return;
       }
-      
-      if (type === 'outputNode' && currentNodes.some(n => n.type === 'outputNode')) {
-        alert('경고: Output 노드는 하나만 생성할 수 있습니다.');
+
+      if (type === 'outputNode' && currentNodes.some((n) => n.type === 'outputNode')) {
+        showAlert('경고: Output 노드는 하나만 생성할 수 있습니다.', { type: 'warning' });
         return;
       }
+
+      if (!reactFlowInstance) return;
 
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
-      
+
       const labels: Record<string, string> = {
         inputNode: 'Input',
-        llmNode: 'LLM Agent',
-        agentNode: 'Autonomous Agent',
-        searchNode: 'Search Tool',
-        calculatorNode: 'Calculator Tool',
-        outputNode: 'Output'
+        plannerNode: 'Planner',
+        routerNode: 'Router',
+        llmNode: 'LLM',
+        aggregatorNode: 'Aggregator',
+        searchNode: '검색 Tool',
+        weatherNode: '날씨 Tool',
+        youtubeNode: 'YouTube Tool',
+        outputNode: 'Output',
       };
+
+      const defaultConfigs: Record<string, any> = {
+        inputNode: { input_text: '' },
+        plannerNode: {
+          model: 'gemma2:2b',
+          temperature: 0.7,
+          system_prompt: '사용자 요청을 달성하기 위한 구체적인 세부 작업(Task) 계획을 수립하세요. 최종 결과 제시, 답변 작성, 요약 등의 작업은 후속 노드가 처리하므로 계획 목록에 포함하지 마세요.',
+        },
+        routerNode: {
+          model: 'gemma2:2b',
+          temperature: 0.7,
+          max_loops: 5,
+          system_prompt: '당신은 지능형 작업 분배 관리자입니다. 주어진 지침과 작업 내용을 바탕으로 가장 적절한 노드로 분기하세요.',
+        },
+        llmNode: {
+          model: 'gemma2:2b',
+          temperature: 0.7,
+          system_prompt: '당신은 사용자의 요청에 정확하고 친절하게 답변하는 유능한 AI 어시스턴트입니다.',
+          react_loop: true,
+          max_tool_iterations: 3,
+          tool_instruction: '',
+        },
+        aggregatorNode: {
+          model: 'gemma2:2b',
+          temperature: 0.7,
+          system_prompt: '각 단계에서 처리된 결과들을 종합하여 사용자 요청에 대한 명확하고 정리된 최종 답변을 작성하세요.',
+        },
+        searchNode: {},
+        weatherNode: {},
+        youtubeNode: {},
+        outputNode: {},
+      };
+
+      const newId = getUniqueId(type, currentNodes);
 
       const newNode = {
-        id: getId(type),
+        id: newId,
         type,
         position,
-        data: { label: labels[type] || 'Node', config: {} },
+        data: {
+          label: labels[type] || 'Node',
+          config: defaultConfigs[type] || {},
+        },
       };
 
-      useWorkflowStore.getState().setNodes([...useWorkflowStore.getState().nodes, newNode]);
+      useWorkflowStore.getState().setNodes([...currentNodes, newNode]);
     },
     [reactFlowInstance],
   );
 
+  // Shift + Drag (좌우 이동) 및 Ctrl + Drag (확대/축소) 제어
+  const dragStartRef = useRef<{
+    x: number;
+    y: number;
+    viewport: { x: number; y: number; zoom: number };
+    mode: 'shift' | 'ctrl';
+  } | null>(null);
+
+  const handleMouseDownCapture = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // 노드 내부 또는 조작 UI 클릭 시에는 기본 이벤트 허용
+      if (
+        target.closest('.react-flow__node') ||
+        target.closest('.react-flow__controls') ||
+        target.closest('input') ||
+        target.closest('textarea') ||
+        target.closest('button') ||
+        target.closest('select')
+      ) {
+        return;
+      }
+
+      if (e.button === 0 && (e.shiftKey || e.ctrlKey)) {
+        if (!reactFlowInstance) return;
+        e.stopPropagation();
+        dragStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          viewport: reactFlowInstance.getViewport(),
+          mode: e.ctrlKey ? 'ctrl' : 'shift',
+        };
+      }
+    },
+    [reactFlowInstance],
+  );
+
+  const handleMouseMoveCapture = useCallback(
+    (e: React.MouseEvent) => {
+      if (!dragStartRef.current || !reactFlowInstance) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      const { viewport, mode } = dragStartRef.current;
+
+      if (mode === 'shift') {
+        // Shift + Drag: 좌우로만 이동 (Y축 고정)
+        reactFlowInstance.setViewport({
+          x: viewport.x + dx,
+          y: viewport.y,
+          zoom: viewport.zoom,
+        });
+      } else if (mode === 'ctrl') {
+        // Ctrl + Drag: 위로 드래그 시 확대, 아래로 드래그 시 축소
+        const zoomDelta = -dy * 0.01;
+        const newZoom = Math.min(Math.max(0.2, viewport.zoom * (1 + zoomDelta)), 2.5);
+        reactFlowInstance.setViewport({
+          x: viewport.x,
+          y: viewport.y,
+          zoom: newZoom,
+        });
+      }
+    },
+    [reactFlowInstance],
+  );
+
+  const handleMouseUpCapture = useCallback(() => {
+    dragStartRef.current = null;
+  }, []);
+
   return (
-    <div className="flex-1 relative" style={{ width: '100%', height: '100%' }} ref={reactFlowWrapper}>
+    <div
+      className="flex-1 w-full h-full relative select-none"
+      ref={reactFlowWrapper}
+      onMouseDownCapture={handleMouseDownCapture}
+      onMouseMoveCapture={handleMouseMoveCapture}
+      onMouseUpCapture={handleMouseUpCapture}
+      onMouseLeave={handleMouseUpCapture}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
+        connectionMode={ConnectionMode.Loose}
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        defaultEdgeOptions={{ type: 'custom', animated: true }}
-        fitView
-        className="bg-muted/10"
+        fitView={activeGuide !== 'studio_quest'}
+        fitViewOptions={{ maxZoom: 0.85, padding: 0.3 }}
+        defaultViewport={{ x: 60, y: 80, zoom: 0.8 }}
+        colorMode={theme}
+        className="bg-background"
+        panOnDrag={true}
+        panOnScroll={true}
+        zoomOnScroll={true}
+        zoomActivationKeyCode="Control"
+        minZoom={0.2}
+        maxZoom={2.5}
+        defaultEdgeOptions={{
+          type: 'custom',
+          animated: true,
+        }}
       >
-        <Controls />
-        <Background gap={24} size={2} color="hsl(var(--muted-foreground))" className="opacity-20" />
-        
-        {/* Sidebar Palette inside ReactFlow Panel */}
-        <Panel position="top-left" className="bg-card/80 backdrop-blur-md p-3 rounded-lg border shadow-lg flex flex-col gap-2 max-h-[90vh] overflow-y-auto">
-          <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-1">Core Nodes</h3>
-          <div 
-            className="px-3 py-2 bg-background border rounded cursor-grab hover:border-primary text-sm shadow-sm transition-colors"
-            onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'inputNode'); e.dataTransfer.effectAllowed = 'move'; }}
-            draggable
-          >
-            Input Node
-          </div>
-          <div 
-            className="px-3 py-2 bg-background border rounded cursor-grab hover:border-primary text-sm shadow-sm transition-colors"
-            onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'llmNode'); e.dataTransfer.effectAllowed = 'move'; }}
-            draggable
-          >
-            LLM Agent
-          </div>
-          <div 
-            className="px-3 py-2 bg-background border rounded cursor-grab hover:border-primary text-sm shadow-sm transition-colors"
-            onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'agentNode'); e.dataTransfer.effectAllowed = 'move'; }}
-            draggable
-          >
-            Autonomous Agent
-          </div>
-          <div 
-            className="px-3 py-2 bg-background border rounded cursor-grab hover:border-primary text-sm shadow-sm transition-colors"
-            onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'outputNode'); e.dataTransfer.effectAllowed = 'move'; }}
-            draggable
-          >
-            Output Node
-          </div>
-          
-          <h3 className="text-xs font-semibold uppercase text-muted-foreground mt-2 mb-1">Tools</h3>
-          <div 
-            className="px-3 py-2 bg-background border rounded cursor-grab hover:border-primary text-sm shadow-sm transition-colors"
-            onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'searchNode'); e.dataTransfer.effectAllowed = 'move'; }}
-            draggable
-          >
-            Search Tool
-          </div>
-          <div 
-            className="px-3 py-2 bg-background border rounded cursor-grab hover:border-primary text-sm shadow-sm transition-colors"
-            onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', 'calculatorNode'); e.dataTransfer.effectAllowed = 'move'; }}
-            draggable
-          >
-            Calculator Tool
-          </div>
-        </Panel>
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={24}
+          size={1.5}
+          color={theme === 'dark' ? "rgba(218, 226, 253, 0.12)" : "rgba(15, 23, 42, 0.18)"}
+        />
+        <Controls
+          position="bottom-right"
+          showInteractive={false}
+          className="!bg-surface-container-low !backdrop-blur-md !border !border-outline-variant/60 !rounded-xl !p-1 !shadow-xl"
+        />
       </ReactFlow>
     </div>
   );
 };
 
-export const WorkflowEditor = () => (
-  <ReactFlowProvider>
-    <Editor />
-  </ReactFlowProvider>
-);
+export const WorkflowEditor: React.FC = () => {
+  return (
+    <ReactFlowProvider>
+      <EditorInner />
+    </ReactFlowProvider>
+  );
+};

@@ -1,156 +1,117 @@
 # 🚀 NOA-E (Node Oriented Agent - Education)
 
-> **React Flow** 기반의 직관적인 노드 캔버스와 **FastAPI + LangGraph** 엔진을 통해 복잡한 AI Agent 워크플로우를 시각적으로 설계하고 실시간으로 실행하는 교육·실습 플랫폼입니다.
+<img width="2170" height="725" alt="logo_with_bg" src="https://github.com/user-attachments/assets/2237d965-94e4-4cb6-b6f1-ce27b105c69a" />
+
+
+  <p align="center">
+    <strong>노드 연결 기반 AI Agent 학습·개발 플랫폼</strong>
+  </p>
+
+  <p align="center">
+    <a href="#-프로젝트-소개-overview">프로젝트 소개</a> •
+    <a href="#-핵심-기능-key-features">핵심 기능</a> •
+    <a href="#-기술-스택-tech-stack">기술 스택</a> •
+    <a href="#-프로젝트-구조-directory-structure">프로젝트 구조</a> •
+    <a href="#-빠른-시작-quick-start">빠른 시작</a> •
+    <a href="#-데스크톱-로컬-런타임-desktop-runtime">데스크톱 런타임</a>
+  </p>
+</div>
 
 ---
 
 ## 📌 프로젝트 소개 (Overview)
 
-**NOA-E**는 사용자가 복잡한 코드를 작성하지 않고도 드래그 앤 드롭 방식으로 AI Agent의 작동 흐름(Input, LLM, Tool, Output)을 구성하고, LangGraph를 통해 컴파일하여 즉시 테스트할 수 있는 웹 기반 AI Agent 교육 플랫폼입니다.
+**NOA-E (Node Oriented Agent - Education)**는 코딩에 익숙하지 않은 입문자를 대상으로 AI Agent의 구조와 오케스트레이션 원리를 직관적으로 이해하고 직접 설계할 수 있는 교육·실습 플랫폼입니다.
 
-- **비주얼 노드 에디터**: 캔버스 위에 Input, LLM, Tool, Output 노드를 배치하고 직관적으로 연결하여 에이전트를 빌드합니다.
-- **LangGraph 기반 실행 엔진**: 프론트엔드에서 설계한 워크플로우 JSON을 검증 후 LangGraph의 `StateGraph` 구조로 변환하여 실행합니다.
-- **실시간 스트리밍 모니터링**: Server-Sent Events (SSE)를 통해 노드 실행 상태, 토큰 생성 과정, 실행 로그를 실시간으로 시각화합니다.
-- **하이브리드 LLM 지원**: 로컬 환경을 위한 Ollama(Gemma2 등) 및 클라우드 OpenAI 모델을 지원합니다.
+- 🧩 **No-Code 비주얼 에디터**: React Flow 기반의 캔버스에서 노드를 드래그 앤 드롭하고 선을 이어 AI Agent 워크플로우를 완성할 수 있습니다.
+- 🧠 **에이전트 오케스트레이션 지원**: 단일 프롬프팅을 넘어 **Planner**, **Router**, **Aggregator** 노드를 통해 목표 분해, 조건부 동적 분기, 다중 작업 결과 취합 루프를 시각적으로 구현할 수 있습니다.
+- 🛠️ **실시간 외부 도구(Tools) 연동**: 웹 검색, YouTube 검색 등 다양한 Tool 노드를 에이전트 LLM에 유연하게 바인딩할 수 있습니다.
+- ⚡ **실시간 SSE 스트리밍 & 디버깅**: 에이전트 실행 시 노드별 실행 상태, 토큰 스트리밍, ReAct 추론/사고 로그를 단계별(Step)로 모니터링할 수 있습니다.
+- 📦 **독립형 데스크톱 런타임 (PySide6)**: 웹에서 설계한 에이전트 워크플로우(`JSON`)를 내려받아, 웹 연결 프록시 또는 로컬 LLM을 통해 독립 실행형 데스크톱 애플리케이션으로 바로 구동합니다.
+
+---
+
+## ✨ 핵심 기능 (Key Features)
+
+### 1. 📚 체계적인 5단계 이론 교육 (Learn)
+- **1단계: LLM 기초와 생성 원리**
+- **2단계: 프롬프트 엔지니어링 & 제어**
+- **3단계: AI Agent 아키텍처**
+- **4단계: 도구(Tools) & RAG**
+- **5단계: MCP & AI 안전/윤리**
+
+### 2. 🎨 비주얼 노드 스튜디오 (Studio)
+- **노드 라이브러리**:
+  - `Input` / `Output`: 워크플로우의 입력 및 결과 렌더링
+  - `LLM`: Ollama / OpenAI 호환 모델 설정, 시스템 프롬프트 및 파라미터 제어, 상단 Tool 바인딩 지원
+  - `Planner`: 사용자 목표를 분석하여 세부 작업 계획 수립
+  - `Router`: 실행 상태 및 의도에 따른 조건부 동적 경로 분기 제어
+  - `Aggregator`: 복수 노드의 실행 결과를 취합하고 최종 응답 생성
+  - `Tools`: Web Search, Weather, YouTube 등 실시간 외부 도구 바인딩
+- **인터랙티브 기능**:
+  - **온보딩 가이드**: 플랫폼의 주요 메뉴와 핵심 기능을 한눈에 둘러보는 온보딩 가이드
+  - **에이전트 제작 가이드**: 노드 배치부터 연결, 실행까지 단계별로 안내하는 제작 가이드
+  - **실시간 실행 결과 패널**: 루프/스텝별 실행 내역 실시간 누적 및 아코디언 토글
+
+### 3. 🖥️ 독립형 데스크톱 런타임 (Desktop Native Runtime)
+- 웹 스튜디오에서 제작한 에이전트를 내보내기(`JSON`)하여 로컬 데스크톱에서 단독 구동
+- **웹 경유 LLM 프록시 탑재**: PC에 고사양 GPU나 LLM 환경이 없어도 웹 플랫폼 서버를 경유하여 즉시 동작
+- **커스텀 LLM 설정**: 로컬 Ollama 또는 개인 OpenAI API Key 등으로 노드별 유연한 전환 지원
+- **실시간 사고 과정 뷰어**: 에이전트의 내부 의사결정 및 도구 호출 과정을 실시간 로그 카드로 시각화
 
 ---
 
 ## 🛠 기술 스택 (Tech Stack)
 
-### Frontend
-- **Framework**: React 19, Vite, TypeScript
-- **Visual Editor**: `@xyflow/react` (React Flow)
-- **State Management**: Zustand
-- **Styling & UI**: TailwindCSS v4, Lucide React, Framer Motion, Axios
-
-### Backend & Engine
-- **Framework**: Python 3.11+, FastAPI, Uvicorn
-- **Agent Orchestration**: LangGraph, LangChain (`langchain-openai`)
-- **Schema & Validation**: Pydantic
-- **Database & ORM**: PostgreSQL 15, SQLAlchemy, psycopg2
-
-### Infrastructure & DevOps
-- **Containerization**: Docker, Docker Compose
-- **Reverse Proxy**: Nginx
-- **Local LLM Runner**: Ollama (`gemma2:2b`)
+| 영역 | 기술 스택 |
+| :--- | :--- |
+| **Web Frontend** | React 19, TypeScript, `@xyflow/react` (React Flow), TailwindCSS, Zustand |
+| **Backend & Engine** | Python 3.11+, FastAPI, LangGraph, LangChain, PostgreSQL 15 |
+| **Desktop Runtime** | PySide6 (Qt GUI), Standalone LangGraph Engine, PyInstaller |
+| **Infra & LLM** | Docker, Docker Compose, Nginx, Ollama, OpenAI Compatible API |
 
 ---
 
 ## 📂 프로젝트 구조 (Directory Structure)
 
 ```text
-n8n/
-├── docker/
-│   ├── compose/
-│   │   └── docker-compose.yml   # NOA-E Docker Compose 오케스트레이션 정의
-│   └── env/
-│       ├── .env.backend         # Backend 환경 변수
-│       ├── .env.frontend        # Frontend 환경 변수
-│       └── .env.db              # PostgreSQL DB 환경 변수
+NOA-E/
+├── docker/       # Docker Compose 및 환경 변수(.env) 설정
 ├── services/
-│   ├── backend/                 # FastAPI 백엔드 & LangGraph 엔진
-│   │   ├── app/
-│   │   │   ├── core/engine/     # Workflow Compiler & Node 실행 로직
-│   │   │   └── router/          # API 엔드포인트 (/api/workflow)
-│   │   ├── Dockerfile
-│   │   ├── main.py              # Backend 진입점
-│   │   └── requirements.txt
-│   ├── frontend/                # React Flow 기반 웹 클라이언트
-│   │   ├── src/
-│   │   │   ├── components/      # Visual Editor, Palette, Execution View
-│   │   │   ├── store/           # Workflow 상태 저장소 (Zustand)
-│   │   │   └── App.tsx
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   └── nginx/                   # 프록시 라우팅 설정
-├── Implementation Plan.md       # MVP 구현 계획서
-├── WORKFLOW_SCHEMA.md           # Workflow JSON Schema 정의서
-├── .gitignore                   # Git 제외 설정
-└── README.md                    # 프로젝트 가이드
+│   ├── backend/  # FastAPI 백엔드 & LangGraph 엔진
+│   ├── frontend/ # React Flow 기반 웹 클라이언트
+│   └── nginx/    # Nginx 리버스 프록시
+└── runtime/      # PySide6 데스크톱 네이티브 런타임
 ```
 
 ---
 
 ## ⚡ 빠른 시작 (Quick Start)
 
-### 1. Docker Compose로 전체 시스템 실행 (권장)
+### 1. 환경 변수 확인 및 설정
 
-Docker 및 Docker Compose가 설치되어 있다면 단일 명령어로 모든 NOA-E 컨테이너를 기동할 수 있습니다.
-
-```bash
-# 1. 저장소 클론 및 디렉토리 이동
-git clone <repository-url>
-cd n8n
-
-# 2. Docker Compose 실행
-docker compose -f docker/compose/docker-compose.yml up --build -d
-```
-
-#### 🐳 실행되는 컨테이너 목록
-| 서비스명 | 컨테이너 이름 | 포트 매핑 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **Nginx** | `noa-e-nginx` | `80:80` | 리버스 프록시 및 라우팅 |
-| **Frontend** | `noa-e-frontend` | `3000:3000` | 웹 에디터 UI ([http://localhost:3000](http://localhost:3000)) |
-| **Backend** | `noa-e-backend` | `8000:8000` | FastAPI & LangGraph 엔진 ([Swagger Docs](http://localhost:8000/docs)) |
-| **Database** | `noa-e-db` | `5432:5432` | PostgreSQL 15 데이터베이스 |
-| **Ollama** | `noa-e-ollama` | `11434:11434` | 로컬 LLM 런타임 |
-| **Ollama Init** | `noa-e-ollama-init` | - | 기본 모델 (`gemma2:2b`) 자동 풀링 |
-
----
-
-### 2. 로컬 개발 환경 직접 실행 (Local Development)
-
-#### Backend 실행 (Python 3.11+)
-
-```bash
-cd services/backend
-
-# 가상환경 생성 및 활성화
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-# source .venv/bin/activate
-
-# 의존성 설치
-pip install -r requirements.txt
-
-# 서버 실행 (개발 모드)
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-#### Frontend 실행 (Node.js 18+)
-
-```bash
-cd services/frontend
-
-# 패키지 설치
-npm install
-
-# 개발 서버 실행
-npm run dev
-```
-
-브라우저에서 [http://localhost:5173](http://localhost:5173) (Vite 기본 포트)으로 접속합니다.
-
----
-
-## 🔑 환경 변수 설정 (Environment Variables)
-
-`docker/env/` 디렉토리의 설정 파일에서 데이터베이스 및 LLM 설정을 관리합니다.
+`docker/env/` 디렉터리의 기본 환경 변수를 필요에 따라 수정합니다.
 
 - **`docker/env/.env.backend`**
   ```env
   DATABASE_URL=postgresql://postgres:postgres@db:5432/agent_db
   USE_OPENAI=false
-  LLM_MODEL=gemma2:2b
-  LLM_BASE_URL=http://ollama:11434/v1
-  LLM_API_KEY=ollama
+
+  # LLM 기본 엔드포인트 설정
+  LLM_MODEL=gpt-6-luna
+  LLM_BASE_URL=https://llm_base_url
+  LLM_API_KEY=your_llm_api_key
+
+  # YouTube Tool 사용 시 필수 (Google Cloud Console 발급)
+  YOUTUBE_API_KEY=your_youtube_api_key
+
+  # 지원 모델 기능 명세 (JSON)
+  MODELS_CONFIG={"gpt-6-luna":{"base_url":"https://llm_base_url","api_key":"your_llm_api_key","image":false,"tool":true,"mcp":false,"skill":false}}
   ```
 
 - **`docker/env/.env.frontend`**
   ```env
-  VITE_API_BASE_URL=http://localhost:8000
+  VITE_API_BASE_URL=/noa-e/api
   ```
 
 - **`docker/env/.env.db`**
@@ -162,19 +123,62 @@ npm run dev
 
 ---
 
-## 📖 핵심 기능 및 워크플로우 구성
+### 2. Docker Compose로 웹 플랫폼 전체 기동 (권장)
 
-1. **노드 배치**:
-   - `Input`: 사용자 질문/입력 파라미터 정의
-   - `LLM`: 프롬프트 템플릿, 모델(OpenAI / Ollama), Temperature 설정
-   - `Tool`: 계산기(Calculator), 웹 검색, 커스텀 Python 함수 등 연동
-   - `Output`: 최종 생성 결과 출력 및 렌더링
-2. **엣지 연결**: 노드의 핸들을 드래그하여 입력과 출력을 연결합니다.
-3. **실행 및 스트리밍 확인**:
-   - `Run` 버튼을 누르면 워크플로우가 검증되고 서버의 LangGraph 엔진으로 전달됩니다.
-   - 우측/하단 모니터링 패널에서 실시간 스트리밍 로그와 최종 응답을 확인합니다.
+Docker 및 Docker Compose가 설치된 환경에서 아래 명령어를 실행합니다.
 
-> 상세한 노드 규격 및 JSON 데이터 포맷은 [WORKFLOW_SCHEMA.md](file:///d:/project/n8n/WORKFLOW_SCHEMA.md)를 참조하세요.
+```bash
+# Docker Compose 컨테이너 빌드 및 백그라운드 기동
+docker compose -f docker/compose/docker-compose.yml up --build -d
+```
+
+#### 🐳 컨테이너 서비스 구성
+| 컨테이너명 | 포트 | 설명 |
+| :--- | :--- | :--- |
+| **`noa-e-nginx`** | `80` | 통합 리버스 프록시 ([http://localhost/noa-e](http://localhost/noa-e)) |
+| **`noa-e-frontend`** | `3000` | React 웹 클라이언트 개발 서버 |
+| **`noa-e-backend`** | `8000` | FastAPI 백엔드 ([API Docs](http://localhost:8000/docs)) |
+| **`noa-e-db`** | `5432` | PostgreSQL 15 데이터베이스 |
+| **`noa-e-ollama`** | `11434` | 로컬 LLM 런타임 |
+| **`noa-e-ollama-init`** | - | 기본 모델 (`gemma2:2b`) 자동 풀링 |
+
+---
+
+## 🖥️ 데스크톱 로컬 런타임 (Desktop Runtime)
+
+웹 스튜디오에서 설계한 에이전트를 `JSON` 파일로 내보낸 후 로컬 데스크톱에서 독립적으로 실행하기 위한 로컬 런타임입니다.
+
+### 1. 환경 설정 및 의존성 설치
+```bash
+cd runtime
+pip install -r requirements.txt
+```
+
+### 2. GUI 데스크톱 앱 실행 (기본 권장)
+```bash
+python agent_runner.py
+# 또는 python gui.py
+```
+- 실행 후 좌측 사이드바의 **[⚙️ 에이전트 로드 / 설정]**을 클릭하여 `workflow.json` 파일을 불러옵니다.
+- 에이전트 노드별로 **기본(웹 서버 프록시/서버 Ollama)** 또는 **커스텀(개인 API Key/로컬 LLM)**을 자유롭게 설정할 수 있습니다.
+- 대화창에 메시지를 입력하면 실시간 ReAct 사고 로그 및 도구 호출 과정과 함께 답변을 수신합니다.
+
+### 3. CLI 터미널 대화 모드
+```bash
+python agent_runner.py --workflow sample_agent.json --cli
+```
+
+### 4. 윈도우 배포 패키지(.exe / 설치 프로그램) 빌드
+- **독립형 실행 폴더 빌드 (PyInstaller)**:
+  ```bash
+  python build_exe.py
+  ```
+  > `dist/noa-e/noa-e.exe` 생성
+- **원클릭 인스톨러 생성 (Inno Setup)**:
+  ```bash
+  python build_installer.py
+  ```
+  > `installer_output/NOA-E_Desktop_Setup_v1.0.0.exe` 생성 (바탕화면 바로가기, 환경변수 등록, 언인스톨러 포함)
 
 ---
 

@@ -1,5 +1,5 @@
+import React from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, useReactFlow } from '@xyflow/react';
-import { X } from 'lucide-react';
 
 export default function CustomEdge({
   id,
@@ -27,9 +27,17 @@ export default function CustomEdge({
     setEdges((edges) => edges.filter((e) => e.id !== id));
   };
 
+  const defaultStyle = {
+    stroke: '#adc6ff',
+    strokeWidth: 2.5,
+    strokeDasharray: '6 4',
+    filter: 'drop-shadow(0 0 6px rgba(77, 142, 255, 0.4))',
+    ...style,
+  };
+
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={defaultStyle} />
       <EdgeLabelRenderer>
         <div
           style={{
@@ -41,10 +49,12 @@ export default function CustomEdge({
           className="nodrag nopan"
         >
           <button
-            className="w-5 h-5 bg-background border border-muted-foreground/30 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors shadow-sm cursor-pointer"
+            className="w-5 h-5 bg-surface-container-high border border-outline-variant rounded-full flex items-center justify-center text-outline hover:bg-error hover:text-on-error hover:border-error transition-all shadow-md cursor-pointer hover:scale-110"
             onClick={(event) => onEdgeClick(event, id)}
+            title="연결선 삭제"
+            type="button"
           >
-            <X size={12} />
+            <span className="material-symbols-outlined text-[12px]">close</span>
           </button>
         </div>
       </EdgeLabelRenderer>

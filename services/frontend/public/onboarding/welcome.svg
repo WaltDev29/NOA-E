@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c101d"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#080c16"/>
+    </linearGradient>
+    <linearGradient id="primaryGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="accentGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#C084FC"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="320" fill="url(#bgGrad)"/>
+  <rect width="600" height="320" fill="url(#grid)"/>
+
+  <!-- Radial Glow Behind Core -->
+  <circle cx="300" cy="160" r="110" fill="#3B82F6" opacity="0.18" filter="url(#glow)"/>
+  <circle cx="300" cy="160" r="60" fill="#8B5CF6" opacity="0.25" filter="url(#glow)"/>
+
+  <!-- Orbital Rings -->
+  <circle cx="300" cy="160" r="115" fill="none" stroke="rgba(96,165,250,0.2)" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <circle cx="300" cy="160" r="75" fill="none" stroke="rgba(192,132,252,0.3)" stroke-width="1.5"/>
+
+  <!-- Connection Nodes -->
+  <line x1="160" y1="110" x2="260" y2="140" stroke="rgba(96,165,250,0.5)" stroke-width="2"/>
+  <line x1="160" y1="210" x2="260" y2="180" stroke="rgba(96,165,250,0.5)" stroke-width="2"/>
+  <line x1="340" y1="160" x2="440" y2="120" stroke="rgba(192,132,252,0.6)" stroke-width="2"/>
+  <line x1="340" y1="160" x2="440" y2="200" stroke="rgba(192,132,252,0.6)" stroke-width="2"/>
+
+  <!-- Peripheral Nodes -->
+  <g transform="translate(140, 90)">
+    <rect width="40" height="40" rx="10" fill="#1E293B" stroke="#3B82F6" stroke-width="1.5"/>
+    <circle cx="20" cy="20" r="6" fill="#60A5FA"/>
+  </g>
+  <g transform="translate(140, 190)">
+    <rect width="40" height="40" rx="10" fill="#1E293B" stroke="#3B82F6" stroke-width="1.5"/>
+    <circle cx="20" cy="20" r="6" fill="#60A5FA"/>
+  </g>
+  <g transform="translate(420, 100)">
+    <rect width="40" height="40" rx="10" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <polygon points="17,14 27,20 17,26" fill="#C084FC"/>
+  </g>
+  <g transform="translate(420, 180)">
+    <rect width="40" height="40" rx="10" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <polygon points="17,14 27,20 17,26" fill="#C084FC"/>
+  </g>
+
+  <!-- Central Core Hexagon / Symbol -->
+  <g transform="translate(300, 160)">
+    <polygon points="0,-45 39,-22 39,22 0,45 -39,22 -39,-22" fill="#0F172A" stroke="url(#primaryGlow)" stroke-width="3" filter="url(#glow)"/>
+    <polygon points="0,-35 30,-17 30,17 0,35 -30,17 -30,-17" fill="url(#primaryGlow)" opacity="0.3"/>
+    <!-- Sparkle / AI Star -->
+    <path d="M 0 -18 Q 0 0 18 0 Q 0 0 0 18 Q 0 0 -18 0 Q 0 0 0 -18 Z" fill="#FFFFFF"/>
+    <circle cx="0" cy="0" r="4" fill="#93C5FD"/>
+  </g>
+
+  <!-- Floating Sparkles -->
+  <circle cx="230" cy="80" r="2" fill="#93C5FD" opacity="0.8"/>
+  <circle cx="370" cy="70" r="2.5" fill="#E9D5FF" opacity="0.8"/>
+  <circle cx="480" cy="150" r="1.5" fill="#93C5FD" opacity="0.6"/>
+  <circle cx="120" cy="160" r="2" fill="#E9D5FF" opacity="0.6"/>
+  <circle cx="360" cy="250" r="2" fill="#60A5FA" opacity="0.8"/>
+</svg>
